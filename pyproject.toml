@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ia_modules"
+version = "0.1.0"
+description = "Intelligent Agent Modules for TravelApp"
+dependencies = []
+
+[project.optional-dependencies]
+dev = []
+
+[tool.setuptools]
+packages = ["ia_modules"]
+package-dir = {"ia_modules" = "."}
+
+[tool.setuptools.package-data]
+ia_modules = ["*"]
