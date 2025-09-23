@@ -1,314 +1,399 @@
 # IA Modules - Pipeline Framework
 
+A Python package for building robust, graph-based pipelines with conditional routing, service injection, authentication, and database management.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Core Features](#core-features)
+- [Quickstart: Your First Pipeline](#quickstart-your-first-pipeline)
+- [Core Architecture Principles](#core-architecture-principles)
+- [Package Structure](#package-structure)
+- [Key Components](#key-components)
+  - [Pipeline System](#pipeline-system)
+  - [Authentication System](#authentication-system)
+  - [Database Layer](#database-layer)
+- [Defining Pipelines (JSON Format)](#defining-pipelines-json-format)
+  - [Top-Level Fields](#top-level-fields)
+  - [Step Definition](#step-definition)
+  - [Flow & Routing](#flow--routing)
+  - [Templating and Parameterization](#templating-and-parameterization)
+  - [Full JSON Example](#full-json-example)
+- [Running Pipelines](#running-pipelines)
+  - [Application Responsibilities](#application-responsibilities)
+  - [Option 1: DB-Backed Execution (Production)](#option-1-db-backed-execution-production)
+  - [Option 2: File-Based Execution (Development)](#option-2-file-based-execution-development)
+- [Human-in-the-Loop (HITL)](#human-in-the-loop-hitl)
+- [Advanced Topics](#advanced-topics)
+  - [The Pipeline Importer Service](#the-pipeline-importer-service)
+  - [Database Schema](#database-schema)
+- [Installation](#installation)
+- [Contributing](#contributing)
+
 ## Overview
 
-A Python package for building graph-based pipelines with conditional routing, service injection, authentication, and database management.
+`ia_modules` provides a comprehensive framework for creating, managing, and executing complex workflows as Directed Acyclic Graphs (DAGs). It is designed to decouple business logic into modular `Steps`, orchestrate their execution with intelligent routing, and provide common services like database access and authentication out-of-the-box.
+
+## Core Features
+
+- **Graph-Based Execution**: Define complex workflows as DAGs in simple JSON.
+- **Conditional Routing**: Control the pipeline's path using simple expressions, with future support for AI and function-based decisions.
+- **Service Injection**: Steps have secure and easy access to shared services like databases (`self.get_db()`) and HTTP clients (`self.get_http()`).
+- **Human-in-the-Loop**: Pause a pipeline and wait for external human input before resuming.
+- **Database Management**: Includes a database manager with multi-provider support and a built-in migration system.
+- **Authentication**: FastAPI-compatible authentication middleware and session management.
+
+## Quickstart: Your First Pipeline
+
+Let's create and run a simple two-step pipeline.
+
+1. Create your project structure:
+
+```bash
+mkdir my_pipeline_app
+cd my_pipeline_app
+mkdir pipelines
+touch main.py
+touch steps.py
+```
+
+2. Define the pipeline (`pipelines/hello_world.json`):
+
+```json
+{
+  "name": "Hello World Pipeline",
+  "version": "1.0",
+  "steps": [
+    {
+      "id": "step_one",
+      "step_class": "GenerateMessageStep",
+      "module": "steps"
+    },
+    {
+      "id": "step_two",
+      "step_class": "PrintMessageStep",
+      "module": "steps",
+      "inputs": {
+        "message": "{{ step_one.greeting }}"
+      }
+    }
+  ],
+  "flow": {
+    "start_at": "step_one",
+    "transitions": [
+      { "from": "step_one", "to": "step_two" }
+    ]
+  }
+}
+```
+
+3. Implement the steps (`steps.py`):
+
+```python
+# steps.py
+from ia_modules.pipeline import Step
+
+class GenerateMessageStep(Step):
+    async def work(self, data):
+        name = data.get("name", "World")
+        return {"greeting": f"Hello, {name}!"}
+
+class PrintMessageStep(Step):
+    async def work(self, data):
+        message = data.get("message")
+        print(message)
+        return {"status": "Message printed successfully"}
+```
+
+4. Create the runner (`main.py`):
+
+```python
+# main.py
+import asyncio
+from ia_modules.pipeline.runner import run_pipeline_from_json
+
+async def main():
+    print("Running the pipeline...")
+    result = await run_pipeline_from_json(
+        pipeline_file="pipelines/hello_world.json",
+        input_data={"name": "Developer"}
+    )
+    print("\nPipeline finished with result:")
+    print(result)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+5. Run it!
+
+Make sure `ia_modules` is installed and in your `PYTHONPATH`.
+
+```bash
+python main.py
+```
+
+Expected Output:
+
+```
+Running the pipeline...
+Hello, Developer!
+
+Pipeline finished with result:
+{'status': 'Message printed successfully'}
+```
 
 ## Core Architecture Principles
 
-### 1. **Graph-First Design**
-- All pipelines are defined as **directed acyclic graphs (DAGs)**
-- Conditional branching based on step outputs
-
-### 2. **Intelligent Flow Control**
-- **Expression-based routing**: Simple logical conditions
-- **AI-driven routing**: Agent-based decision making (future)
-- **Function-based routing**: Custom business logic (future)
-
-### 3. **Service Injection & Dependency Management**
-- Preserved from Architecture 1.0
-- Clean `ServiceRegistry` pattern
-- Database and HTTP service access via `self.get_db()`, `self.get_http()`
+1. **Graph-First Design**: All pipelines are defined as **directed acyclic graphs (DAGs)**, ensuring a clear, predictable, and finite execution flow.
+2. **Intelligent Flow Control**:
+   - **Expression-based routing**: Simple logical conditions on step outputs (e.g., `result.score > 0.8`).
+   - **AI-driven routing**: (Future) Use an agent to make complex routing decisions.
+   - **Function-based routing**: (Future) Define routing logic with custom Python functions.
+3. **Service Injection & Dependency Management**: A clean `ServiceRegistry` pattern provides steps with managed access to shared resources like database connections and HTTP clients.
 
 ## Package Structure
 
 ```
 ia_modules/
 ├── pipeline/            # Core pipeline execution engine
-│   ├── core.py         # Pipeline, Step, HumanInputStep, TemplateParameterResolver
-│   ├── services.py     # ServiceRegistry, CentralLoggingService
-│   ├── runner.py       # JSON pipeline loader and execution
-│   ├── routing.py      # Conditional routing logic
-│   └── pipeline_models.py  # Data models for pipeline execution
-├── auth/               # Authentication and session management
-│   ├── middleware.py   # FastAPI authentication middleware
-│   ├── session.py      # SessionManager
-│   ├── models.py       # User models and roles
-│   └── security.py     # Token generation and security
-├── database/           # Database abstraction and management
-│   ├── manager.py      # DatabaseManager with multi-database support
-│   ├── migrations.py   # Database migration system
-│   ├── interfaces.py   # Database connection interfaces
-│   └── providers.py    # Database provider implementations
-├── web/                # Web utilities
-│   ├── database.py     # Web-optimized database operations
-│   └── execution_tracker.py  # Pipeline execution tracking
-└── data/               # Data models and compatibility shims
-    └── pipeline_models.py  # Pipeline model re-exports
+├── auth/                # Authentication and session management
+├── database/            # Database abstraction and management
+├── web/                 # Web utilities (execution tracking, etc.)
+└── data/                # Shared data models
 ```
 
 ## Key Components
 
-### Pipeline System
-- **Step Class**: Base class for pipeline steps with service injection
-- **Pipeline Class**: Graph-based pipeline orchestrator with conditional routing
-- **HumanInputStep**: Base class for human-in-the-loop interactions
-- **TemplateParameterResolver**: Dynamic parameter substitution system
-- **ServiceRegistry**: Dependency injection for database and HTTP services
+#### Pipeline System
 
-### Authentication System
-- **AuthMiddleware**: FastAPI-compatible authentication middleware
-- **SessionManager**: Secure session handling and user state management
-- **User Models**: Type-safe user data structures and role management
-- **Security**: Token generation and session cookie management
+- **Step**: The base class for all pipeline steps. Implements the `work` method containing business logic.
+- **Pipeline**: The orchestrator that executes the graph, manages state, and handles routing.
+- **HumanInputStep**: A specialized step that pauses execution to wait for human interaction.
+- **ServiceRegistry**: A dependency injection container for services (DB, HTTP, etc.).
 
-### Database Layer
-- **DatabaseManager**: Multi-database connection and transaction management
-- **Migration System**: Schema versioning and automated database updates
-- **Provider Interfaces**: Abstract database operations for different providers
-- **Connection Management**: Type-safe database configuration and pooling
+#### Authentication System
 
-## Usage Examples
+- **AuthMiddleware**: FastAPI-compatible middleware for protecting endpoints.
+- **SessionManager**: Manages secure user sessions.
 
-### Basic Step Implementation
+#### Database Layer
 
-```python
-from ia_modules.pipeline import Step
+- **DatabaseManager**: Handles connections to multiple database backends (e.g., SQLite, PostgreSQL).
+- **Migration System**: Manages database schema versioning and updates.
 
-class MyStep(Step):
-    async def work(self, data: Dict[str, Any]) -> Any:
-        # Access injected services
-        db = self.get_db()
-        http = self.get_http()
+## Defining Pipelines (JSON Format)
 
-        # Your business logic here
-        result = await process_data(data)
-        return {"processed": result}
-```
+Pipelines are defined as JSON documents, making them language-agnostic and easy to store, version, and edit.
 
-### Pipeline Execution
+### Top-Level Fields
 
-```python
-from ia_modules.pipeline import run_pipeline_from_json
+- `name` (string): Human-readable name for the pipeline.
+- `version` (string): Version of the pipeline (e.g., "1.0").
+- `parameters` (object, optional): Default input parameters for a pipeline run.
+- `steps` (array): A list of all step objects in the graph.
+- `flow` (object): Defines the execution order and conditional transitions.
+- `error_handling` (object, optional): Global configuration for retries, timeouts, etc.
+- `outputs` (object, optional): Defines the final output of the entire pipeline, often templated from step results.
 
-# Execute pipeline from JSON configuration
-result = await run_pipeline_from_json(
-    pipeline_config,
-    input_data,
-    services
-)
-```
+### Step Definition
 
-## Graph Pipeline Definition Format
+- `id` (string): A unique identifier for the step within the pipeline.
+- `step_class` (string): The Python class name that implements the step's logic.
+- `module` (string): The Python module path where the `step_class` can be found.
+- `inputs` (object, optional): Maps required inputs for the step to outputs from other steps or pipeline parameters.
+- `config` (object, optional): Static configuration passed to the step instance.
 
-### Enhanced JSON Schema
+### Flow & Routing
+
+- `flow.start_at` (string): The `id` of the first step to execute.
+- `flow.transitions` (array): A list of directed edges in the graph. Each transition includes:
+  - `from` (string): The source step `id`.
+  - `to` (string): The destination step `id`.
+  - `condition` (string | object, optional): The routing rule. Defaults to `"always"`.
+    - **Simple Conditions**: `"always"` or `"parameter:my_param"` (checks for truthiness of a pipeline parameter).
+    - **Expression Conditions**: An object for more complex logic, e.g., `{"type": "expression", "config": {"source": "step_id.output_name", "operator": "gt", "value": 100}}`.
+
+### Templating and Parameterization
+
+The framework uses a simple templating syntax to pass data between steps and from pipeline parameters.
+
+- **Reference a step's output**: `{{ step_id.output_name }}`
+- **Reference a pipeline parameter**: `{{ parameters.param_name }}`
+
+This syntax is used within the `inputs` mapping of a step.
+
+> Note: Consolidating to `{{ ... }}` is recommended for clarity. If backwards compatibility is required for the single-brace style, document it as deprecated.
+
+### Full JSON Example
+
+This pipeline scrapes a Wikipedia page and processes its content.
 
 ```json
 {
-  "name": "Advanced Travel Pipeline",
-  "description": "Graph-based pipeline with conditional flows",
-  "version": "2.0",
+  "name": "AI Notebook Creation Pipeline",
+  "description": "Creates research notebooks with AI-enhanced content.",
+  "version": "1.0",
+  "parameters": {
+    "topic": "artificial intelligence",
+    "enable_ai_processing": true
+  },
   "steps": [
     {
-      "id": "step_id",                    // Required: unique step identifier
-      "name": "Human Readable Name",      // Required: display name
-      "type": "task",                     // Required: task|human_input
-      "step_class": "StepClassName",      // Required: Python class name
-      "module": "module.path",            // Required: import path
-      "config": {...},                    // Optional: step configuration
-      "input_schema": {...},              // Optional: JSON schema validation
-      "output_schema": {...}              // Optional: output contract
+      "id": "wikipedia_scraper",
+      "name": "Wikipedia Content Scraper",
+      "step_class": "WikipediaScraperStep",
+      "module": "knowledge_processing.wikipedia_scraper_step",
+      "inputs": {
+        "topic": "{{ parameters.topic }}"
+      },
+      "outputs": ["scraped_content", "article_title"]
+    },
+    {
+      "id": "structured_processor",
+      "name": "Structured Content Processor",
+      "step_class": "StructuredWikipediaProcessorStep",
+      "module": "knowledge_processing.structured_wikipedia_processor_step",
+      "inputs": {
+        "scraped_html": "{{ wikipedia_scraper.scraped_content }}",
+        "title": "{{ wikipedia_scraper.article_title }}"
+      },
+      "outputs": ["structured_content"]
     }
   ],
   "flow": {
-    "start_at": "first_step_id",          // Required: entry point
-    "paths": [
+    "start_at": "wikipedia_scraper",
+    "transitions": [
       {
-        "from": "step_a",                 // Required: source step
-        "to": "step_b",                   // Required: target step
-        "condition": {                    // Required: routing condition
-          "type": "expression",           // expression|always|agent|function
-          "config": {
-            "source": "result.score",     // Data path to evaluate
-            "operator": "greater_than",   // Comparison operator
-            "value": 0.7                  // Threshold value
-          }
-        }
+        "from": "wikipedia_scraper",
+        "to": "structured_processor"
       }
     ]
   }
 }
 ```
 
-### Supported Condition Types
+## Running Pipelines
 
-#### 1. Always Condition
-```json
-{"type": "always"}
-```
-- Always takes this path (fallback/default)
+There are two primary ways to execute a pipeline: backed by a database (for production) or directly from a file (for development).
 
-#### 2. Expression Condition
-```json
-TODO: Create a doocument of all possible expressions IA Pipelines can/should perform.
-{
-  "type": "expression",
-  "config": {
-    "source": "result.quality_score",
-    "operator": "greater_than_or_equal",
-    "value": 75
-  }
-}
-```
+### Application Responsibilities
 
-**Supported Operators:**
-- `equals`, `greater_than`, `greater_than_or_equal`
-- `less_than`, `equals_ignore_case`
+The `ia_modules` library provides the execution engine. The consuming application is responsible for:
 
-#### 3. Future: Agent Condition (AI-Driven Routing)
-```json
-{
-  "type": "agent",
-  "config": {
-    "agent_id": "quality_assessor_agent",
-    "input": {"prompt": "Assess content quality: {result}"},
-    "output": {"evaluation": {"operator": "equals", "value": "high_quality"}}
-  }
-}
+1. **Storing Pipeline JSON**: Keeping pipeline definitions in a local directory (e.g., `pipelines/`).
+2. **Providing Services**: Creating and configuring the `ServiceRegistry` with application-specific database connections, HTTP clients, and other services.
+3. **Database Integration**: (For production) Running the necessary database migrations and using the `PipelineImportService` to load JSON definitions into the database.
+
+### Option 1: DB-Backed Execution (Production)
+
+This is the standard approach for a deployed application.
+
+```python
+from ia_modules.pipeline.importer import PipelineImportService
+from ia_modules.pipeline.runner import create_pipeline_from_json
+from ia_modules.pipeline.services import ServiceRegistry
+
+# 1. Setup application services
+services = ServiceRegistry(db=app_db_manager, http=http_client)
+
+# 2. Load pipeline configuration from the database
+importer = PipelineImportService(db_provider, pipelines_dir='/path/to/pipelines')
+pipeline_row = await importer.get_pipeline_by_slug('ai-notebook-creation-pipeline-v1')
+pipeline_config = pipeline_row['pipeline_config'] # This is the parsed JSON
+
+# 3. Create and run the pipeline instance
+pipeline = create_pipeline_from_json(pipeline_config, services=services)
+result = await pipeline.run({'topic': 'machine learning'})
 ```
 
-#### 4. Future: Function Condition (Custom Business Logic)
-```json
-{
-  "type": "function",
-  "config": {
-    "function_class": "BusinessRulesValidator",
-    "function_method": "validate_lead_quality",
-    "expected_result": true
-  }
-}
+### Option 2: File-Based Execution (Development)
+
+Ideal for local development, testing, and ad-hoc runs.
+
+```python
+from ia_modules.pipeline.runner import run_pipeline_from_json
+from ia_modules.pipeline.services import ServiceRegistry
+
+# 1. Setup services (can be mocked for testing)
+services = ServiceRegistry(db=mock_db, http=mock_http)
+
+# 2. Run directly from the JSON file
+result = await run_pipeline_from_json(
+    pipeline_file="pipelines/ai_notebook_creation_pipeline.json",
+    input_data={"topic": "machine learning"},
+    services=services
+)
 ```
 
-## Human-in-the-Loop (HITL) Architecture
+## Human-in-the-Loop (HITL)
 
-### HITL Step Definition
+Pipelines can include a `HumanInputStep` to pause execution and wait for external input. When the runner encounters this step type, it will halt and return a payload indicating that human action is required.
+
+**Example HITL Step Definition:**
 
 ```json
 {
   "id": "human_approval",
-  "name": "Human Review",
   "type": "human_input",
   "step_class": "HumanInputStep",
   "config": {
     "ui_schema": {
-      "title": "Review Content",
+      "title": "Review Content for Approval",
       "fields": [
         {"name": "decision", "type": "radio", "options": ["Approve", "Reject"]},
-        {"name": "notes", "type": "textarea"}
+        {"name": "notes", "type": "textarea", "label": "Reasoning"}
       ]
     }
   }
 }
 ```
 
-### HITL Base Implementation
+The application's UI can use the `ui_schema` to dynamically render a form. Once the user submits the form, the application can resume the pipeline run, providing the user's data as input to the `human_approval` step.
 
-```python
-class HumanInputStep(Step):
-    """Base class for human-in-the-loop steps"""
+## Advanced Topics
 
-    async def work(self, data: Dict[str, Any]) -> Any:
-        ui_schema = self.config.get('ui_schema', {})
+### The Pipeline Importer Service
 
-        # Base implementation - override with specific HITL integration
-        return {
-            'human_input_required': True,
-            'ui_schema': ui_schema,
-            'message': f'Human input step {self.name}'
-        }
-```
+In a production environment, pipelines are loaded from the filesystem into a database table for fast and reliable access. The `PipelineImportService` handles this process.
 
-## Real-World Examples
+- **Location**: `ia_modules/pipeline/importer.py`
+- **Purpose**: Scans a directory for `*.json` files, validates them, and upserts them into the `pipelines` database table.
+- **Change Detection**: It computes a hash of the file content to avoid redundant database writes if a pipeline definition hasn't changed.
 
-### Example 1: Travel Content Pipeline
+The consuming application typically calls `importer.import_all_pipelines()` on startup.
 
-**Intelligent Flow Logic:**
-1. **High-confidence location** → Detailed POI enrichment → Advanced story
-2. **Low-confidence location** → Basic POI enrichment → Simple summary
+### Database Schema
 
-```json
-{
-  "flow": {
-    "start_at": "location_parser",
-    "paths": [
-      {
-        "from": "osm_fetcher",
-        "to": "poi_enricher_detailed",
-        "condition": {
-          "type": "expression",
-          "config": {"source": "result.poi_potential", "operator": "greater_than", "value": 0.7}
-        }
-      },
-      {
-        "from": "osm_fetcher",
-        "to": "poi_enricher_basic",
-        "condition": {"type": "always"}
-      }
-    ]
-  }
-}
-```
+The importer and runner expect a specific database schema for storing pipelines, execution jobs, and logs. The SQL migration scripts are located in `ia_modules/pipeline/migrations/`.
 
-### Example 2: Lead Processing Pipeline
+**It is the consuming application's responsibility to run these migrations.**
 
-**Quality-Based Routing:**
-1. **High-quality leads** → Human review → CRM integration
-2. **Low-quality leads** → Automated notification only
+You can either:
+1. Copy the migration files into your application's migration directory.
+2. Configure your migration tool (e.g., Alembic) to discover migrations within `ia_modules`.
 
-```json
-{
-  "flow": {
-    "paths": [
-      {
-        "from": "lead_scorer",
-        "to": "human_review",
-        "condition": {
-          "type": "expression",
-          "config": {"source": "result.score", "operator": "greater_than_or_equal", "value": 75}
-        }
-      },
-      {
-        "from": "lead_scorer",
-        "to": "automated_notification",
-        "condition": {"type": "always"}
-      }
-    ]
-  }
-}
-```
+The core table is `pipelines`, which stores the JSON definition and metadata for each imported pipeline.
 
 ## Installation
 
+This package is intended for private use. Install it directly from the Git repository.
+
 ```bash
-# Install in development mode
+# For development (allows editing the code locally)
+git clone <repository-url>
+cd ia_modules
 pip install -e .
 
-# Or install from source
+# For deployment
 pip install git+<repository-url>
 ```
 
-## Configuration
+## Contributing
 
-The package supports environment-based configuration and includes built-in database migration support.
+1. **Branching**: Create a feature branch from `develop` (e.g., `feature/add-new-step`).
+2. **Development**: Make your changes. Ensure you add unit tests for new functionality.
+3. **Linting & Formatting**: Run `black .` and `flake8` to ensure code quality.
+4. **Pull Request**: Open a PR against the `develop` branch. Provide a clear description of the changes.
 
-```python
-from ia_modules.database import DatabaseManager
-from ia_modules.auth import AuthMiddleware
-
-# Initialize database
-db_manager = DatabaseManager("sqlite:///app.db")
-await db_manager.run_migrations()
-
-# Set up authentication
-auth = AuthMiddleware(secret_key="your-secret-key")
-```
+---

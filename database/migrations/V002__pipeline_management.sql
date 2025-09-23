@@ -1,90 +1,140 @@
--- Pipeline Management System - V002
--- Description: Add comprehensive pipeline management tables
--- Dependencies: V001__complete_schema.sql
+BEGIN TRANSACTION;
 
--- Pipelines table for storing pipeline definitions
+-- Consolidated Pipeline & Execution Schema (V002)
+-- This migration contains the canonical tables used by apps and the web interface.
+-- It merges the earlier V002 and V003 variants into one coherent schema.
+
+-- Core pipelines table (canonical pipeline definitions)
 CREATE TABLE IF NOT EXISTS pipelines (
     id TEXT PRIMARY KEY,
-    slug TEXT UNIQUE NOT NULL,
+    slug TEXT UNIQUE,
     name TEXT NOT NULL,
     description TEXT,
     version TEXT DEFAULT '1.0',
-    pipeline_json TEXT NOT NULL,
-    file_path TEXT,  -- Relative path to JSON file
-    content_hash TEXT,  -- Hash of pipeline content for change detection
-    is_active BOOLEAN DEFAULT 1,
-    is_system BOOLEAN DEFAULT 0,  -- System pipelines vs user pipelines
+    pipeline_json TEXT,
+    config_json TEXT,
+    file_path TEXT,
+    content_hash TEXT,
+    is_system INTEGER DEFAULT 0,
+    is_active INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Pipeline executions table (separate from user-specific executions)
-CREATE TABLE IF NOT EXISTS pipeline_executions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    execution_id TEXT UNIQUE NOT NULL,
-    pipeline_id TEXT NOT NULL,
-    pipeline_slug TEXT NOT NULL,
-    pipeline_name TEXT NOT NULL,
-    user_id INTEGER,  -- NULL for system executions
-    status TEXT NOT NULL DEFAULT 'pending',
-    input_data TEXT,  -- JSON string
-    output_data TEXT, -- JSON string
-    error_message TEXT,
-    started_at TIMESTAMP,
-    completed_at TIMESTAMP,
-    execution_time_ms INTEGER,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (pipeline_id) REFERENCES pipelines (id),
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
-);
-
--- Step executions table for detailed tracking
-CREATE TABLE IF NOT EXISTS step_executions_enhanced (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    execution_id TEXT NOT NULL,
-    step_execution_id TEXT UNIQUE NOT NULL,  -- UUID for each step execution
-    step_id TEXT NOT NULL,
-    step_name TEXT NOT NULL,
-    step_type TEXT NOT NULL DEFAULT 'task',  -- Type of step (task, conditional, etc.)
-    status TEXT NOT NULL,
-    input_data TEXT,  -- JSON string
-    output_data TEXT, -- JSON string for step results
-    error_message TEXT,
-    started_at TIMESTAMP,
-    completed_at TIMESTAMP,
-    execution_time_ms INTEGER,
-    step_order INTEGER,
-    retry_count INTEGER DEFAULT 0,
-    metadata_json TEXT, -- Additional metadata as JSON
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (execution_id) REFERENCES pipeline_executions (execution_id) ON DELETE CASCADE
-);
-
--- Pipeline templates/examples table
+-- Templates / examples table (shared for CLI/web)
 CREATE TABLE IF NOT EXISTS pipeline_templates (
     id TEXT PRIMARY KEY,
-    slug TEXT UNIQUE NOT NULL,
+    slug TEXT UNIQUE,
     name TEXT NOT NULL,
     description TEXT,
-    category TEXT DEFAULT 'user',
-    pipeline_json TEXT NOT NULL,
-    is_system BOOLEAN DEFAULT 0,
+    category TEXT DEFAULT 'example',
+    pipeline_json TEXT,
+    config_json TEXT,
+    is_system INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Indexes for performance
+-- Per-step logs and events (legacy; kept for compatibility)
+CREATE TABLE IF NOT EXISTS pipeline_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    execution_id TEXT,
+    job_id TEXT,
+    step_id TEXT,
+    step_name TEXT,
+    event_type TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    data TEXT,
+    duration_ms INTEGER
+);
+
+-- Enhanced execution tracker table (primary execution tracking system)
+-- execution_id is the canonical identifier used in code paths; keep as TEXT primary key
+CREATE TABLE IF NOT EXISTS pipeline_executions (
+    execution_id TEXT PRIMARY KEY,
+    id INTEGER UNIQUE,
+    pipeline_id TEXT,
+    pipeline_slug TEXT,
+    pipeline_name TEXT,
+    user_id INTEGER,
+    status TEXT NOT NULL,
+    started_at TIMESTAMP NOT NULL,
+    completed_at TIMESTAMP,
+    total_steps INTEGER DEFAULT 0,
+    completed_steps INTEGER DEFAULT 0,
+    failed_steps INTEGER DEFAULT 0,
+    input_data TEXT,
+    output_data TEXT,
+    current_step TEXT,
+    error_message TEXT,
+    execution_time_ms INTEGER,
+    duration_seconds REAL,
+    metadata_json TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Detailed step executions (enhanced)
+CREATE TABLE IF NOT EXISTS step_executions_enhanced (
+    step_execution_id TEXT PRIMARY KEY,
+    execution_id TEXT NOT NULL,
+    step_id TEXT NOT NULL,
+    step_name TEXT NOT NULL,
+    step_type TEXT,
+    status TEXT NOT NULL,
+    started_at TIMESTAMP NOT NULL,
+    completed_at TIMESTAMP,
+    input_data TEXT,
+    output_data TEXT,
+    result_json TEXT,
+    error_message TEXT,
+    execution_time_ms INTEGER,
+    duration_seconds REAL,
+    retry_count INTEGER DEFAULT 0,
+    metadata_json TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (execution_id) REFERENCES pipeline_executions (execution_id)
+);
+
+-- Simpler legacy step_executions table (kept for apps that expect it)
+CREATE TABLE IF NOT EXISTS step_executions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    execution_id TEXT NOT NULL,
+    step_id TEXT NOT NULL,
+    step_name TEXT NOT NULL,
+    status TEXT NOT NULL,
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    duration_seconds REAL,
+    result_json TEXT,
+    error_message TEXT,
+    step_order INTEGER,
+    FOREIGN KEY (execution_id) REFERENCES pipeline_executions (execution_id)
+);
+
+-- Detailed execution logs for the web interface
+CREATE TABLE IF NOT EXISTS execution_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    execution_id TEXT NOT NULL,
+    step_id TEXT,
+    log_level TEXT DEFAULT 'INFO',
+    message TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    metadata_json TEXT,
+    FOREIGN KEY (execution_id) REFERENCES pipeline_executions (execution_id)
+);
+
+-- Indexes for performance and common lookups
 CREATE INDEX IF NOT EXISTS idx_pipelines_slug ON pipelines(slug);
 CREATE INDEX IF NOT EXISTS idx_pipelines_active ON pipelines(is_active);
-CREATE INDEX IF NOT EXISTS idx_pipelines_system ON pipelines(is_system);
+CREATE INDEX IF NOT EXISTS idx_pipeline_templates_slug ON pipeline_templates(slug);
+CREATE INDEX IF NOT EXISTS idx_pipeline_logs_execution ON pipeline_logs(execution_id);
 CREATE INDEX IF NOT EXISTS idx_pipeline_executions_pipeline_id ON pipeline_executions(pipeline_id);
-CREATE INDEX IF NOT EXISTS idx_pipeline_executions_user_id ON pipeline_executions(user_id);
+CREATE INDEX IF NOT EXISTS idx_pipeline_executions_pipeline_slug ON pipeline_executions(pipeline_slug);
 CREATE INDEX IF NOT EXISTS idx_pipeline_executions_status ON pipeline_executions(status);
-CREATE INDEX IF NOT EXISTS idx_pipeline_executions_started ON pipeline_executions(started_at);
-CREATE INDEX IF NOT EXISTS idx_step_executions_execution_id ON step_executions_enhanced(execution_id);
-CREATE INDEX IF NOT EXISTS idx_step_executions_step_id ON step_executions_enhanced(step_id);
-CREATE INDEX IF NOT EXISTS idx_step_executions_status ON step_executions_enhanced(status);
-CREATE INDEX IF NOT EXISTS idx_pipeline_templates_category ON pipeline_templates(category);
-CREATE INDEX IF NOT EXISTS idx_pipeline_templates_system ON pipeline_templates(is_system);
+CREATE INDEX IF NOT EXISTS idx_pipeline_executions_started_at ON pipeline_executions(started_at);
+CREATE INDEX IF NOT EXISTS idx_step_executions_execution_id ON step_executions(execution_id);
+CREATE INDEX IF NOT EXISTS idx_step_executions_enhanced_execution_id ON step_executions_enhanced(execution_id);
+CREATE INDEX IF NOT EXISTS idx_step_executions_enhanced_status ON step_executions_enhanced(status);
+CREATE INDEX IF NOT EXISTS idx_execution_logs_execution_id ON execution_logs(execution_id);
 
--- Note: Skipping data migration for now - starting fresh with new pipeline system
+COMMIT;
