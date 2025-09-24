@@ -66,10 +66,13 @@ def create_pipeline_from_json(pipeline_config: Dict[str, Any], services: Optiona
 
 
 async def run_pipeline_from_json(
-    pipeline_file: str, 
+    pipeline_file: str,
     input_data: Dict[str, Any] = None,
     services: Optional[ServiceRegistry] = None,
-    working_directory: Optional[str] = None
+    working_directory: Optional[str] = None,
+    websocket_manager=None,
+    user_id: int = None,
+    execution_id: str = None
 ) -> Dict[str, Any]:
     """Main runner function - execute pipeline from JSON configuration"""
     
@@ -91,8 +94,17 @@ async def run_pipeline_from_json(
     if input_data is None:
         input_data = {}
     
+    # Inject WebSocket service if provided
+    if services is None:
+        services = ServiceRegistry()
+
+    if websocket_manager and user_id and execution_id:
+        services.register('websocket_manager', websocket_manager)
+        services.register('websocket_user_id', user_id)
+        services.register('websocket_execution_id', execution_id)
+
     # Create and run pipeline with injected services
     pipeline = create_pipeline_from_json(pipeline_config, services)
     result = await pipeline.run(input_data)
-    
+
     return result

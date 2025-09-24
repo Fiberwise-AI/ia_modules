@@ -145,12 +145,21 @@ class StepLogger:
         # Log to database if available
         if self.db_manager:
             try:
-                self.db_manager.execute(
-                    """INSERT INTO pipeline_logs (job_id, step_name, step_number, event_type, timestamp, data) 
-                       VALUES (?, ?, ?, ?, ?, ?)""",
-                    (self.job_id, self.step_name, self.step_number, 'start', 
-                     datetime.now().isoformat(), json.dumps(input_data, default=str))
-                )
+                # Check if db_manager has execute method (DatabaseManager) or execute_query method (DatabaseInterface)
+                if hasattr(self.db_manager, 'execute'):
+                    self.db_manager.execute(
+                        """INSERT INTO pipeline_logs (job_id, step_name, step_number, event_type, timestamp, data) 
+                           VALUES (?, ?, ?, ?, ?, ?)""",
+                        (self.job_id, self.step_name, self.step_number, 'start', 
+                         datetime.now().isoformat(), json.dumps(input_data, default=str))
+                    )
+                elif hasattr(self.db_manager, 'execute_query'):
+                    self.db_manager.execute_query(
+                        """INSERT INTO pipeline_logs (job_id, step_name, step_number, event_type, timestamp, data) 
+                           VALUES (?, ?, ?, ?, ?, ?)""",
+                        (self.job_id, self.step_name, self.step_number, 'start', 
+                         datetime.now().isoformat(), json.dumps(input_data, default=str))
+                    )
             except Exception as e:
                 self._log(f"Warning: Could not log to database: {e}")
     
@@ -162,12 +171,21 @@ class StepLogger:
         # Log to database if available
         if self.db_manager:
             try:
-                self.db_manager.execute(
-                    """INSERT INTO pipeline_logs (job_id, step_name, step_number, event_type, timestamp, data, duration) 
-                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                    (self.job_id, self.step_name, self.step_number, 'complete', 
-                     datetime.now().isoformat(), json.dumps(result, default=str), duration)
-                )
+                # Check if db_manager has execute method (DatabaseManager) or execute_query method (DatabaseInterface)
+                if hasattr(self.db_manager, 'execute'):
+                    self.db_manager.execute(
+                        """INSERT INTO pipeline_logs (job_id, step_name, step_number, event_type, timestamp, data, duration) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (self.job_id, self.step_name, self.step_number, 'complete', 
+                         datetime.now().isoformat(), json.dumps(result, default=str), duration)
+                    )
+                elif hasattr(self.db_manager, 'execute_query'):
+                    self.db_manager.execute_query(
+                        """INSERT INTO pipeline_logs (job_id, step_name, step_number, event_type, timestamp, data, duration) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (self.job_id, self.step_name, self.step_number, 'complete', 
+                         datetime.now().isoformat(), json.dumps(result, default=str), duration)
+                    )
             except Exception as e:
                 self._log(f"Warning: Could not log to database: {e}")
     
@@ -179,12 +197,21 @@ class StepLogger:
         # Log to database if available
         if self.db_manager:
             try:
-                self.db_manager.execute(
-                    """INSERT INTO pipeline_logs (job_id, step_name, step_number, event_type, timestamp, data, duration) 
-                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                    (self.job_id, self.step_name, self.step_number, 'error', 
-                     datetime.now().isoformat(), str(error), duration)
-                )
+                # Check if db_manager has execute method (DatabaseManager) or execute_query method (DatabaseInterface)
+                if hasattr(self.db_manager, 'execute'):
+                    self.db_manager.execute(
+                        """INSERT INTO pipeline_logs (job_id, step_name, step_number, event_type, timestamp, data, duration) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (self.job_id, self.step_name, self.step_number, 'error', 
+                         datetime.now().isoformat(), str(error), duration)
+                    )
+                elif hasattr(self.db_manager, 'execute_query'):
+                    self.db_manager.execute_query(
+                        """INSERT INTO pipeline_logs (job_id, step_name, step_number, event_type, timestamp, data, duration) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (self.job_id, self.step_name, self.step_number, 'error', 
+                         datetime.now().isoformat(), str(error), duration)
+                    )
             except Exception as e:
                 self._log(f"Warning: Could not log to database: {e}")
 
@@ -237,6 +264,20 @@ class Step:
             if self.logger:
                 await self.logger.log_step_start(data)
 
+            # Send WebSocket notification for step start
+            if self.services:
+                websocket_manager = self.services.get('websocket_manager')
+                user_id = self.services.get('websocket_user_id')
+                execution_id = self.services.get('websocket_execution_id')
+
+                if websocket_manager and user_id and execution_id:
+                    await websocket_manager.send_processing_status(
+                        user_id=user_id,
+                        status="step_started",
+                        execution_id=execution_id,
+                        extra_data={"step_name": self.name, "step_type": type(self).__name__}
+                    )
+
             # Log input data to central logger if available
             if self.services:
                 central_logger = self.services.get('central_logger')
@@ -261,6 +302,20 @@ class Step:
             if self.logger:
                 await self.logger.log_step_complete(result)
 
+            # Send WebSocket notification for step completion
+            if self.services:
+                websocket_manager = self.services.get('websocket_manager')
+                user_id = self.services.get('websocket_user_id')
+                execution_id = self.services.get('websocket_execution_id')
+
+                if websocket_manager and user_id and execution_id:
+                    await websocket_manager.send_processing_status(
+                        user_id=user_id,
+                        status="step_completed",
+                        execution_id=execution_id,
+                        extra_data={"step_name": self.name, "result": result}
+                    )
+
             success = True
             return merged_result
 
@@ -268,6 +323,20 @@ class Step:
             error_message = str(e)
             if self.logger:
                 await self.logger.log_step_error(e)
+
+            # Send WebSocket notification for step failure
+            if self.services:
+                websocket_manager = self.services.get('websocket_manager')
+                user_id = self.services.get('websocket_user_id')
+                execution_id = self.services.get('websocket_execution_id')
+
+                if websocket_manager and user_id and execution_id:
+                    await websocket_manager.send_processing_status(
+                        user_id=user_id,
+                        status="step_failed",
+                        execution_id=execution_id,
+                        extra_data={"step_name": self.name, "error": str(e)}
+                    )
             raise
 
         finally:
@@ -298,14 +367,27 @@ class Step:
         duration = (end_time - start_time).total_seconds()
 
         # Log step execution
-        db_service.log_step_execution(
-            execution_id=execution_id,
-            step_name=self.name,
-            success=success,
-            duration=duration,
-            error=error_message,
-            result=result
-        )
+        try:
+            # Check if db_service has log_step_execution method or is a DatabaseManager
+            if hasattr(db_service, 'log_step_execution'):
+                db_service.log_step_execution(
+                    execution_id=execution_id,
+                    step_name=self.name,
+                    success=success,
+                    duration=duration,
+                    error=error_message,
+                    result=result
+                )
+            elif hasattr(db_service, 'execute'):
+                # It's a DatabaseManager directly
+                db_service.execute(
+                    """INSERT INTO pipeline_executions (execution_id, step_name, success, duration, error, result) 
+                       VALUES (?, ?, ?, ?, ?, ?)""",
+                    (execution_id, self.name, success, duration, error_message, json.dumps(result, default=str) if result is not None else None)
+                )
+        except Exception as e:
+            # Silently fail database logging
+            pass
 
     def _summarize_data(self, data: Any, data_type: str) -> str:
         """Create a summary of data for logging (avoid logging huge arrays)"""
