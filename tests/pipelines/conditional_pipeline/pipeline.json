@@ -1,0 +1,104 @@
+{
+    "name": "Conditional Processing Pipeline",
+    "description": "Pipeline with conditional logic based on data quality",
+    "version": "1.0.0",
+    "parameters": {
+        "threshold": 0.8,
+        "test_data": [
+            {"quality_score": 0.95, "content": "high quality data 1"},
+            {"quality_score": 0.88, "content": "high quality data 2"},
+            {"quality_score": 0.92, "content": "high quality data 3"},
+            {"quality_score": 0.65, "content": "low quality data 1"},
+            {"quality_score": 0.45, "content": "low quality data 2"}
+        ]
+    },
+    "steps": [
+        {
+            "id": "step1",
+            "name": "Data Ingestor",
+            "step_class": "DataIngestorStep",
+            "module": "tests.pipelines.conditional_pipeline.steps.data_ingestor",
+            "config": {
+                "test_data": "{{ parameters.test_data }}"
+            }
+        },
+        {
+            "id": "step2",
+            "name": "Quality Checker",
+            "step_class": "QualityCheckerStep",
+            "module": "tests.pipelines.conditional_pipeline.steps.quality_checker",
+            "config": {
+                "threshold": "{{ parameters.threshold }}"
+            }
+        },
+        {
+            "id": "step3",
+            "name": "High Quality Processing",
+            "step_class": "HighQualityProcessorStep",
+            "module": "tests.pipelines.conditional_pipeline.steps.high_quality_processor",
+            "config": {
+                "processing_level": "full"
+            }
+        },
+        {
+            "id": "step4",
+            "name": "Low Quality Processing", 
+            "step_class": "LowQualityProcessorStep",
+            "module": "tests.pipelines.conditional_pipeline.steps.low_quality_processor",
+            "config": {
+                "processing_level": "basic"
+            }
+        },
+        {
+            "id": "step5",
+            "name": "Results Aggregator",
+            "step_class": "ResultsAggregatorStep",
+            "module": "tests.pipelines.conditional_pipeline.steps.results_aggregator",
+            "config": {}
+        }
+    ],
+    "flow": {
+        "start_at": "step1",
+        "paths": [
+            {
+                "from_step": "step1",
+                "to_step": "step2",
+                "condition": {"type": "always"}
+            },
+            {
+                "from_step": "step2",
+                "to_step": "step3",
+                "condition": {
+                    "type": "threshold_condition",
+                    "config": {
+                        "field": "quality_score",
+                        "operator": ">=",
+                        "value": "{{ parameters.threshold }}"
+                    }
+                }
+            },
+            {
+                "from_step": "step2",
+                "to_step": "step4",
+                "condition": {
+                    "type": "threshold_condition", 
+                    "config": {
+                        "field": "quality_score",
+                        "operator": "<",
+                        "value": "{{ parameters.threshold }}"
+                    }
+                }
+            },
+            {
+                "from_step": "step3",
+                "to_step": "step5",
+                "condition": {"type": "always"}
+            },
+            {
+                "from_step": "step4", 
+                "to_step": "step5",
+                "condition": {"type": "always"}
+            }
+        ]
+    }
+}

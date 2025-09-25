@@ -14,8 +14,6 @@ class DatabaseType(Enum):
     SQLITE = "sqlite"
     POSTGRESQL = "postgresql"
     MYSQL = "mysql"
-    MONGODB = "mongodb"
-    REDIS = "redis"
     DUCKDB = "duckdb"
     CLOUDFLARE_D1 = "cloudflare_d1"
 

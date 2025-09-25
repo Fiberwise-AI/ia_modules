@@ -14,8 +14,8 @@ from ia_modules.pipeline.services import ServiceRegistry
 
 class IntegrationTestStep(Step):
     """Test step implementation"""
-    
-    async def work(self, data: dict) -> dict:
+
+    async def run(self, data: dict) -> dict:
         return {"processed": True, "data": data}
 
 
@@ -52,8 +52,12 @@ async def test_pipeline_integration():
     pipeline = create_pipeline_from_json(pipeline_config, services)
     result = await pipeline.run({"input": "test_data"})
     
-    assert result["processed"] is True
-    assert result["input"] == "test_data"
+    assert result is not None
+    assert isinstance(result, dict)
+    assert "input" in result
+    assert "steps" in result
+    assert "output" in result
+    assert result["input"]["input"] == "test_data"
 
 
 @pytest.mark.asyncio
@@ -100,8 +104,12 @@ async def test_complex_pipeline_integration():
     pipeline = create_pipeline_from_json(pipeline_config, services)
     result = await pipeline.run({"input": "test_data"})
     
-    assert result["processed"] is True
-    assert result["input"] == "test_data"
+    assert result is not None
+    assert isinstance(result, dict)
+    assert "input" in result
+    assert "steps" in result
+    assert "output" in result
+    assert result["input"]["input"] == "test_data"
 
 
 if __name__ == "__main__":

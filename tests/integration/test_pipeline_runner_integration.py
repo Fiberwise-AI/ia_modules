@@ -19,8 +19,8 @@ from ia_modules.pipeline.services import ServiceRegistry
 
 class IntegrationTestStep(Step):
     """Test step implementation"""
-    
-    async def work(self, data: dict) -> dict:
+
+    async def run(self, data: dict) -> dict:
         return {"result": "success", "input_data": data, "step_name": self.name}
 
 
@@ -142,7 +142,10 @@ async def test_full_pipeline_integration():
         
         assert result is not None
         assert isinstance(result, dict)
-        assert result["input"] == "test_data"
+        assert "input" in result
+        assert "steps" in result
+        assert "output" in result
+        assert result["input"]["input"] == "test_data"
 
 
 if __name__ == "__main__":

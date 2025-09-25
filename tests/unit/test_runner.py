@@ -16,8 +16,8 @@ from ia_modules.pipeline.runner import (
 from ia_modules.pipeline.core import Step
 
 
-class TestStep(Step):
-    """Test step implementation"""
+class MockStep(Step):
+    """Mock step implementation for testing"""
     
     async def work(self, data: dict) -> dict:
         return {"result": "success", "input_data": data}
@@ -29,18 +29,18 @@ def test_load_step_class():
     # For testing purposes, we'll mock the import
     with patch('importlib.import_module') as mock_import:
         mock_module = Mock()
-        mock_module.TestStep = TestStep
+        mock_module.MockStep = MockStep
         mock_import.return_value = mock_module
         
-        loaded_class = load_step_class("test.module", "TestStep")
-        assert loaded_class == TestStep
+        loaded_class = load_step_class("test.module", "MockStep")
+        assert loaded_class == MockStep
 
 
 def test_create_step_from_json():
     """Test creating step from JSON"""
     step_def = {
         "id": "test_step",
-        "step_class": "TestStep",
+        "step_class": "MockStep",
         "module": "test.module",
         "config": {"param1": "value1"}
     }
@@ -48,7 +48,7 @@ def test_create_step_from_json():
     # Mock the import
     with patch('importlib.import_module') as mock_import:
         mock_module = Mock()
-        mock_module.TestStep = TestStep
+        mock_module.MockStep = MockStep
         mock_import.return_value = mock_module
         
         context = {"parameters": {}}
@@ -65,7 +65,7 @@ def test_create_pipeline_from_json():
         "steps": [
             {
                 "id": "step1",
-                "step_class": "TestStep",
+                "step_class": "MockStep",
                 "module": "test.module",
                 "config": {"param": "value"}
             }
@@ -79,7 +79,7 @@ def test_create_pipeline_from_json():
     # Mock the import
     with patch('importlib.import_module') as mock_import:
         mock_module = Mock()
-        mock_module.TestStep = TestStep
+        mock_module.MockStep = MockStep
         mock_import.return_value = mock_module
         
         pipeline = create_pipeline_from_json(pipeline_config)

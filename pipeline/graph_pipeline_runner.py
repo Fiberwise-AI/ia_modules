@@ -13,7 +13,7 @@ import uuid
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict  # Changed from validator to field_validator
 
 # Add parent directories to path for imports
 current_dir = Path(__file__).parent
@@ -23,7 +23,6 @@ sys.path.insert(0, str(current_dir))
 from ia_modules.pipeline.core import Pipeline, Step
 from ia_modules.pipeline.runner import create_pipeline_from_json
 from ia_modules.pipeline.services import ServiceRegistry
-from ia_modules.pipeline.enhanced_pipeline import EnhancedPipeline
 
 
 class AgentStepWrapper(Step):
@@ -33,7 +32,7 @@ class AgentStepWrapper(Step):
         super().__init__(name, config)
         self.agent_instance = agent_instance
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         """Execute the agent and return results in Step-compatible format"""
         # Call the agent's process method
         result = await self.agent_instance.process(data)
@@ -64,12 +63,11 @@ class FlowCondition(BaseModel):
 
 class FlowPath(BaseModel):
     """Pydantic model for flow path"""
+    model_config = ConfigDict(populate_by_name=True)
+    
     from_step: str = Field(..., alias="from", description="Source step ID")
     to_step: str = Field(..., alias="to", description="Target step ID")
     condition: FlowCondition = Field(default_factory=lambda: FlowCondition(), description="Path condition")
-
-    class Config:
-        validate_by_name = True
 
 
 class PipelineFlow(BaseModel):
@@ -90,7 +88,8 @@ class PipelineConfig(BaseModel):
     output_schema: Optional[Dict[str, Any]] = Field(None, description="Output validation schema")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
-    @validator('steps')
+    @field_validator('steps')
+    @classmethod
     def validate_step_ids_unique(cls, v):
         """Validate that all step IDs are unique"""
         ids = [step.id for step in v]
@@ -98,11 +97,13 @@ class PipelineConfig(BaseModel):
             raise ValueError("Step IDs must be unique")
         return v
 
-    @validator('flow')
-    def validate_flow_references(cls, v, values):
+    @field_validator('flow')
+    @classmethod
+    def validate_flow_references(cls, v, info):
         """Validate that flow references exist in steps"""
-        if 'steps' in values:
-            step_ids = {step.id for step in values['steps']}
+        # Get the steps from the model data using the info parameter
+        if info.data and 'steps' in info.data:
+            step_ids = {step.id for step in info.data['steps']}
             step_ids.update(['end', 'end_with_success', 'end_with_failure'])
 
             for path in v.paths:
@@ -251,7 +252,7 @@ class GraphPipelineRunner:
                 execution_id = str(uuid.uuid4())
         else:
             # Fallback if no services registry
-            execution_id = str(uuid.uuid4())
+                execution_id = str(uuid.uuid4())
 
         # Set execution ID in central logger
         logger = self._get_central_logger()

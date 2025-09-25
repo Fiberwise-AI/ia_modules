@@ -1,0 +1,52 @@
+{
+    "name": "Agent-Based Processing Pipeline",
+    "description": "Pipeline that uses agent-based processing steps",
+    "version": "1.0.0",
+    "parameters": {
+        "input_data": {}
+    },
+    "steps": [
+        {
+            "id": "step1",
+            "name": "Data Ingestor",
+            "step_class": "SimpleAgentStep",
+            "module": "tests.pipelines.agent_pipeline.steps.simple_agent_step",
+            "config": {
+                "processing_type": "ingestion"
+            }
+        },
+        {
+            "id": "step2",
+            "name": "Decision Agent",
+            "step_class": "DecisionAgentStep",
+            "module": "tests.pipelines.agent_pipeline.steps.decision_agent_step",
+            "config": {
+                "decision_logic": "validation"
+            }
+        },
+        {
+            "id": "step3",
+            "name": "Final Processor",
+            "step_class": "SimpleAgentStep",
+            "module": "tests.pipelines.agent_pipeline.steps.simple_agent_step",
+            "config": {
+                "processing_type": "final_processing"
+            }
+        }
+    ],
+    "flow": {
+        "start_at": "step1",
+        "paths": [
+            {
+                "from_step": "step1",
+                "to_step": "step2",
+                "condition": {"type": "always"}
+            },
+            {
+                "from_step": "step2",
+                "to_step": "step3",
+                "condition": {"type": "always"}
+            }
+        ]
+    }
+}

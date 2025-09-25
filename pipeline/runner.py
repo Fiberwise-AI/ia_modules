@@ -31,7 +31,7 @@ def create_step_from_json(step_def: Dict[str, Any], context: Dict[str, Any] = No
     resolved_config = step_def.get('config', {})
     if context:
         resolved_config = TemplateParameterResolver.resolve_parameters(resolved_config, context)
-    
+
     step_class = load_step_class(step_def['module'], step_def.get('step_class', step_def.get('class', '')))
     step_name = step_def.get('id', step_def.get('name', 'Unknown'))
     return step_class(step_name, resolved_config)
@@ -61,8 +61,10 @@ def create_pipeline_from_json(pipeline_config: Dict[str, Any], services: Optiona
             'parameters': pipeline_config.get('parameters', {})
         }
 
-    # Create pipeline with optional structure
-    return Pipeline(steps, services=services, structure=structure)
+    # Create pipeline
+    pipeline_name = pipeline_config.get('name', 'Unknown')
+    flow = pipeline_config.get('flow', {})
+    return Pipeline(pipeline_name, steps, flow, services or ServiceRegistry())
 
 
 async def run_pipeline_from_json(
