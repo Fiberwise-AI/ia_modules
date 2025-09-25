@@ -6,7 +6,7 @@ A Python package for building robust, graph-based pipelines with conditional rou
 
 - [Overview](#overview)
 
-- [Pipeline Examples & Features](TEST_PIPELINES_GUIDE.md) **See framework capabilities in action with runnable examples**
+- [Pipeline Examples & Features](docs/TEST_PIPELINES_GUIDE.md) **See framework capabilities in action with runnable examples**
 - [Core Features](#core-features)
 - [Quickstart: Your First Pipeline](#quickstart-your-first-pipeline)
 - [Core Architecture Principles](#core-architecture-principles)
@@ -50,7 +50,7 @@ A Python package for building robust, graph-based pipelines with conditional rou
 Comprehensive documentation is available in the `docs/` folder:
 
 ### 📋 **Guides & Tutorials**
-- **[Pipeline Examples & Features](TEST_PIPELINES_GUIDE.md)** - Runnable examples showcasing each framework feature
+- **[Pipeline Examples & Features](docs/TEST_PIPELINES_GUIDE.md)** - Runnable examples showcasing each framework feature
 - **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - Complete development workflow and best practices
 - **[Testing Guide](docs/TESTING_GUIDE.md)** - Testing patterns, fixtures, and validation strategies
 
@@ -65,7 +65,7 @@ Comprehensive documentation is available in the `docs/` folder:
 ### 🎯 **Quick Navigation**
 | Topic | Documentation | Purpose |
 |-------|---------------|---------|
-| **Getting Started** | [Pipeline Examples](TEST_PIPELINES_GUIDE.md) | See working examples |
+| **Getting Started** | [Pipeline Examples](docs/TEST_PIPELINES_GUIDE.md) | See working examples |
 | **Development** | [Developer Guide](docs/DEVELOPER_GUIDE.md) | Build and contribute |
 | **Architecture** | [Pipeline Architecture](docs/PIPELINE_ARCHITECTURE.md) | Understand the system |
 | **Testing** | [Testing Guide](docs/TESTING_GUIDE.md) | Quality assurance |
