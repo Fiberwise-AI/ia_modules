@@ -5,6 +5,8 @@ A Python package for building robust, graph-based pipelines with conditional rou
 ## Table of Contents
 
 - [Overview](#overview)
+
+- [Pipeline Examples & Features](TEST_PIPELINES_GUIDE.md) **See framework capabilities in action with runnable examples**
 - [Core Features](#core-features)
 - [Quickstart: Your First Pipeline](#quickstart-your-first-pipeline)
 - [Core Architecture Principles](#core-architecture-principles)
@@ -42,6 +44,33 @@ A Python package for building robust, graph-based pipelines with conditional rou
 - **Human-in-the-Loop**: Pause a pipeline and wait for external human input before resuming.
 - **Database Management**: Includes a database manager with multi-provider support and a built-in migration system.
 - **Authentication**: FastAPI-compatible authentication middleware and session management.
+
+## Documentation
+
+Comprehensive documentation is available in the `docs/` folder:
+
+### 📋 **Guides & Tutorials**
+- **[Pipeline Examples & Features](TEST_PIPELINES_GUIDE.md)** - Runnable examples showcasing each framework feature
+- **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - Complete development workflow and best practices
+- **[Testing Guide](docs/TESTING_GUIDE.md)** - Testing patterns, fixtures, and validation strategies
+
+### 🏗️ **Architecture & Design**
+- **[Pipeline Architecture](docs/PIPELINE_ARCHITECTURE.md)** - Core system design and execution patterns
+- **[Database Interfaces](docs/DATABASE_INTERFACES.md)** - Database layer design and integration patterns
+
+### 🔍 **References**
+- **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation for all modules
+- **[Human-in-the-Loop Guide](docs/HUMAN_IN_LOOP_COMPREHENSIVE.md)** - Interactive workflow patterns and implementation
+
+### 🎯 **Quick Navigation**
+| Topic | Documentation | Purpose |
+|-------|---------------|---------|
+| **Getting Started** | [Pipeline Examples](TEST_PIPELINES_GUIDE.md) | See working examples |
+| **Development** | [Developer Guide](docs/DEVELOPER_GUIDE.md) | Build and contribute |
+| **Architecture** | [Pipeline Architecture](docs/PIPELINE_ARCHITECTURE.md) | Understand the system |
+| **Testing** | [Testing Guide](docs/TESTING_GUIDE.md) | Quality assurance |
+| **API Reference** | [API Reference](docs/API_REFERENCE.md) | Technical details |
+| **Advanced Features** | [Human-in-the-Loop](docs/HUMAN_IN_LOOP_COMPREHENSIVE.md) | Interactive workflows |
 
 ## Quickstart: Your First Pipeline
 
