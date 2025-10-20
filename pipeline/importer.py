@@ -32,9 +32,29 @@ class PipelineImportService:
         else:
             self.pipelines_dir = Path(pipelines_dir)
 
-    async def import_all_pipelines(self) -> Dict[str, Any]:
+    async def clear_all_imported_pipelines(self) -> int:
+        """Clear all imported pipelines (non-system) from database"""
+        logger.info("Clearing all imported pipelines from database")
+
+        query = "DELETE FROM pipelines WHERE is_system = 0"
+        result = await self.db_provider.execute_query(query)
+
+        if not result.success:
+            logger.error(f"Failed to clear pipelines: {result}")
+            return 0
+
+        # Get count of deleted rows (if available)
+        deleted_count = getattr(result, 'rows_affected', 0)
+        logger.info(f"Cleared {deleted_count} imported pipelines")
+        return deleted_count
+
+    async def import_all_pipelines(self, clear_existing: bool = False) -> Dict[str, Any]:
         """Import all pipeline JSON files from the pipelines directory"""
         logger.info(f"Starting pipeline import from: {self.pipelines_dir}")
+
+        # Clear existing pipelines if requested
+        if clear_existing:
+            await self.clear_all_imported_pipelines()
 
         if not self.pipelines_dir.exists():
             logger.warning(f"Pipelines directory does not exist: {self.pipelines_dir}")
@@ -89,8 +109,8 @@ class PipelineImportService:
         if not name:
             raise ValueError("Pipeline must have a 'name' field")
 
-        # Generate unique slug
-        slug = self._generate_slug(name, str(file_path.relative_to(self.pipelines_dir)))
+        # Generate slug from filename (without extension)
+        slug = file_path.stem
 
         # Calculate content hash for change detection
         content_hash = self._calculate_content_hash(pipeline_data)

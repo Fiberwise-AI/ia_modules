@@ -65,7 +65,7 @@ class LLMConfig:
         defaults = {
             LLMProvider.OPENAI: "gpt-3.5-turbo",
             LLMProvider.ANTHROPIC: "claude-3-haiku-20240307",
-            LLMProvider.GOOGLE: "gemini-1.5-flash",
+            LLMProvider.GOOGLE: "gemini-2.5-flash",
             LLMProvider.AZURE_OPENAI: "gpt-3.5-turbo",
             LLMProvider.OLLAMA: "llama2"
         }
@@ -335,14 +335,27 @@ class LLMProviderService:
         # Configure the API key
         genai.configure(api_key=config.api_key)
 
-        # Create model instance
-        model = genai.GenerativeModel(config.model)
+        # Create model instance with safety settings if provided
+        safety_settings = config.extra_params.get('safety_settings', {})
+        if safety_settings:
+            # Convert safety settings to Google format
+            formatted_safety = []
+            for category, threshold in safety_settings.items():
+                formatted_safety.append({
+                    "category": getattr(genai.types.HarmCategory, category),
+                    "threshold": getattr(genai.types.HarmBlockThreshold, threshold)
+                })
+            self.logger.info(f"Applying safety settings: {formatted_safety}")
+            model = genai.GenerativeModel(config.model, safety_settings=formatted_safety)
+        else:
+            self.logger.info("No safety settings configured, using defaults")
+            model = genai.GenerativeModel(config.model)
 
         # Configure generation settings
         generation_config = genai.types.GenerationConfig(
             temperature=temperature,
             max_output_tokens=max_tokens,
-            **kwargs
+            **{k: v for k, v in kwargs.items() if k != 'safety_settings'}
         )
 
         # Generate response
@@ -351,8 +364,24 @@ class LLMProviderService:
             generation_config=generation_config
         )
 
+        # Handle safety filtering and other response issues
+        try:
+            content = response.text
+        except Exception as e:
+            # Check finish reason and provide appropriate error
+            if response.candidates and len(response.candidates) > 0:
+                finish_reason = response.candidates[0].finish_reason
+                if finish_reason == 2:  # SAFETY
+                    raise Exception("Content was filtered by safety settings. Try rephrasing your prompt.")
+                elif finish_reason == 3:  # RECITATION
+                    raise Exception("Content was filtered due to recitation concerns.")
+                else:
+                    raise Exception(f"Content generation failed with finish_reason: {finish_reason}")
+            else:
+                raise Exception(f"No candidates returned from API: {str(e)}")
+
         return LLMResponse(
-            content=response.text,
+            content=content,
             provider=config.provider,
             model=config.model,
             usage={

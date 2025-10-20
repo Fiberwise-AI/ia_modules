@@ -183,15 +183,15 @@ async def test_service_registry_with_real_pipeline():
             super().__init__(name, config)
             self.services = services
             self.logger = services.get("central_logger")
-        
-        async def work(self, data: dict) -> dict:
+
+        async def run(self, data: dict) -> dict:
             self.logger.info(f"Starting {self.name}", self.name)
-            
+
             # Simulate getting another service
             if self.services.has("data_validator"):
                 validator = self.services.get("data_validator")
                 # Use validator if available
-            
+
             result = {"step": self.name, "processed": True, "input": data}
             self.logger.success(f"Completed {self.name}", self.name)
             return result
@@ -208,7 +208,7 @@ async def test_service_registry_with_real_pipeline():
     
     # Execute step
     logger.set_execution_id("service_integration_test")
-    result = await step.work({"test": "data"})
+    result = await step.run({"test": "data"})
     
     assert result["processed"] is True
     assert result["step"] == "integration_step"

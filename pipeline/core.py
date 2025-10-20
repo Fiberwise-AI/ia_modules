@@ -7,6 +7,7 @@ import asyncio
 import logging
 
 from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.telemetry.integration import get_telemetry
 
 
 class TemplateParameterResolver:
@@ -74,27 +75,203 @@ class InputResolver:
 
 
 class Step:
-    """Base class for all pipeline steps"""
+    """Base class for all pipeline steps with error handling support"""
 
     def __init__(self, name: str, config: Dict[str, Any]):
         self.name = name
         self.config = config
         self.logger = logging.getLogger(f"Step.{name}")
 
+        # Error handling configuration
+        self.error_config = config.get('error_handling', {})
+        self.continue_on_error = self.error_config.get('continue_on_error', False)
+        self.enable_fallback = self.error_config.get('enable_fallback', False)
+
+        # Retry configuration
+        retry_config_dict = self.error_config.get('retry', {})
+        if retry_config_dict:
+            from .retry import RetryConfig
+            self.retry_config = RetryConfig(**retry_config_dict)
+        else:
+            self.retry_config = None
+
+        # Services will be injected by Pipeline
+        self.services = None
+
     async def run(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute the step logic"""
-        raise NotImplementedError("Subclasses must implement run method")
+        """
+        Execute the step logic
+
+        Override this method in subclasses to implement step behavior.
+
+        Args:
+            data: Input data for the step
+
+        Returns:
+            Output data from the step
+
+        Raises:
+            NotImplementedError: If not implemented by subclass
+        """
+        raise NotImplementedError(
+            f"Subclasses must implement run() method. "
+            f"{self.__class__.__name__} has not implemented run()."
+        )
+
+    async def execute_with_error_handling(
+        self,
+        data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Execute step with comprehensive error handling
+
+        This wrapper adds retry logic, fallback mechanisms, and error recovery
+        around the step's run() method.
+
+        Args:
+            data: Input data for the step
+
+        Returns:
+            Output data from the step, or error state if continue_on_error=True
+
+        Raises:
+            PipelineError: If step fails and continue_on_error=False
+        """
+        from .errors import PipelineError, classify_exception
+        from .retry import RetryStrategy
+
+        try:
+            # Execute with retry if configured
+            if self.retry_config and self.retry_config.max_attempts > 1:
+                strategy = RetryStrategy(self.retry_config)
+                return await strategy.execute_with_retry(self.run, data)
+            else:
+                return await self.run(data)
+
+        except PipelineError as e:
+            # Handle known pipeline errors
+            return await self._handle_pipeline_error(e, data)
+
+        except Exception as e:
+            # Classify and handle unexpected errors
+            pipeline_error = classify_exception(e, step_id=self.name)
+            return await self._handle_pipeline_error(pipeline_error, data)
+
+    async def _handle_pipeline_error(
+        self,
+        error: 'PipelineError',
+        data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Handle pipeline errors with fallback and recovery
+
+        Args:
+            error: The pipeline error that occurred
+            data: Original input data
+
+        Returns:
+            Fallback result or error state
+
+        Raises:
+            PipelineError: If error cannot be handled
+        """
+        from .errors import ErrorSeverity
+
+        # Log the error
+        log_method = (
+            self.logger.critical if error.severity == ErrorSeverity.CRITICAL
+            else self.logger.error if error.severity == ErrorSeverity.ERROR
+            else self.logger.warning
+        )
+        log_method(f"Error in step '{self.name}': {error}")
+
+        # Try fallback if configured and error is recoverable
+        if self.enable_fallback and error.recoverable:
+            try:
+                self.logger.info(f"Attempting fallback for step '{self.name}'")
+                return await self.fallback(data, error)
+            except Exception as fallback_error:
+                self.logger.error(
+                    f"Fallback failed for step '{self.name}': {fallback_error}"
+                )
+                # Continue to error handling below
+
+        # Return error state if continue_on_error is enabled
+        if self.continue_on_error:
+            self.logger.warning(
+                f"Step '{self.name}' failed but continuing pipeline execution"
+            )
+            return {
+                "step_error": True,
+                "error_message": str(error),
+                "error_category": error.category.value,
+                "error_severity": error.severity.value,
+                "step_name": self.name,
+                "original_data": data,
+                "context": error.context
+            }
+
+        # Re-raise to stop pipeline
+        raise error
+
+    async def fallback(
+        self,
+        data: Dict[str, Any],
+        error: 'PipelineError'
+    ) -> Dict[str, Any]:
+        """
+        Fallback handler when step execution fails
+
+        Override this method in subclasses to provide custom fallback behavior.
+        Default implementation logs a warning and re-raises the error.
+
+        Args:
+            data: Original input data
+            error: The error that triggered the fallback
+
+        Returns:
+            Fallback output data
+
+        Raises:
+            PipelineError: If no fallback is implemented
+
+        Example:
+            async def fallback(self, data, error):
+                # Return cached data if API call fails
+                cache_key = data.get('id')
+                if cache_key in self.cache:
+                    return {"data": self.cache[cache_key], "from_cache": True}
+                raise error
+        """
+        self.logger.warning(f"No fallback implemented for step '{self.name}'")
+        raise error
+
+    def get_db(self):
+        """Get database service from registry"""
+        if self.services:
+            return self.services.get('database')
+        return None
+
+    def get_http(self):
+        """Get HTTP client service from registry"""
+        if self.services:
+            return self.services.get('http')
+        return None
 
 
 class Pipeline:
     """Main pipeline executor"""
 
-    def __init__(self, name: str, steps: List[Step], flow: Dict[str, Any], services: ServiceRegistry):
+    def __init__(self, name: str, steps: List[Step], flow: Dict[str, Any], services: ServiceRegistry, enable_telemetry: bool = True):
         self.name = name
         self.steps = steps
         self.flow = flow
         self.services = services
         self.logger = logging.getLogger(f"Pipeline.{name}")
+
+        # Telemetry integration
+        self.enable_telemetry = enable_telemetry
+        self.telemetry = get_telemetry(enabled=enable_telemetry) if enable_telemetry else None
 
         # Inject services into all steps
         for step in self.steps:
@@ -117,6 +294,21 @@ class Pipeline:
         # Start with input data
         current_data = input_data
 
+        # Execute with telemetry if enabled
+        if self.enable_telemetry and self.telemetry:
+            with self.telemetry.trace_pipeline(self.name, input_data) as pipeline_ctx:
+                return await self._execute_pipeline(input_data, results, current_data, pipeline_ctx)
+        else:
+            return await self._execute_pipeline(input_data, results, current_data, None)
+
+    async def _execute_pipeline(
+        self,
+        input_data: Dict[str, Any],
+        results: Dict[str, Any],
+        current_data: Dict[str, Any],
+        pipeline_ctx
+    ) -> Dict[str, Any]:
+        """Internal pipeline execution with telemetry context"""
         # Execute steps in order based on flow
         try:
             # Get the starting step
@@ -135,8 +327,14 @@ class Pipeline:
 
                 self.logger.info(f"Executing step: {step_name}")
 
-                # Run the step with current data
-                step_result = await step.run(current_data)
+                # Execute step with telemetry if enabled
+                if self.enable_telemetry and self.telemetry:
+                    parent_span = pipeline_ctx.span if pipeline_ctx else None
+                    with self.telemetry.trace_step(self.name, step_name, parent_span) as step_ctx:
+                        step_result = await step.execute_with_error_handling(current_data)
+                        step_ctx.set_output(step_result)
+                else:
+                    step_result = await step.execute_with_error_handling(current_data)
 
                 # Store result for this step
                 results["steps"][step_name] = step_result
@@ -146,6 +344,10 @@ class Pipeline:
 
             # Set final output
             results["output"] = current_data
+
+            # Record result in telemetry
+            if pipeline_ctx:
+                pipeline_ctx.set_result(results["output"])
 
             self.logger.info("Pipeline execution completed successfully")
             return results

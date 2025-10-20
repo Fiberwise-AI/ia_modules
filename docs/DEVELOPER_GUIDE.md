@@ -218,7 +218,7 @@ import asyncio
 class DataTransformStep(Step):
     """Transform input data according to configuration"""
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         # Access step configuration
         transform_type = self.config.get('transform_type', 'uppercase')
         field_name = self.config.get('field_name', 'text')
@@ -246,7 +246,7 @@ class DataTransformStep(Step):
 class DatabaseWriterStep(Step):
     """Write data to database using injected service"""
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         # Access database service
         db = self.get_db()
         if not db:
@@ -288,7 +288,7 @@ class DatabaseWriterStep(Step):
 class APICallStep(Step):
     """Make HTTP API calls using injected HTTP service"""
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         # Access HTTP service
         http = self.get_http()
         if not http:
@@ -328,7 +328,7 @@ class APICallStep(Step):
 class ConditionalProcessingStep(Step):
     """Demonstrate conditional logic within a step"""
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         # Get input value for condition
         score = data.get('quality_score', 0.0)
         threshold = self.config.get('threshold', 0.5)
@@ -377,7 +377,7 @@ class ConditionalProcessingStep(Step):
 class RobustProcessingStep(Step):
     """Step with comprehensive error handling"""
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         try:
             # Validate inputs
             required_fields = self.config.get('required_fields', [])
@@ -422,7 +422,7 @@ class RobustProcessingStep(Step):
 class BatchProcessingStep(Step):
     """Process data in batches for better performance"""
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         items = data.get('items', [])
         batch_size = self.config.get('batch_size', 100)
 
@@ -732,7 +732,7 @@ CREATE TRIGGER IF NOT EXISTS update_pipeline_results_updated_at
 class PersistentAnalysisStep(Step):
     """Step that persists analysis results to database"""
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         db = self.get_db()
         if not db:
             raise RuntimeError("Database service required for persistent analysis")
@@ -949,7 +949,7 @@ async def setup_services() -> ServiceRegistry:
 class EnhancedAPIStep(Step):
     """Step demonstrating multiple service usage"""
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         # Get services
         http = self.get_http()
         cache_service = self.services.get('cache') if self.services else None
@@ -1237,7 +1237,7 @@ class ParallelProcessingStep(Step):
         ```
     """
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         """
         Process data in parallel batches.
 

@@ -163,7 +163,7 @@ from ia_modules.pipeline.core import Step
 from ia_modules.pipeline.services import ServiceRegistry
 
 class MockStep(Step):
-    async def work(self, data: dict) -> dict:
+    async def run(self, data: dict) -> dict:
         return {"test_result": "success", "input_data": data}
 
 def test_step_execution():
@@ -596,7 +596,7 @@ from typing import Dict, Any
 class TestDataStep(Step):
     """Test step that generates data"""
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         return {
             "generated_data": [1, 2, 3, 4, 5],
             "timestamp": "2024-01-01T00:00:00Z",
@@ -606,7 +606,7 @@ class TestDataStep(Step):
 class TestDatabaseStep(Step):
     """Test step that uses database service"""
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         db = self.get_db()
         if not db:
             return {"error": "No database service"}
@@ -622,7 +622,7 @@ class TestDatabaseStep(Step):
 class TestConditionalStep(Step):
     """Test step that returns different results for conditional flow testing"""
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         quality_score = data.get("quality_score", 0.5)
 
         return {
@@ -916,7 +916,7 @@ async def test_step_error_handling():
     """Test step error handling"""
 
     class ErrorStep(Step):
-        async def work(self, data):
+        async def run(self, data):
             raise ValueError("Intentional test error")
 
     step = ErrorStep("error_step", {})

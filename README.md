@@ -25,7 +25,9 @@ A Python package for building robust, graph-based pipelines with conditional rou
   - [Application Responsibilities](#application-responsibilities)
   - [Option 1: DB-Backed Execution (Production)](#option-1-db-backed-execution-production)
   - [Option 2: File-Based Execution (Development)](#option-2-file-based-execution-development)
+- [AI/LLM Integration](#aillm-integration)
 - [Human-in-the-Loop (HITL)](#human-in-the-loop-hitl)
+- [Parallel Processing](#parallel-processing)
 - [Advanced Topics](#advanced-topics)
   - [The Pipeline Importer Service](#the-pipeline-importer-service)
   - [Database Schema](#database-schema)
@@ -39,11 +41,14 @@ A Python package for building robust, graph-based pipelines with conditional rou
 ## Core Features
 
 - **Graph-Based Execution**: Define complex workflows as DAGs in simple JSON.
-- **Conditional Routing**: Control the pipeline's path using simple expressions, with future support for AI and function-based decisions.
-- **Service Injection**: Steps have secure and easy access to shared services like databases (`self.get_db()`) and HTTP clients (`self.get_http()`).
+- **AI/LLM Integration**: Built-in support for multiple AI providers (Google Gemini, OpenAI, Anthropic) with structured output generation and automatic provider switching.
+- **Parallel Processing**: Automatic concurrent execution of independent steps based on dependency analysis.
+- **Conditional Routing**: Control the pipeline's path using simple expressions, threshold conditions, and data-driven decisions.
+- **Service Injection**: Steps have secure and easy access to shared services like databases (`self.get_db()`), HTTP clients (`self.get_http()`), and LLM services (`self.services.get('llm_provider')`).
 - **Human-in-the-Loop**: Pause a pipeline and wait for external human input before resuming.
 - **Database Management**: Includes a database manager with multi-provider support and a built-in migration system.
 - **Authentication**: FastAPI-compatible authentication middleware and session management.
+- **Production Ready**: Comprehensive error handling, logging, monitoring, and performance optimization features.
 
 ## Documentation
 
@@ -123,12 +128,12 @@ touch steps.py
 from ia_modules.pipeline import Step
 
 class GenerateMessageStep(Step):
-    async def work(self, data):
+    async def run(self, data):
         name = data.get("name", "World")
         return {"greeting": f"Hello, {name}!"}
 
 class PrintMessageStep(Step):
-    async def work(self, data):
+    async def run(self, data):
         message = data.get("message")
         print(message)
         return {"status": "Message printed successfully"}
@@ -355,6 +360,52 @@ result = await run_pipeline_from_json(
 )
 ```
 
+## AI/LLM Integration
+
+The framework includes comprehensive support for Large Language Model integration with multiple providers.
+
+### Supported Providers
+
+| Provider | Environment Variable | Models | Features |
+|----------|---------------------|---------|----------|
+| **Google Gemini** | `GEMINI_API_KEY` | gemini-2.5-flash, gemini-2.5-pro | Fast, cost-effective |
+| **OpenAI** | `OPENAI_API_KEY` | gpt-3.5-turbo, gpt-4o | Wide compatibility |
+| **Anthropic** | `ANTHROPIC_API_KEY` | claude-3-haiku, claude-3-sonnet | Advanced reasoning |
+
+### LLM-Powered Steps
+
+```python
+# steps/ai_steps.py
+class AIAnalysisStep(Step):
+    async def run(self, data):
+        llm_service = self.services.get('llm_provider')
+
+        # Generate structured output with schema validation
+        result = await llm_service.generate_structured_output(
+            prompt=f"Analyze this data: {data['text']}",
+            schema={
+                "type": "object",
+                "properties": {
+                    "sentiment": {"type": "string"},
+                    "confidence": {"type": "number"},
+                    "key_topics": {"type": "array"}
+                }
+            }
+        )
+
+        return {"analysis": result}
+```
+
+### Running AI-Enhanced Pipelines
+
+```bash
+# Set API key
+export GEMINI_API_KEY="your_api_key_here"
+
+# Run AI-powered pipeline
+python tests/pipeline_runner_with_llm.py pipelines/ai_analysis.json --input '{"text": "Your content here"}'
+```
+
 ## Human-in-the-Loop (HITL)
 
 Pipelines can include a `HumanInputStep` to pause execution and wait for external input. When the runner encounters this step type, it will halt and return a payload indicating that human action is required.
@@ -379,6 +430,40 @@ Pipelines can include a `HumanInputStep` to pause execution and wait for externa
 ```
 
 The application's UI can use the `ui_schema` to dynamically render a form. Once the user submits the form, the application can resume the pipeline run, providing the user's data as input to the `human_approval` step.
+
+## Parallel Processing
+
+The framework automatically executes steps in parallel when they have no dependencies on each other.
+
+### Automatic Parallelization
+
+```json
+{
+  "flow": {
+    "start_at": "data_loader",
+    "transitions": [
+      {"from": "data_loader", "to": "processor_1"},
+      {"from": "data_loader", "to": "processor_2"}, 
+      {"from": "data_loader", "to": "processor_3"},
+      {"from": "processor_1", "to": "merger"},
+      {"from": "processor_2", "to": "merger"},
+      {"from": "processor_3", "to": "merger"}
+    ]
+  }
+}
+```
+
+**Execution Flow:**
+1. `data_loader` runs first
+2. `processor_1`, `processor_2`, `processor_3` run **simultaneously** 
+3. `merger` waits for all three processors to complete
+
+### Performance Benefits
+
+- **🚀 Speed**: CPU-bound tasks utilize multiple cores
+- **⚡ Throughput**: I/O-bound tasks don't block each other  
+- **📈 Scalability**: Add parallel paths to increase capacity
+- **🔧 Efficiency**: Better resource utilization
 
 ## Advanced Topics
 

@@ -36,7 +36,7 @@ class Step:
 
 **Methods:**
 
-- `async def work(self, data: Dict[str, Any]) -> Any`
+- `async def run(self, data: Dict[str, Any]) -> Any`
   - **Purpose**: Main step execution logic (override in subclasses)
   - **Parameters**: `data` - Input data dictionary
   - **Returns**: Step output data
@@ -70,7 +70,7 @@ class Step:
 
 ```python
 class DataProcessorStep(Step):
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         # Access database service
         db = self.get_db()
         if not db:
@@ -97,7 +97,7 @@ Special step type for human-in-the-loop workflows.
 
 ```python
 class HumanInputStep(Step):
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         """
         Handle human input requirement.
 
@@ -788,7 +788,7 @@ from ia_modules.pipeline.core import Step
 from typing import Dict, Any
 
 class CustomAnalysisStep(Step):
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         # Access configuration
         threshold = self.config.get('threshold', 0.5)
 

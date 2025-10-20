@@ -42,7 +42,7 @@ async def setup_llm_service():
             name="google_default",
             provider=LLMProvider.GOOGLE,
             api_key=os.getenv('GOOGLE_API_KEY'),
-            model="gemini-1.5-flash",  # Fast and cost-effective
+            model="gemini-2.5-flash",  # Fast and cost-effective
             temperature=0.7,
             max_tokens=1000,
             is_default=True
@@ -82,7 +82,7 @@ async def setup_llm_service():
         name="google_direct",
         provider=LLMProvider.GOOGLE,
         api_key="your_actual_google_api_key_here",  # NEVER do this in production!
-        model="gemini-1.5-flash",
+        model="gemini-2.5-flash",
         is_default=True
     )
     """

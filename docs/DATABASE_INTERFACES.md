@@ -495,7 +495,7 @@ services = ServiceRegistry(
 
 # Access in pipeline steps
 class DatabaseStep(Step):
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         db = self.get_db()
         result = await db.fetch_all("SELECT * FROM processed_data WHERE id = ?", (data['id'],))
 

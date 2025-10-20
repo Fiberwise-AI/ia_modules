@@ -1,4 +1,4 @@
-# Human-in-the-Loop (HITL) Comprehensive Design
+# Human-in-the-Loop (HITL) Comprehensive Design (WIP)
 
 ## Overview
 

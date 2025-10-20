@@ -150,6 +150,36 @@ export ANTHROPIC_API_KEY="your_anthropic_key"
 - 📈 **Performance Scaling**: Handle large datasets efficiently
 - 🎯 **Complex Flow Control**: Multi-path execution with synchronization
 
+#### How Parallel Execution Works
+
+The framework automatically detects when steps can run in parallel based on the flow configuration:
+
+**1. Dependency Analysis**
+```json
+{
+  "flow": {
+    "start_at": "step1",
+    "paths": [
+      {"from_step": "step1", "to_step": "step2"},
+      {"from_step": "step1", "to_step": "step3"}, 
+      {"from_step": "step1", "to_step": "step4"}
+    ]
+  }
+}
+```
+
+**2. Parallel Execution**
+- `step1` completes first
+- `step2`, `step3`, `step4` **run concurrently** (they all depend only on step1)
+- `step5` waits for all three to complete before starting
+
+**3. Synchronization**
+The framework automatically:
+- ✅ **Starts steps** as soon as their dependencies are satisfied
+- ⚡ **Runs independent steps** concurrently using async/await
+- 🔄 **Waits for completion** before proceeding to dependent steps
+- 📊 **Merges results** when multiple parallel steps feed into one step
+
 **Configuration**:
 ```json
 {
@@ -178,6 +208,37 @@ step1 (splitter)
 # Run with array data
 python tests/pipeline_runner.py tests/pipelines/parallel_pipeline/pipeline.json --input '{"loaded_data": [{"id": 1, "value": 100}, {"id": 2, "value": 200}]}'
 ```
+
+**Real Pipeline JSON (Parallel Execution)**:
+```json
+{
+  "flow": {
+    "start_at": "step1",
+    "paths": [
+      {"from_step": "step1", "to_step": "step2"},
+      {"from_step": "step1", "to_step": "step3"},
+      {"from_step": "step1", "to_step": "step4"},
+      {"from_step": "step2", "to_step": "step5"},
+      {"from_step": "step3", "to_step": "step5"}, 
+      {"from_step": "step4", "to_step": "step5"}
+    ]
+  }
+}
+```
+
+**Execution Timeline**:
+```
+Time 0: step1 starts
+Time 1: step1 completes
+Time 1: step2, step3, step4 start SIMULTANEOUSLY  
+Time 3: step2 completes
+Time 4: step3 completes  
+Time 5: step4 completes
+Time 5: step5 starts (waits for ALL to complete)
+Time 6: step5 completes
+```
+
+🔥 **Key Point**: Steps 2, 3, and 4 run **concurrently**, not sequentially!
 
 ---
 
@@ -287,7 +348,7 @@ The Agent Pipeline showcases production-ready AI integration:
 
 | Provider | Environment Variable | Models | Notes |
 |----------|---------------------|---------|-------|
-| Google Gemini | `GEMINI_API_KEY` | gemini-1.5-flash, gemini-1.5-pro | Fast and cost-effective |
+| Google Gemini | `GEMINI_API_KEY` | gemini-2.5-flash, gemini-2.5-pro | Fast and cost-effective |
 | OpenAI | `OPENAI_API_KEY` | gpt-3.5-turbo, gpt-4 | Widely compatible |
 | Anthropic | `ANTHROPIC_API_KEY` | claude-3-haiku, claude-3-sonnet | Great reasoning |
 
@@ -310,14 +371,53 @@ export OPENAI_API_KEY="your_openai_key"
 export ANTHROPIC_API_KEY="your_anthropic_key"
 ```
 
-### ⚡ Performance & Scaling
+### ⚡ Parallel Execution Patterns
 
-The Parallel Pipeline demonstrates enterprise-grade performance patterns:
+The framework supports several parallel execution patterns:
 
-- **Horizontal Scaling**: Automatic workload distribution
-- **Resource Management**: Efficient memory and CPU usage
-- **Result Aggregation**: Intelligent merging of parallel results
-- **Monitoring**: Built-in performance metrics and logging
+#### **1. Fan-Out Pattern** (1 → Many)
+```json
+{
+  "paths": [
+    {"from_step": "input", "to_step": "process_a"},
+    {"from_step": "input", "to_step": "process_b"},
+    {"from_step": "input", "to_step": "process_c"}
+  ]
+}
+```
+✅ `process_a`, `process_b`, `process_c` run **simultaneously** after `input` completes
+
+#### **2. Fan-In Pattern** (Many → 1)  
+```json
+{
+  "paths": [
+    {"from_step": "process_a", "to_step": "merge"},
+    {"from_step": "process_b", "to_step": "merge"},
+    {"from_step": "process_c", "to_step": "merge"}
+  ]
+}
+```
+✅ `merge` waits for **all three** parallel steps to complete
+
+#### **3. Pipeline Parallelism** (Concurrent Chains)
+```json
+{
+  "paths": [
+    {"from_step": "split", "to_step": "chain1_step1"},
+    {"from_step": "chain1_step1", "to_step": "chain1_step2"},
+    {"from_step": "split", "to_step": "chain2_step1"}, 
+    {"from_step": "chain2_step1", "to_step": "chain2_step2"}
+  ]
+}
+```
+✅ Two processing chains run **independently and concurrently**
+
+#### **Performance Benefits**
+
+- **🚀 Speed**: CPU-bound tasks utilize multiple cores  
+- **⚡ Throughput**: I/O-bound tasks don't block each other
+- **📈 Scalability**: Add more parallel paths to increase capacity
+- **🔧 Resource Efficiency**: Better utilization of available hardware
 
 ### 🎯 Business Logic Flexibility  
 

@@ -68,7 +68,7 @@ ANTHROPIC_API_KEY=your_key_here
   "llm_providers": {
     "google": {
       "api_key": "your_key_here",
-      "model": "gemini-1.5-flash"
+      "model": "gemini-2.5-flash"
     }
   }
 }
@@ -78,7 +78,7 @@ ANTHROPIC_API_KEY=your_key_here
 
 | Provider | Environment Variable | Models | Notes |
 |----------|---------------------|---------|-------|
-| Google Gemini | `GOOGLE_API_KEY` | gemini-1.5-flash, gemini-1.5-pro | Fast and cost-effective |
+| Google Gemini | `GOOGLE_API_KEY` | gemini-2.5-flash, gemini-2.5-pro | Fast and cost-effective |
 | OpenAI | `OPENAI_API_KEY` | gpt-3.5-turbo, gpt-4 | Widely compatible |
 | Anthropic | `ANTHROPIC_API_KEY` | claude-3-haiku, claude-3-sonnet | Great reasoning |
 | Groq | `GROQ_API_KEY` | llama3-70b, mixtral-8x7b | Ultra-fast inference |

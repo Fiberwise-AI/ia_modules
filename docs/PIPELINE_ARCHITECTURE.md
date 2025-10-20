@@ -70,7 +70,7 @@ The IA Modules Pipeline System is a sophisticated, graph-based workflow executio
 The fundamental execution unit in the pipeline system.
 
 **Key Features:**
-- Asynchronous execution with `async def work()`
+- Asynchronous execution with `async def run()`
 - Service injection through `get_db()` and `get_http()`
 - Comprehensive logging and error handling
 - WebSocket integration for real-time updates
@@ -85,7 +85,7 @@ class Step:
         self.logger = None
         self.services = None
 
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         """Override this method in subclasses"""
         return f"result from {self.name}"
 
@@ -282,7 +282,7 @@ Steps can access database services through clean abstractions:
 
 ```python
 class DatabaseProcessingStep(Step):
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         db = self.get_db()
         if db:
             # Execute database operations
@@ -297,7 +297,7 @@ HTTP clients are injected for external API calls:
 
 ```python
 class APIStep(Step):
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         http = self.get_http()
         if http:
             response = await http.get(f"https://api.example.com/data/{data['id']}")
@@ -477,7 +477,7 @@ Special step type for pausing execution and waiting for human interaction:
 
 ```python
 class HumanInputStep(Step):
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         ui_schema = self.config.get('ui_schema', {})
 
         return {
@@ -568,7 +568,7 @@ All step execution is asynchronous, allowing for:
 
 ```python
 class WellDesignedStep(Step):
-    async def work(self, data: Dict[str, Any]) -> Any:
+    async def run(self, data: Dict[str, Any]) -> Any:
         # 1. Validate inputs
         required_fields = ['input_field']
         for field in required_fields:

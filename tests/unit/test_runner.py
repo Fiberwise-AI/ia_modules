@@ -18,8 +18,8 @@ from ia_modules.pipeline.core import Step
 
 class MockStep(Step):
     """Mock step implementation for testing"""
-    
-    async def work(self, data: dict) -> dict:
+
+    async def run(self, data: dict) -> dict:
         return {"result": "success", "input_data": data}
 
 

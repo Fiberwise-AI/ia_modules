@@ -30,7 +30,7 @@ async def setup_llm_service():
             name="google_default",
             provider=LLMProvider.GOOGLE,
             api_key=google_api_key,
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             temperature=0.7,
             max_tokens=1000,
             is_default=True
