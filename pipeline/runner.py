@@ -64,7 +64,19 @@ def create_pipeline_from_json(pipeline_config: Dict[str, Any], services: Optiona
     # Create pipeline
     pipeline_name = pipeline_config.get('name', 'Unknown')
     flow = pipeline_config.get('flow', {})
-    return Pipeline(pipeline_name, steps, flow, services or ServiceRegistry())
+    loop_config = pipeline_config.get('loop_config', None)
+
+    # Get checkpointer from services if available
+    checkpointer = services.get('checkpointer') if services else None
+
+    return Pipeline(
+        pipeline_name,
+        steps,
+        flow,
+        services or ServiceRegistry(),
+        loop_config=loop_config,
+        checkpointer=checkpointer
+    )
 
 
 async def run_pipeline_from_json(

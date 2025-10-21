@@ -262,16 +262,44 @@ class Step:
 class Pipeline:
     """Main pipeline executor"""
 
-    def __init__(self, name: str, steps: List[Step], flow: Dict[str, Any], services: ServiceRegistry, enable_telemetry: bool = True):
+    def __init__(self, name: str, steps: List[Step], flow: Dict[str, Any], services: ServiceRegistry, enable_telemetry: bool = True, loop_config: Optional[Dict[str, Any]] = None, checkpointer: Optional[Any] = None):
         self.name = name
         self.steps = steps
         self.flow = flow
         self.services = services
         self.logger = logging.getLogger(f"Pipeline.{name}")
+        self.loop_config = loop_config or {}
+        self.checkpointer = checkpointer  # Optional checkpoint storage backend
 
         # Telemetry integration
         self.enable_telemetry = enable_telemetry
         self.telemetry = get_telemetry(enabled=enable_telemetry) if enable_telemetry else None
+
+        # Loop detection and execution
+        self.loop_detector = None
+        self.loop_executor = None
+
+        # Initialize loop support if flow has transitions/paths
+        if flow and ('transitions' in flow or 'paths' in flow):
+            try:
+                from ia_modules.pipeline.loop_detector import LoopDetector
+                from ia_modules.pipeline.loop_executor import LoopAwareExecutor
+
+                self.loop_detector = LoopDetector(flow)
+                loops = self.loop_detector.detect_loops()
+
+                # Only initialize executor if loops actually detected
+                if loops:
+                    self.loop_executor = LoopAwareExecutor(flow, self.loop_config)
+                    self.logger.info(f"Detected {len(loops)} loop(s) in pipeline '{name}'")
+
+                    # Validate loops for safety
+                    validation_errors = self.loop_detector.validate_loops()
+                    if validation_errors:
+                        for error in validation_errors:
+                            self.logger.warning(f"Loop validation: {error}")
+            except ImportError:
+                self.logger.debug("Loop detection modules not available, continuing without loop support")
 
         # Inject services into all steps
         for step in self.steps:
@@ -280,8 +308,31 @@ class Pipeline:
         # Create step mapping for easy lookup
         self.step_map = {step.name: step for step in steps}
 
-    async def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Run the pipeline with given input data"""
+    def has_loops(self) -> bool:
+        """Public method to check if pipeline has loops"""
+        return self.loop_executor is not None  # Only True if loops actually detected
+
+    def get_loops(self) -> List[Any]:
+        """Get detected loops in the pipeline"""
+        if self.loop_detector:
+            return self.loop_detector.detect_loops()
+        return []
+
+    async def run(self, input_data: Dict[str, Any], thread_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Run the pipeline with given input data.
+
+        Args:
+            input_data: Input data for the pipeline
+            thread_id: Thread ID for checkpointing (optional, required if checkpointer enabled)
+
+        Returns:
+            Pipeline execution results
+
+        Example:
+            >>> pipeline = Pipeline(...)
+            >>> result = await pipeline.run({'data': 'value'}, thread_id='user-123')
+        """
         self.logger.info(f"Starting pipeline execution")
 
         # Initialize results tracking
@@ -297,18 +348,120 @@ class Pipeline:
         # Execute with telemetry if enabled
         if self.enable_telemetry and self.telemetry:
             with self.telemetry.trace_pipeline(self.name, input_data) as pipeline_ctx:
-                return await self._execute_pipeline(input_data, results, current_data, pipeline_ctx)
+                return await self._execute_pipeline(input_data, results, current_data, pipeline_ctx, thread_id)
         else:
-            return await self._execute_pipeline(input_data, results, current_data, None)
+            return await self._execute_pipeline(input_data, results, current_data, None, thread_id)
+
+    async def resume(self, thread_id: str, checkpoint_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Resume pipeline execution from a checkpoint.
+
+        Args:
+            thread_id: Thread ID to resume
+            checkpoint_id: Specific checkpoint ID (optional, defaults to latest)
+
+        Returns:
+            Pipeline execution results
+
+        Raises:
+            ValueError: If checkpointer not configured or checkpoint not found
+
+        Example:
+            >>> pipeline = Pipeline(..., checkpointer=checkpointer)
+            >>> # Later, resume from where it left off
+            >>> result = await pipeline.resume(thread_id='user-123')
+        """
+        if not self.checkpointer:
+            raise ValueError("Cannot resume: checkpointer not configured")
+
+        self.logger.info(f"Resuming pipeline execution for thread {thread_id}")
+
+        # Load checkpoint
+        checkpoint = await self.checkpointer.load_checkpoint(thread_id, checkpoint_id)
+
+        if not checkpoint:
+            raise ValueError(f"No checkpoint found for thread {thread_id}")
+
+        self.logger.info(f"Loaded checkpoint: {checkpoint.checkpoint_id} (step: {checkpoint.step_id})")
+
+        # Restore state from checkpoint
+        state = checkpoint.state
+        input_data = state.get('pipeline_input', {})
+        completed_steps = state.get('steps', {})
+        current_data = state.get('current_data', {})
+
+        # Initialize results with restored state
+        results = {
+            "input": input_data,
+            "steps": completed_steps,
+            "output": None
+        }
+
+        # Determine next step to execute
+        execution_path = self._build_execution_path()
+        next_step_index = checkpoint.step_index + 1
+
+        if next_step_index >= len(execution_path):
+            # Pipeline was already complete
+            self.logger.info("Pipeline was already complete at checkpoint")
+            results["output"] = current_data
+            return results
+
+        # Continue execution from next step
+        self.logger.info(f"Continuing execution from step index {next_step_index}")
+
+        # Execute remaining steps
+        for step_index in range(next_step_index, len(execution_path)):
+            step_name = execution_path[step_index]
+            step = self.step_map.get(step_name)
+
+            if not step:
+                raise ValueError(f"Step '{step_name}' not found")
+
+            self.logger.info(f"Executing step: {step_name}")
+
+            # Execute step
+            step_result = await step.execute_with_error_handling(current_data)
+
+            # Store result
+            results["steps"][step_name] = step_result
+            current_data = step_result
+
+            # Save checkpoint after each step
+            try:
+                checkpoint_id = await self.checkpointer.save_checkpoint(
+                    thread_id=thread_id,
+                    pipeline_id=self.name,
+                    step_id=step_name,
+                    step_index=step_index,
+                    state={
+                        'pipeline_input': input_data,
+                        'steps': results["steps"],
+                        'current_data': current_data
+                    },
+                    metadata={'execution_path': execution_path, 'resumed': True},
+                    step_name=step_name,
+                    parent_checkpoint_id=checkpoint.checkpoint_id
+                )
+                self.logger.debug(f"Saved checkpoint: {checkpoint_id}")
+            except Exception as e:
+                self.logger.warning(f"Failed to save checkpoint: {e}")
+
+        # Set final output
+        results["output"] = current_data
+
+        self.logger.info("Pipeline execution completed successfully (resumed)")
+        return results
 
     async def _execute_pipeline(
         self,
         input_data: Dict[str, Any],
         results: Dict[str, Any],
         current_data: Dict[str, Any],
-        pipeline_ctx
+        pipeline_ctx,
+        thread_id: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Internal pipeline execution with telemetry context"""
+        """Internal pipeline execution with telemetry context and checkpointing"""
         # Execute steps in order based on flow
         try:
             # Get the starting step
@@ -320,7 +473,7 @@ class Pipeline:
             execution_path = self._build_execution_path()
 
             # Execute each step in sequence
-            for step_name in execution_path:
+            for step_index, step_name in enumerate(execution_path):
                 step = self.step_map.get(step_name)
                 if not step:
                     raise ValueError(f"Step '{step_name}' not found")
@@ -341,6 +494,26 @@ class Pipeline:
 
                 # Update current data for next step
                 current_data = step_result
+
+                # Save checkpoint after each step (if checkpointer enabled)
+                if self.checkpointer and thread_id:
+                    try:
+                        checkpoint_id = await self.checkpointer.save_checkpoint(
+                            thread_id=thread_id,
+                            pipeline_id=self.name,
+                            step_id=step_name,
+                            step_index=step_index,
+                            state={
+                                'pipeline_input': input_data,
+                                'steps': results["steps"],
+                                'current_data': current_data
+                            },
+                            metadata={'execution_path': execution_path},
+                            step_name=step_name
+                        )
+                        self.logger.debug(f"Saved checkpoint: {checkpoint_id}")
+                    except Exception as e:
+                        self.logger.warning(f"Failed to save checkpoint: {e}")
 
             # Set final output
             results["output"] = current_data

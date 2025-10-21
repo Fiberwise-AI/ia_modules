@@ -1,3 +1,1 @@
-"""
-End-to-end test package for pipeline infrastructure
-"""
+"""End-to-end integration tests."""

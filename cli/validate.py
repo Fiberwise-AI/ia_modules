@@ -6,12 +6,20 @@ Comprehensive validation for pipeline definitions including:
 - Step import checking
 - Flow validation (reachability, cycles)
 - Template validation
+- Loop detection and analysis
 """
 
 import importlib
 import re
 from typing import Dict, Any, List, Set, Optional, Tuple
 from dataclasses import dataclass, field
+
+# Import loop detection
+try:
+    from ia_modules.pipeline.loop_detector import LoopDetector
+    HAS_LOOP_DETECTOR = True
+except ImportError:
+    HAS_LOOP_DETECTOR = False
 
 
 @dataclass
@@ -211,12 +219,16 @@ class PipelineValidator:
                 f"Unreachable steps: {', '.join(sorted(unreachable))}"
             )
 
-        # Check for cycles
-        cycles = self._find_cycles(flow)
-        if cycles:
-            self.result.add_warning(
-                f"Flow contains cycles: {' -> '.join(cycles)}"
-            )
+        # Check for cycles using new LoopDetector if available
+        if HAS_LOOP_DETECTOR and 'transitions' in flow:
+            self._validate_loops_advanced(flow)
+        else:
+            # Fallback to simple cycle detection
+            cycles = self._find_cycles(flow)
+            if cycles:
+                self.result.add_warning(
+                    f"Flow contains cycles: {' -> '.join(cycles)}"
+                )
 
     def _validate_paths(self, paths: Any, step_names: Set[str]) -> None:
         """Validate flow paths"""
@@ -449,6 +461,53 @@ class PipelineValidator:
                     return cycle_path
 
         return []
+
+    def _validate_loops_advanced(self, flow: Dict[str, Any]) -> None:
+        """Validate loops using advanced LoopDetector"""
+        try:
+            detector = LoopDetector(flow)
+            loops = detector.detect_loops()
+
+            if loops:
+                # Inform about detected loops
+                self.result.add_info(
+                    f"Detected {len(loops)} loop(s) in pipeline (cyclic execution)"
+                )
+
+                # Validate loops for safety
+                loop_errors = detector.validate_loops()
+
+                if loop_errors:
+                    for error in loop_errors:
+                        # Critical errors about infinite loops
+                        if 'infinite loop' in error.lower():
+                            self.result.add_error(f"Loop validation: {error}")
+                        else:
+                            self.result.add_warning(f"Loop validation: {error}")
+
+                # Add details about each loop
+                for i, loop in enumerate(loops, 1):
+                    loop_desc = ' -> '.join(loop.steps) + f' -> {loop.steps[0]}'
+                    self.result.add_info(f"Loop {i}: {loop_desc}")
+
+                    if loop.exit_conditions:
+                        self.result.add_info(
+                            f"  Exit conditions: {len(loop.exit_conditions)}"
+                        )
+                    else:
+                        self.result.add_warning(
+                            f"  Loop {i} has no exit conditions - check 'loop_config'"
+                        )
+
+                # Suggest loop_config
+                if 'loop_config' not in self.pipeline_data:
+                    self.result.add_info(
+                        "Consider adding 'loop_config' to set max_iterations and timeout"
+                    )
+
+        except Exception as e:
+            # Fallback to simple cycle detection if advanced fails
+            self.result.add_warning(f"Advanced loop detection failed: {e}")
 
 
 def validate_pipeline(
