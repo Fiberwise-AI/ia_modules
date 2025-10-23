@@ -250,22 +250,16 @@ class DatadogExporter(MetricsExporter):
         super().__init__(prefix)
         self.api_key = api_key
         self.app_key = app_key
-        self._initialized = False
 
-    def _initialize(self):
-        """Initialize Datadog client"""
-        if not self._initialized:
-            try:
-                from datadog import initialize, api
-                initialize(api_key=self.api_key, app_key=self.app_key)
-                self._api = api
-                self._initialized = True
-            except ImportError:
-                raise ImportError("datadog package is required for Datadog exporter")
+        try:
+            from datadog import initialize, api
+            initialize(api_key=self.api_key, app_key=self.app_key)
+            self._api = api
+        except ImportError:
+            raise ImportError("datadog package is required for Datadog exporter")
 
     def export(self, metrics: List[Metric]) -> None:
         """Export metrics to Datadog"""
-        self._initialize()
 
         for metric in metrics:
             try:

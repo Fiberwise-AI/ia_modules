@@ -531,8 +531,6 @@ from ia_modules.memory import MemoryConversationMemory
 
 # Create memory
 memory = MemoryConversationMemory()
-await memory.initialize()
-
 # Create agent with memory
 agent = BaseAgent(
     role=assistant_role,
@@ -683,7 +681,7 @@ from ia_modules.database import DatabaseManager
 db = DatabaseManager("postgresql://...")
 await db.connect()
 checkpointer = SQLCheckpointer(db)
-await checkpointer.initialize()
+
 
 # Run pipeline with checkpointing
 from ia_modules.pipeline import GraphPipelineRunner
@@ -712,8 +710,6 @@ from ia_modules.reliability import ReliabilityMetrics, SQLMetricStorage
 
 # Create storage
 storage = SQLMetricStorage(db_manager)
-await storage.initialize()
-
 # Create metrics tracker
 metrics = ReliabilityMetrics(storage)
 

@@ -34,12 +34,6 @@ class PipelineService:
         self.pipelines_dir = Path("pipelines")
         self.pipelines_dir.mkdir(exist_ok=True)
 
-    async def initialize(self):
-        """Initialize service - load existing pipelines"""
-        logger.info("Initializing PipelineService...")
-        await self._load_pipelines_from_disk()
-        logger.info(f"Loaded {len(self.pipelines)} pipelines")
-
     async def _load_pipelines_from_disk(self):
         """Load pipelines from JSON files"""
         for file_path in self.pipelines_dir.glob("*.json"):
@@ -203,10 +197,6 @@ class ExecutionService:
     def __init__(self):
         self.executions: Dict[str, ExecutionStatus] = {}
         self.logs: Dict[str, List[LogMessage]] = {}
-
-    async def initialize(self):
-        """Initialize service"""
-        logger.info("Initializing ExecutionService...")
 
     async def execute_pipeline(
         self,

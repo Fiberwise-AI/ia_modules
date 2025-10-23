@@ -174,14 +174,7 @@ class OpenTelemetryTracer(Tracer):
 
     def __init__(self, service_name: str = "ia_modules"):
         self.service_name = service_name
-        self._tracer = None
-        self._initialized = False
         self.logger = logging.getLogger("OpenTelemetryTracer")
-
-    def _initialize(self):
-        """Initialize OpenTelemetry"""
-        if self._initialized:
-            return
 
         try:
             from opentelemetry import trace
@@ -206,7 +199,6 @@ class OpenTelemetryTracer(Tracer):
 
             # Get tracer
             self._tracer = trace.get_tracer(__name__)
-            self._initialized = True
 
             self.logger.info(f"Initialized OpenTelemetry tracer for {self.service_name}")
 
@@ -223,8 +215,6 @@ class OpenTelemetryTracer(Tracer):
         parent: Optional[Span] = None
     ) -> Span:
         """Start a new span using OpenTelemetry"""
-        self._initialize()
-
         # Start OpenTelemetry span
         otel_span = self._tracer.start_span(name)
 

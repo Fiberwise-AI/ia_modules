@@ -97,12 +97,6 @@ class ServiceRegistry:
         """Check if service is registered"""
         return name in self._services
 
-    async def initialize_all(self):
-        """Initialize all services that support it"""
-        for service in self._services.values():
-            if hasattr(service, 'initialize'):
-                await service.initialize()
-
     async def cleanup_all(self):
         """Cleanup all services that support it"""
         for service in self._services.values():

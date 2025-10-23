@@ -37,14 +37,9 @@ async def run_worker():
     logger.info(f"✓ Database connected ({db_manager.config.database_type.value})")
 
     # Initialize services
-    metrics_service = MetricsService()
-    await metrics_service.initialize()
-
+    metrics_service = MetricsService(db_manager)
     pipeline_service = PipelineService(metrics_service, db_manager)
-    await pipeline_service.initialize()
-
     scheduler_service = SchedulerService(pipeline_service, db_manager)
-    await scheduler_service.initialize()
 
     logger.info("✓ Scheduler Worker started successfully")
     logger.info("Press Ctrl+C to stop the worker")

@@ -189,7 +189,6 @@ class TestStateManager:
     async def test_persistence_with_checkpointer(self):
         """State persists to checkpointer."""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         state = StateManager(thread_id="test-thread", checkpointer=checkpointer)
 
@@ -203,7 +202,6 @@ class TestStateManager:
     async def test_restore_from_checkpoint(self):
         """State can restore from checkpointer."""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         # Create and populate state
         state1 = StateManager(thread_id="test-thread", checkpointer=checkpointer)

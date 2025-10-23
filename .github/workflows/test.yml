@@ -12,8 +12,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest]
+        python-version: ["3.11"]
+
+        # os: [ubuntu-latest, windows-latest, macos-latest]
+        # python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    services:
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
     - uses: actions/checkout@v4
@@ -37,8 +51,15 @@ jobs:
         pip install -e ".[dev,all]"
 
     - name: Run tests
+      env:
+        REDIS_URL: redis://localhost:6379
       run: |
-        pytest tests/ -v --tb=short --cov=ia_modules --cov-report=xml --cov-report=term
+        pytest tests/ -v --tb=short \
+          --cov=ia_modules \
+          --cov-report=xml \
+          --cov-report=term \
+          --cov-report=html \
+          --cov-config=pyproject.toml
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'

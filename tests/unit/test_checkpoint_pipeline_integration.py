@@ -41,7 +41,6 @@ class TestPipelineCheckpointBasic:
     async def test_pipeline_with_checkpointer(self):
         """Test pipeline saves checkpoints when checkpointer enabled"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         flow = {
             'start_at': 'step1',
@@ -69,7 +68,6 @@ class TestPipelineCheckpointBasic:
     async def test_pipeline_checkpoint_state(self):
         """Test that checkpoint contains correct state"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         flow = {
             'start_at': 'step1',
@@ -101,7 +99,6 @@ class TestPipelineResume:
     async def test_resume_from_checkpoint(self):
         """Test resuming pipeline from checkpoint"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         flow = {
             'start_at': 'step1',
@@ -137,7 +134,6 @@ class TestPipelineResume:
     async def test_resume_from_latest(self):
         """Test resuming from latest checkpoint"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         flow = {
             'start_at': 'step1',
@@ -177,7 +173,6 @@ class TestPipelineResume:
     async def test_resume_nonexistent_thread_fails(self):
         """Test that resuming nonexistent thread raises error"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         flow = {'start_at': 'step1'}
         steps = [DummyStep('step1', {})]
@@ -194,7 +189,6 @@ class TestPipelineCheckpointThreadIsolation:
     async def test_multiple_threads_isolated(self):
         """Test that multiple threads have isolated checkpoints"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         flow = {
             'start_at': 'step1',
@@ -229,7 +223,6 @@ class TestPipelineCheckpointMetadata:
     async def test_checkpoint_metadata(self):
         """Test that checkpoint contains expected metadata"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         flow = {
             'start_at': 'step1',
@@ -254,7 +247,6 @@ class TestPipelineCheckpointMetadata:
     async def test_resumed_checkpoint_has_parent(self):
         """Test that resumed checkpoint references parent"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         flow = {
             'start_at': 'step1',
@@ -291,7 +283,6 @@ class TestPipelineCheckpointBackwardCompatibility:
     async def test_run_without_thread_id_no_checkpoints(self):
         """Test running with checkpointer but no thread_id doesn't save checkpoints"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         flow = {'start_at': 'step1'}
         steps = [DummyStep('step1', {})]

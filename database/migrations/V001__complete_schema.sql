@@ -36,7 +36,6 @@ CREATE TABLE IF NOT EXISTS pipeline_templates (
 
 CREATE TABLE IF NOT EXISTS pipeline_executions (
     execution_id TEXT PRIMARY KEY,
-    id INTEGER UNIQUE,
     pipeline_id TEXT,
     pipeline_slug TEXT,
     pipeline_name TEXT,
@@ -58,17 +57,24 @@ CREATE TABLE IF NOT EXISTS pipeline_executions (
 );
 
 CREATE TABLE IF NOT EXISTS step_executions (
-    id SERIAL PRIMARY KEY,
+    step_execution_id TEXT PRIMARY KEY,
     execution_id TEXT NOT NULL,
     step_id TEXT NOT NULL,
     step_name TEXT NOT NULL,
+    step_type TEXT,
     status TEXT NOT NULL,
     started_at TIMESTAMP,
     completed_at TIMESTAMP,
     duration_seconds REAL,
+    input_data TEXT,
+    output_data TEXT,
     result_json TEXT,
     error_message TEXT,
+    execution_time_ms INTEGER,
+    retry_count INTEGER DEFAULT 0,
+    metadata_json TEXT,
     step_order INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (execution_id) REFERENCES pipeline_executions (execution_id)
 );
 
@@ -202,6 +208,7 @@ CREATE INDEX IF NOT EXISTS idx_pipeline_logs_execution ON pipeline_logs(executio
 CREATE INDEX IF NOT EXISTS idx_pipeline_executions_pipeline_id ON pipeline_executions(pipeline_id);
 CREATE INDEX IF NOT EXISTS idx_pipeline_executions_status ON pipeline_executions(status);
 CREATE INDEX IF NOT EXISTS idx_step_executions_execution_id ON step_executions(execution_id);
+CREATE INDEX IF NOT EXISTS idx_step_executions_status ON step_executions(status);
 CREATE INDEX IF NOT EXISTS idx_execution_logs_execution_id ON execution_logs(execution_id);
 
 CREATE INDEX IF NOT EXISTS idx_checkpoint_thread_id ON pipeline_checkpoints(thread_id);

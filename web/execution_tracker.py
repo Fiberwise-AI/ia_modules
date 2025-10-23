@@ -94,123 +94,6 @@ class ExecutionTracker:
         self.db = db_manager
         self.active_executions: Dict[str, ExecutionRecord] = {}
         self.websocket_connections: List[Any] = []  # WebSocket connections for real-time updates
-        self._initialized = False
-
-    async def initialize(self):
-        """Initialize the execution tracker and create database tables"""
-        if self._initialized:
-            return True
-
-        try:
-            # Create execution tracking tables
-            await self._create_tables()
-
-            # Load active executions from database
-            await self._load_active_executions()
-
-            self._initialized = True
-            logger.info("Execution tracker initialized")
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to initialize execution tracker: {e}")
-            return False
-
-    async def _create_tables(self):
-        """Create database tables for execution tracking"""
-
-        # Check if enhanced tracking columns exist, add them if not
-        try:
-            # Check if total_steps column exists
-            result = self.db.fetch_one(
-                "SELECT name FROM pragma_table_info('pipeline_executions') WHERE name='total_steps'"
-            )
-
-            if not result:
-                # Add enhanced tracking columns to existing table
-                self.db.execute("ALTER TABLE pipeline_executions ADD COLUMN total_steps INTEGER DEFAULT 0")
-                self.db.execute("ALTER TABLE pipeline_executions ADD COLUMN completed_steps INTEGER DEFAULT 0")
-                self.db.execute("ALTER TABLE pipeline_executions ADD COLUMN failed_steps INTEGER DEFAULT 0")
-                self.db.execute("ALTER TABLE pipeline_executions ADD COLUMN execution_time_ms INTEGER")
-                self.db.execute("ALTER TABLE pipeline_executions ADD COLUMN metadata_json TEXT")
-
-        except Exception as e:
-            # If pipeline_executions doesn't exist, create full enhanced table
-            execution_schema = """
-                execution_id TEXT PRIMARY KEY,
-                pipeline_id TEXT NOT NULL,
-                pipeline_name TEXT NOT NULL,
-                status TEXT NOT NULL,
-                started_at TEXT NOT NULL,
-                completed_at TEXT,
-                total_steps INTEGER DEFAULT 0,
-                completed_steps INTEGER DEFAULT 0,
-                failed_steps INTEGER DEFAULT 0,
-                input_data TEXT,
-                output_data TEXT,
-                error_message TEXT,
-                execution_time_ms INTEGER,
-                metadata_json TEXT,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            """
-            self.db.create_table("pipeline_executions", execution_schema)
-
-        # Check if enhanced step executions table exists
-        try:
-            result = self.db.fetch_one(
-                "SELECT name FROM pragma_table_info('step_executions') WHERE name='step_execution_id'"
-            )
-
-            if not result:
-                # Create enhanced step executions table
-                step_schema = """
-                    step_execution_id TEXT PRIMARY KEY,
-                    execution_id TEXT NOT NULL,
-                    step_id TEXT NOT NULL,
-                    step_name TEXT NOT NULL,
-                    step_type TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    started_at TEXT NOT NULL,
-                    completed_at TEXT,
-                    input_data TEXT,
-                    output_data TEXT,
-                    error_message TEXT,
-                    execution_time_ms INTEGER,
-                    retry_count INTEGER DEFAULT 0,
-                    metadata_json TEXT,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (execution_id) REFERENCES pipeline_executions (execution_id)
-                """
-                self.db.create_table("step_executions_enhanced", step_schema)
-
-        except Exception:
-            # Create table if it doesn't exist
-            step_schema = """
-                step_execution_id TEXT PRIMARY KEY,
-                execution_id TEXT NOT NULL,
-                step_id TEXT NOT NULL,
-                step_name TEXT NOT NULL,
-                step_type TEXT NOT NULL,
-                status TEXT NOT NULL,
-                started_at TEXT NOT NULL,
-                completed_at TEXT,
-                input_data TEXT,
-                output_data TEXT,
-                error_message TEXT,
-                execution_time_ms INTEGER,
-                retry_count INTEGER DEFAULT 0,
-                metadata_json TEXT,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (execution_id) REFERENCES pipeline_executions (execution_id)
-            """
-            self.db.create_table("step_executions_enhanced", step_schema)
-
-        # Create indexes for better query performance
-        self.db.execute("CREATE INDEX IF NOT EXISTS idx_executions_pipeline_id ON pipeline_executions(pipeline_id)")
-        self.db.execute("CREATE INDEX IF NOT EXISTS idx_executions_status ON pipeline_executions(status)")
-        self.db.execute("CREATE INDEX IF NOT EXISTS idx_executions_started_at ON pipeline_executions(started_at)")
-        self.db.execute("CREATE INDEX IF NOT EXISTS idx_step_executions_enhanced_execution_id ON step_executions_enhanced(execution_id)")
-        self.db.execute("CREATE INDEX IF NOT EXISTS idx_step_executions_enhanced_status ON step_executions_enhanced(status)")
 
     async def _load_active_executions(self):
         """Load active executions from database"""
@@ -437,7 +320,7 @@ class ExecutionTracker:
         """Get all step executions for a pipeline execution"""
 
         query = """
-            SELECT * FROM step_executions_enhanced
+            SELECT * FROM step_executions
             WHERE execution_id = ?
             ORDER BY started_at ASC
         """
@@ -590,7 +473,7 @@ class ExecutionTracker:
         """Save step execution record to database"""
 
         query = """
-            INSERT OR REPLACE INTO step_executions_enhanced
+            INSERT OR REPLACE INTO step_executions
             (step_execution_id, execution_id, step_id, step_name, step_type, status,
              started_at, completed_at, input_data, output_data, error_message,
              execution_time_ms, retry_count, metadata_json)
@@ -619,7 +502,7 @@ class ExecutionTracker:
     async def _get_step_execution(self, step_execution_id: str) -> Optional[StepExecutionRecord]:
         """Get step execution from database"""
 
-        query = "SELECT * FROM step_executions_enhanced WHERE step_execution_id = ?"
+        query = "SELECT * FROM step_executions WHERE step_execution_id = ?"
         row = self.db.fetch_one(query, (step_execution_id,))
 
         if not row:
@@ -651,7 +534,7 @@ class ExecutionTracker:
                 COUNT(*) as total,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
                 SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed
-            FROM step_executions_enhanced
+            FROM step_executions
             WHERE execution_id = ?
         """
 
@@ -722,5 +605,4 @@ async def initialize_execution_tracker(db_manager: DatabaseManager) -> Execution
     """Initialize the global execution tracker"""
     global execution_tracker
     execution_tracker = ExecutionTracker(db_manager)
-    await execution_tracker.initialize()
     return execution_tracker

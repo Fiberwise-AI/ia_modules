@@ -12,6 +12,7 @@ from ia_modules.telemetry.tracing import SimpleTracer
 from ia_modules.checkpoint import SQLCheckpointer
 from ia_modules.reliability.metrics import ReliabilityMetrics
 from ia_modules.reliability.sql_metric_storage import SQLMetricStorage
+from ia_modules.web.execution_tracker import ExecutionTracker, ExecutionStatus
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 import asyncio
@@ -31,6 +32,9 @@ class PipelineService:
         self.db_manager = db_manager
         self.pipelines: Dict[str, Dict[str, Any]] = {}
         self.executions: Dict[str, Dict[str, Any]] = {}
+
+        # ExecutionTracker for PostgreSQL persistence with WebSocket support
+        self.tracker = ExecutionTracker(db_manager) if db_manager else None
 
         logger.info("Initializing pipeline service with ACTUAL ia_modules library...")
 
@@ -68,6 +72,96 @@ class PipelineService:
         self.load_test_pipelines()
 
         logger.info(f"Pipeline service initialized with {len(self.pipelines)} pipelines")
+
+    async def _save_execution_to_db(self, execution: Dict[str, Any]):
+        """Save execution to PostgreSQL"""
+        if not self.db_manager:
+            return
+
+        query = """
+            INSERT INTO pipeline_executions
+            (execution_id, pipeline_id, pipeline_name, status, started_at, completed_at,
+             input_data, output_data, error_message, total_steps, completed_steps, failed_steps,
+             execution_time_ms, metadata_json)
+            VALUES (:execution_id, :pipeline_id, :pipeline_name, :status, :started_at, :completed_at,
+                    :input_data, :output_data, :error_message, :total_steps, :completed_steps, :failed_steps,
+                    :execution_time_ms, :metadata_json)
+            ON CONFLICT (execution_id) DO UPDATE SET
+                status = EXCLUDED.status,
+                completed_at = EXCLUDED.completed_at,
+                output_data = EXCLUDED.output_data,
+                error_message = EXCLUDED.error_message,
+                total_steps = EXCLUDED.total_steps,
+                completed_steps = EXCLUDED.completed_steps,
+                failed_steps = EXCLUDED.failed_steps,
+                execution_time_ms = EXCLUDED.execution_time_ms
+        """
+
+        params = {
+            "execution_id": execution["job_id"],
+            "pipeline_id": execution["pipeline_id"],
+            "pipeline_name": execution.get("pipeline_name", "Unknown"),
+            "status": execution["status"],
+            "started_at": execution["started_at"],
+            "completed_at": execution.get("completed_at"),
+            "input_data": json.dumps(execution["input_data"]) if execution.get("input_data") else None,
+            "output_data": json.dumps(execution["output_data"]) if execution.get("output_data") else None,
+            "error_message": execution.get("error"),
+            "total_steps": len(execution.get("steps", [])),
+            "completed_steps": len([s for s in execution.get("steps", []) if s.get("status") == "completed"]),
+            "failed_steps": len([s for s in execution.get("steps", []) if s.get("status") == "failed"]),
+            "execution_time_ms": self._calculate_duration_ms(execution),
+            "metadata_json": json.dumps({"progress": execution.get("progress", 0.0)})
+        }
+
+        await self.db_manager.execute_async(query, params)
+
+    def _calculate_duration_ms(self, execution: Dict[str, Any]) -> Optional[int]:
+        """Calculate execution duration in milliseconds"""
+        if not execution.get("started_at") or not execution.get("completed_at"):
+            return None
+        try:
+            start = datetime.fromisoformat(execution["started_at"].replace('Z', '+00:00'))
+            end = datetime.fromisoformat(execution["completed_at"].replace('Z', '+00:00'))
+            return int((end - start).total_seconds() * 1000)
+        except:
+            return None
+
+    async def _load_executions_from_db(self) -> List[Dict[str, Any]]:
+        """Load recent executions from PostgreSQL"""
+        if not self.db_manager:
+            return []
+
+        query = """
+            SELECT execution_id, pipeline_id, pipeline_name, status, started_at, completed_at,
+                   input_data, output_data, error_message, total_steps, completed_steps, failed_steps,
+                   execution_time_ms, metadata_json
+            FROM pipeline_executions
+            ORDER BY started_at DESC
+            LIMIT 100
+        """
+
+        rows = await self.db_manager.fetch_all_async(query)
+
+        executions = []
+        for row in rows:
+            exec_dict = {
+                "job_id": row["execution_id"],
+                "pipeline_id": row["pipeline_id"],
+                "pipeline_name": row["pipeline_name"],
+                "status": row["status"],
+                "started_at": row["started_at"],
+                "completed_at": row["completed_at"],
+                "input_data": json.loads(row["input_data"]) if row.get("input_data") else None,
+                "output_data": json.loads(row["output_data"]) if row.get("output_data") else None,
+                "error": row["error_message"],
+                "progress": json.loads(row["metadata_json"]).get("progress", 0.0) if row.get("metadata_json") else 0.0,
+                "steps": [],
+                "current_step": None
+            }
+            executions.append(exec_dict)
+
+        return executions
 
     def load_test_pipelines(self):
         """Load ACTUAL test pipelines from ia_modules/tests/pipelines/"""
@@ -143,14 +237,25 @@ class PipelineService:
         if not pipeline:
             raise ValueError(f"Pipeline not found: {pipeline_id}")
 
-        job_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc)
 
-        # Create execution record
+        # Track execution start in database if tracker available
+        if self.tracker:
+            job_id = await self.tracker.start_execution(
+                pipeline_id=pipeline_id,
+                pipeline_name=pipeline.get("name", "Unknown Pipeline"),
+                input_data=input_data,
+                total_steps=len(pipeline.get("config", {}).get("steps", []))
+            )
+        else:
+            job_id = str(uuid.uuid4())
+
+        # Create in-memory execution record for backward compatibility
         self.executions[job_id] = {
             "job_id": job_id,
             "pipeline_id": pipeline_id,
-            "status": "pending",
+            "pipeline_name": pipeline.get("name", "Unknown Pipeline"),
+            "status": "running",
             "input_data": input_data,
             "output_data": None,
             "current_step": None,
@@ -218,6 +323,15 @@ class PipelineService:
         finally:
             completed_at = datetime.now(timezone.utc)
             execution["completed_at"] = completed_at.isoformat()
+
+            # Update execution tracker
+            if self.tracker:
+                await self.tracker.update_execution_status(
+                    execution_id=job_id,
+                    status=ExecutionStatus.COMPLETED if execution["status"] == "completed" else ExecutionStatus.FAILED,
+                    output_data=execution.get("output_data"),
+                    error_message=execution.get("error")
+                )
 
             # Record metrics using ia_modules ReliabilityMetrics
             if self.reliability_metrics:
@@ -313,7 +427,28 @@ class PipelineService:
 
     async def list_executions(self) -> List[Dict[str, Any]]:
         """List all executions"""
-        return list(self.executions.values())
+        if self.tracker:
+            # Load from database
+            exec_records = await self.tracker.get_recent_executions(limit=100)
+            executions = []
+            for record in exec_records:
+                executions.append({
+                    "job_id": record.execution_id,
+                    "pipeline_id": record.pipeline_id,
+                    "pipeline_name": record.pipeline_name,
+                    "status": record.status.value,
+                    "started_at": record.started_at,
+                    "completed_at": record.completed_at,
+                    "input_data": record.input_data,
+                    "output_data": record.output_data,
+                    "error": record.error_message,
+                    "progress": 1.0 if record.status == ExecutionStatus.COMPLETED else 0.5,
+                    "steps": [],
+                    "current_step": None
+                })
+            return executions
+        else:
+            return list(self.executions.values())
 
     async def cancel_execution(self, job_id: str) -> bool:
         """Cancel execution"""

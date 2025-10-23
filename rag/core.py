@@ -44,11 +44,6 @@ class VectorStore(ABC):
     """
 
     @abstractmethod
-    async def initialize(self) -> None:
-        """Initialize vector store."""
-        pass
-
-    @abstractmethod
     async def add_documents(self, documents: List[Document],
                            collection_name: str = "default") -> None:
         """
@@ -107,10 +102,6 @@ class MemoryVectorStore(VectorStore):
     def __init__(self):
         """Initialize memory store."""
         self.collections: Dict[str, List[Document]] = {}
-
-    async def initialize(self) -> None:
-        """Initialize store (no-op for memory)."""
-        pass
 
     async def add_documents(self, documents: List[Document],
                            collection_name: str = "default") -> None:

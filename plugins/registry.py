@@ -190,16 +190,6 @@ class PluginRegistry:
         """
         return [plugin.get_info() for plugin in self._plugins.values()]
 
-    async def initialize_all(self) -> None:
-        """Initialize all registered plugins"""
-        self.logger.info("Initializing all plugins")
-
-        for plugin_name, plugin in self._plugins.items():
-            try:
-                await plugin.initialize()
-            except Exception as e:
-                self.logger.error(f"Failed to initialize plugin '{plugin_name}': {e}")
-
     async def shutdown_all(self) -> None:
         """Shutdown all registered plugins"""
         self.logger.info("Shutting down all plugins")

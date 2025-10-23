@@ -82,7 +82,6 @@ class TestMemoryConversationMemory:
     async def test_initialize(self):
         """Memory backend can be initialized."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         # Should not raise errors
         assert memory is not None
@@ -90,7 +89,6 @@ class TestMemoryConversationMemory:
     async def test_add_message(self):
         """Messages can be added to memory."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         message_id = await memory.add_message(
             thread_id="thread-1",
@@ -104,7 +102,6 @@ class TestMemoryConversationMemory:
     async def test_add_message_with_user_id(self):
         """Messages can be added with user_id for long-term memory."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         message_id = await memory.add_message(
             thread_id="thread-1",
@@ -118,7 +115,6 @@ class TestMemoryConversationMemory:
     async def test_add_message_with_metadata(self):
         """Messages can be added with custom metadata."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         metadata = {"source": "web", "ip": "192.168.1.1"}
 
@@ -136,7 +132,6 @@ class TestMemoryConversationMemory:
     async def test_add_message_with_function_call(self):
         """Messages can be added with function call data."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         function_call = {"name": "get_weather", "arguments": '{"city": "SF"}'}
 
@@ -156,7 +151,6 @@ class TestMemoryConversationMemory:
     async def test_get_messages(self):
         """Messages can be retrieved from memory."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         # Add multiple messages
         await memory.add_message("thread-1", role="user", content="Hello")
@@ -173,7 +167,6 @@ class TestMemoryConversationMemory:
     async def test_get_messages_limit(self):
         """get_messages respects limit parameter."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         # Add 5 messages
         for i in range(5):
@@ -185,7 +178,6 @@ class TestMemoryConversationMemory:
     async def test_get_messages_offset(self):
         """get_messages respects offset parameter."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         # Add 5 messages
         for i in range(5):
@@ -200,7 +192,6 @@ class TestMemoryConversationMemory:
     async def test_get_messages_empty_thread(self):
         """get_messages returns empty list for non-existent thread."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         messages = await memory.get_messages("nonexistent-thread")
         assert messages == []
@@ -208,7 +199,6 @@ class TestMemoryConversationMemory:
     async def test_thread_isolation(self):
         """Messages in different threads are isolated."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         await memory.add_message("thread-1", role="user", content="Thread 1 message")
         await memory.add_message("thread-2", role="user", content="Thread 2 message")
@@ -224,7 +214,6 @@ class TestMemoryConversationMemory:
     async def test_get_user_messages(self):
         """User messages can be retrieved across all threads."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         # Add messages for user-123 across different threads
         await memory.add_message("thread-1", user_id="user-123", role="user", content="Message 1")
@@ -240,7 +229,6 @@ class TestMemoryConversationMemory:
     async def test_get_user_messages_limit(self):
         """get_user_messages respects limit parameter."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         # Add 5 messages for user
         for i in range(5):
@@ -252,7 +240,6 @@ class TestMemoryConversationMemory:
     async def test_search_messages_in_thread(self):
         """Messages can be searched within a thread."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         await memory.add_message("thread-1", role="user", content="What's the weather like?")
         await memory.add_message("thread-1", role="assistant", content="The weather is sunny.")
@@ -266,7 +253,6 @@ class TestMemoryConversationMemory:
     async def test_search_messages_for_user(self):
         """Messages can be searched for a specific user."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         await memory.add_message("thread-1", user_id="user-123", role="user", content="weather today")
         await memory.add_message("thread-2", user_id="user-123", role="user", content="weather tomorrow")
@@ -278,7 +264,6 @@ class TestMemoryConversationMemory:
     async def test_search_messages_global(self):
         """Messages can be searched globally."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         await memory.add_message("thread-1", role="user", content="Python programming")
         await memory.add_message("thread-2", role="user", content="Python snake")
@@ -290,7 +275,6 @@ class TestMemoryConversationMemory:
     async def test_delete_thread(self):
         """Thread messages can be deleted."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         await memory.add_message("thread-1", role="user", content="Message 1")
         await memory.add_message("thread-1", role="user", content="Message 2")
@@ -303,7 +287,6 @@ class TestMemoryConversationMemory:
     async def test_get_thread_stats(self):
         """Thread statistics can be retrieved."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         await memory.add_message("thread-1", role="user", content="Message 1")
         await memory.add_message("thread-1", role="user", content="Message 2")
@@ -317,7 +300,6 @@ class TestMemoryConversationMemory:
     async def test_get_thread_stats_empty(self):
         """Thread stats return empty dict for non-existent thread."""
         memory = MemoryConversationMemory()
-        await memory.initialize()
 
         stats = await memory.get_thread_stats("nonexistent-thread")
         assert stats['message_count'] == 0

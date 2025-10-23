@@ -59,7 +59,7 @@ async def test_postgresql():
     print("\nTesting named parameters...")
     try:
         # Insert test data
-        await db.execute_query(
+        await db.execute_async(
             "INSERT INTO reliability_steps (agent_name, success, timestamp) VALUES (:agent, :success, :ts)",
             {"agent": "test_agent", "success": True, "ts": "2025-01-01 00:00:00"}
         )
@@ -79,7 +79,7 @@ async def test_postgresql():
         print(f"❌ Named parameters test failed: {e}")
 
     # Cleanup
-    await db.execute_query("DELETE FROM reliability_steps WHERE agent_name = :agent", {"agent": "test_agent"})
+    await db.execute_async("DELETE FROM reliability_steps WHERE agent_name = :agent", {"agent": "test_agent"})
 
     # Disconnect
     await db.close()
@@ -110,7 +110,7 @@ async def test_sqlite():
     print("\nTesting named parameters with SQLite...")
     try:
         # Create table
-        await db.execute_query("""
+        await db.execute_async("""
             CREATE TABLE test_items (
                 id INTEGER PRIMARY KEY,
                 name TEXT,
@@ -119,7 +119,7 @@ async def test_sqlite():
         """)
 
         # Insert with named params
-        await db.execute_query(
+        await db.execute_async(
             "INSERT INTO test_items (name, value) VALUES (:name, :value)",
             {"name": "item1", "value": 42}
         )

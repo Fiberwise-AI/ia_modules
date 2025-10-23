@@ -1,22 +1,11 @@
-"""
-SQL-based checkpoint storage using DatabaseManager
+"""SQL-based checkpoint storage implementation"""
 
-Supports PostgreSQL and SQLite with named parameter support.
-"""
-
-import uuid
-import json
-from typing import Dict, List, Optional, Any
+from typing import Dict, Any, Optional, List
 from datetime import datetime
+import json
+import uuid
 
-from .core import (
-    BaseCheckpointer,
-    Checkpoint,
-    CheckpointSaveError,
-    CheckpointLoadError,
-    CheckpointDeleteError,
-    CheckpointStatus
-)
+from .core import BaseCheckpointer, Checkpoint, CheckpointSaveError, CheckpointLoadError
 
 
 class SQLCheckpointer(BaseCheckpointer):
@@ -28,9 +17,7 @@ class SQLCheckpointer(BaseCheckpointer):
     Example:
         >>> from ia_modules.database import DatabaseManager
         >>> db = DatabaseManager("postgresql://localhost/mydb")
-        >>> await db.initialize()
-        >>> checkpointer = SQLCheckpointer(db)
-        >>> await checkpointer.initialize()
+                >>> checkpointer = SQLCheckpointer(db)
     """
 
     def __init__(self, db_manager):
@@ -42,12 +29,11 @@ class SQLCheckpointer(BaseCheckpointer):
         """
         self.db = db_manager
 
-        # Initialize - schema created by migrations (V003__checkpoint_system.sql)
+        # Schema created by migrations (V003__checkpoint_system.sql)
         if not self.db.table_exists("pipeline_checkpoints"):
             raise CheckpointSaveError(
                 "pipeline_checkpoints table not found. Run database migrations first."
             )
-        self._initialized = True
 
     async def save_checkpoint(
         self,
@@ -61,49 +47,36 @@ class SQLCheckpointer(BaseCheckpointer):
         parent_checkpoint_id: Optional[str] = None
     ) -> str:
         """Save checkpoint to SQL database"""
-        if not self._initialized:
-            raise CheckpointSaveError("Checkpointer not initialized")
-
         checkpoint_id = str(uuid.uuid4())
-        timestamp = datetime.now().isoformat()
 
-        # Serialize state and metadata
-        state_json = json.dumps(state)
-        metadata_json = json.dumps(metadata or {})
+        query = """
+        INSERT INTO pipeline_checkpoints (
+            checkpoint_id, thread_id, pipeline_id, step_id, step_index,
+            step_name, state, metadata, parent_checkpoint_id, created_at
+        ) VALUES (
+            :checkpoint_id, :thread_id, :pipeline_id, :step_id, :step_index,
+            :step_name, :state, :metadata, :parent_checkpoint_id, :created_at
+        )
+        """
 
-        # Insert checkpoint
-        if self.db.db_type == DatabaseType.POSTGRESQL:
-            query = """
-                INSERT INTO pipeline_checkpoints
-                (checkpoint_id, thread_id, pipeline_id, step_id, step_index,
-                 step_name, timestamp, state, metadata, status, parent_checkpoint_id)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11)
-            """
-            params = (
-                checkpoint_id, thread_id, pipeline_id, step_id, step_index,
-                step_name or step_id, timestamp, state_json, metadata_json,
-                CheckpointStatus.COMPLETED.value, parent_checkpoint_id
-            )
-        else:
-            # SQLite, MySQL, DuckDB use ? placeholders
-            query = """
-                INSERT INTO pipeline_checkpoints
-                (checkpoint_id, thread_id, pipeline_id, step_id, step_index,
-                 step_name, timestamp, state, metadata, status, parent_checkpoint_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """
-            params = (
-                checkpoint_id, thread_id, pipeline_id, step_id, step_index,
-                step_name or step_id, timestamp, state_json, metadata_json,
-                CheckpointStatus.COMPLETED.value, parent_checkpoint_id
-            )
+        params = {
+            "checkpoint_id": checkpoint_id,
+            "thread_id": thread_id,
+            "pipeline_id": pipeline_id,
+            "step_id": step_id,
+            "step_index": step_index,
+            "step_name": step_name,
+            "state": json.dumps(state),
+            "metadata": json.dumps(metadata or {}),
+            "parent_checkpoint_id": parent_checkpoint_id,
+            "created_at": datetime.now().isoformat()
+        }
 
-        result = await self.db.execute_async(query, params)
-
-        if not result.success:
-            raise CheckpointSaveError(f"Failed to save checkpoint: {result.error_message}")
-
-        return checkpoint_id
+        try:
+            await self.db.execute(query, params)
+            return checkpoint_id
+        except Exception as e:
+            raise CheckpointSaveError(f"Failed to save checkpoint: {e}")
 
     async def load_checkpoint(
         self,
@@ -111,248 +84,168 @@ class SQLCheckpointer(BaseCheckpointer):
         checkpoint_id: Optional[str] = None
     ) -> Optional[Checkpoint]:
         """Load checkpoint from SQL database"""
-        if not self._initialized:
-            raise CheckpointLoadError("Checkpointer not initialized")
-
         if checkpoint_id:
-            # Load specific checkpoint
-            if self.db.db_type == DatabaseType.POSTGRESQL:
-                query = """
-                    SELECT * FROM pipeline_checkpoints
-                    WHERE thread_id = $1 AND checkpoint_id = $2
-                """
-                params = (thread_id, checkpoint_id)
-            else:
-                query = """
-                    SELECT * FROM pipeline_checkpoints
-                    WHERE thread_id = ? AND checkpoint_id = ?
-                """
-                params = (thread_id, checkpoint_id)
+            query = """
+            SELECT * FROM pipeline_checkpoints
+            WHERE thread_id = :thread_id AND checkpoint_id = :checkpoint_id
+            """
+            params = {"thread_id": thread_id, "checkpoint_id": checkpoint_id}
         else:
-            # Load latest checkpoint
-            if self.db.db_type == DatabaseType.POSTGRESQL:
-                query = """
-                    SELECT * FROM pipeline_checkpoints
-                    WHERE thread_id = $1
-                    ORDER BY timestamp DESC
-                    LIMIT 1
-                """
-                params = (thread_id,)
-            else:
-                query = """
-                    SELECT * FROM pipeline_checkpoints
-                    WHERE thread_id = ?
-                    ORDER BY timestamp DESC
-                    LIMIT 1
-                """
-                params = (thread_id,)
+            query = """
+            SELECT * FROM pipeline_checkpoints
+            WHERE thread_id = :thread_id
+            ORDER BY created_at DESC
+            LIMIT 1
+            """
+            params = {"thread_id": thread_id}
 
-        result = await self.db.fetch_one(query, params)
+        try:
+            row = await self.db.fetch_one(query, params)
+            if not row:
+                return None
 
-        if not result.success or not result.data:
-            return None
-
-        row = result.get_first_row()
-        return self._row_to_checkpoint(row)
+            return Checkpoint(
+                checkpoint_id=row["checkpoint_id"],
+                thread_id=row["thread_id"],
+                pipeline_id=row["pipeline_id"],
+                step_id=row["step_id"],
+                step_index=row["step_index"],
+                step_name=row["step_name"],
+                state=json.loads(row["state"]),
+                timestamp=datetime.fromisoformat(row["created_at"]),
+                metadata=json.loads(row["metadata"]),
+                parent_checkpoint_id=row["parent_checkpoint_id"]
+            )
+        except Exception as e:
+            raise CheckpointLoadError(f"Failed to load checkpoint: {e}")
 
     async def list_checkpoints(
         self,
         thread_id: str,
+        pipeline_id: Optional[str] = None,
         limit: int = 10,
         offset: int = 0
     ) -> List[Checkpoint]:
-        """List checkpoints for thread"""
-        if not self._initialized:
-            raise CheckpointLoadError("Checkpointer not initialized")
-
-        if self.db.db_type == DatabaseType.POSTGRESQL:
+        """List checkpoints from SQL database"""
+        if pipeline_id:
             query = """
-                SELECT * FROM pipeline_checkpoints
-                WHERE thread_id = $1
-                ORDER BY timestamp DESC
-                LIMIT $2 OFFSET $3
+            SELECT * FROM pipeline_checkpoints
+            WHERE thread_id = :thread_id AND pipeline_id = :pipeline_id
+            ORDER BY created_at DESC
+            LIMIT :limit OFFSET :offset
             """
-            params = (thread_id, limit, offset)
+            params = {
+                "thread_id": thread_id,
+                "pipeline_id": pipeline_id,
+                "limit": limit,
+                "offset": offset
+            }
         else:
             query = """
-                SELECT * FROM pipeline_checkpoints
-                WHERE thread_id = ?
-                ORDER BY timestamp DESC
-                LIMIT ? OFFSET ?
+            SELECT * FROM pipeline_checkpoints
+            WHERE thread_id = :thread_id
+            ORDER BY created_at DESC
+            LIMIT :limit OFFSET :offset
             """
-            params = (thread_id, limit, offset)
+            params = {"thread_id": thread_id, "limit": limit, "offset": offset}
 
-        result = await self.db.fetch_all(query, params)
+        try:
+            rows = await self.db.fetch_all(query, params)
+            return [
+                Checkpoint(
+                    checkpoint_id=row["checkpoint_id"],
+                    thread_id=row["thread_id"],
+                    pipeline_id=row["pipeline_id"],
+                    step_id=row["step_id"],
+                    step_index=row["step_index"],
+                    step_name=row["step_name"],
+                    state=json.loads(row["state"]),
+                    timestamp=datetime.fromisoformat(row["created_at"]),
+                    metadata=json.loads(row["metadata"]),
+                    parent_checkpoint_id=row["parent_checkpoint_id"]
+                )
+                for row in rows
+            ]
+        except Exception as e:
+            raise CheckpointLoadError(f"Failed to list checkpoints: {e}")
 
-        if not result.success:
-            raise CheckpointLoadError(f"Failed to list checkpoints: {result.error_message}")
+    async def delete_checkpoint(self, thread_id: str, checkpoint_id: str) -> bool:
+        """Delete specific checkpoint"""
+        query = """
+        DELETE FROM pipeline_checkpoints
+        WHERE thread_id = :thread_id AND checkpoint_id = :checkpoint_id
+        """
+        params = {"thread_id": thread_id, "checkpoint_id": checkpoint_id}
 
-        return [self._row_to_checkpoint(row) for row in result.data]
+        try:
+            await self.db.execute(query, params)
+            return True
+        except Exception:
+            return False
 
     async def delete_checkpoints(
         self,
         thread_id: str,
-        before: Optional[datetime] = None,
-        keep_latest: int = 0
+        pipeline_id: Optional[str] = None
     ) -> int:
-        """Delete checkpoints"""
-        if not self._initialized:
-            raise CheckpointDeleteError("Checkpointer not initialized")
-
-        if keep_latest > 0:
-            # Delete all but keep N latest
-            if self.db.db_type == DatabaseType.POSTGRESQL:
-                query = """
-                    DELETE FROM pipeline_checkpoints
-                    WHERE checkpoint_id IN (
-                        SELECT checkpoint_id FROM pipeline_checkpoints
-                        WHERE thread_id = $1
-                        ORDER BY timestamp DESC
-                        OFFSET $2
-                    )
-                """
-                params = (thread_id, keep_latest)
-            else:
-                query = """
-                    DELETE FROM pipeline_checkpoints
-                    WHERE checkpoint_id IN (
-                        SELECT checkpoint_id FROM pipeline_checkpoints
-                        WHERE thread_id = ?
-                        ORDER BY timestamp DESC
-                        LIMIT -1 OFFSET ?
-                    )
-                """
-                params = (thread_id, keep_latest)
-        elif before:
-            # Delete checkpoints before timestamp
-            before_iso = before.isoformat()
-            if self.db.db_type == DatabaseType.POSTGRESQL:
-                query = """
-                    DELETE FROM pipeline_checkpoints
-                    WHERE thread_id = $1 AND timestamp < $2
-                """
-                params = (thread_id, before_iso)
-            else:
-                query = """
-                    DELETE FROM pipeline_checkpoints
-                    WHERE thread_id = ? AND timestamp < ?
-                """
-                params = (thread_id, before_iso)
+        """Delete all checkpoints for thread (optionally filtered by pipeline)"""
+        if pipeline_id:
+            query = """
+            DELETE FROM pipeline_checkpoints
+            WHERE thread_id = :thread_id AND pipeline_id = :pipeline_id
+            """
+            params = {"thread_id": thread_id, "pipeline_id": pipeline_id}
         else:
-            # Delete all for thread
-            if self.db.db_type == DatabaseType.POSTGRESQL:
-                query = "DELETE FROM pipeline_checkpoints WHERE thread_id = $1"
-                params = (thread_id,)
-            else:
-                query = "DELETE FROM pipeline_checkpoints WHERE thread_id = ?"
-                params = (thread_id,)
+            query = """
+            DELETE FROM pipeline_checkpoints
+            WHERE thread_id = :thread_id
+            """
+            params = {"thread_id": thread_id}
 
-        result = await self.db.execute_async(query, params)
-
-        if not result.success:
-            raise CheckpointDeleteError(f"Failed to delete checkpoints: {result.error_message}")
-
-        return result.row_count
+        try:
+            result = await self.db.execute(query, params)
+            return result.rowcount if hasattr(result, 'rowcount') else 0
+        except Exception:
+            return 0
 
     async def get_checkpoint_stats(
         self,
         thread_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get checkpoint statistics"""
-        if not self._initialized:
-            return {}
-
         if thread_id:
-            # Stats for specific thread
-            if self.db.db_type == DatabaseType.POSTGRESQL:
-                query = """
-                    SELECT
-                        COUNT(*) as total,
-                        MIN(timestamp) as oldest,
-                        MAX(timestamp) as newest
-                    FROM pipeline_checkpoints
-                    WHERE thread_id = $1
-                """
-                params = (thread_id,)
-            else:
-                query = """
-                    SELECT
-                        COUNT(*) as total,
-                        MIN(timestamp) as oldest,
-                        MAX(timestamp) as newest
-                    FROM pipeline_checkpoints
-                    WHERE thread_id = ?
-                """
-                params = (thread_id,)
+            query = """
+            SELECT COUNT(*) as total, MIN(created_at) as oldest, MAX(created_at) as newest
+            FROM pipeline_checkpoints
+            WHERE thread_id = :thread_id
+            """
+            params = {"thread_id": thread_id}
+            row = await self.db.fetch_one(query, params)
 
-            result = await self.db.fetch_one(query, params)
-
-            if not result.success or not result.data:
-                return {'total_checkpoints': 0, 'thread_id': thread_id}
-
-            row = result.get_first_row()
             return {
-                'total_checkpoints': row['total'],
-                'oldest_checkpoint': datetime.fromisoformat(row['oldest']) if row['oldest'] else None,
-                'newest_checkpoint': datetime.fromisoformat(row['newest']) if row['newest'] else None,
+                'total_checkpoints': row['total'] if row else 0,
+                'oldest_checkpoint': datetime.fromisoformat(row['oldest']) if row and row['oldest'] else None,
+                'newest_checkpoint': datetime.fromisoformat(row['newest']) if row and row['newest'] else None,
                 'thread_id': thread_id
             }
         else:
-            # Stats for all threads
             query = """
-                SELECT
-                    COUNT(*) as total,
-                    MIN(timestamp) as oldest,
-                    MAX(timestamp) as newest,
-                    COUNT(DISTINCT thread_id) as thread_count
-                FROM pipeline_checkpoints
+            SELECT COUNT(*) as total, MIN(created_at) as oldest, MAX(created_at) as newest,
+                   COUNT(DISTINCT thread_id) as thread_count
+            FROM pipeline_checkpoints
             """
+            row = await self.db.fetch_one(query)
 
-            result = await self.db.fetch_one(query)
-
-            if not result.success or not result.data:
-                return {'total_checkpoints': 0, 'threads': []}
-
-            row = result.get_first_row()
-
-            # Get list of threads
-            if self.db.db_type == DatabaseType.POSTGRESQL:
-                threads_query = "SELECT DISTINCT thread_id FROM pipeline_checkpoints"
-            else:
-                threads_query = "SELECT DISTINCT thread_id FROM pipeline_checkpoints"
-
-            threads_result = await self.db.fetch_all(threads_query)
-            threads = [r['thread_id'] for r in threads_result.data] if threads_result.success else []
+            threads_query = "SELECT DISTINCT thread_id FROM pipeline_checkpoints"
+            threads = await self.db.fetch_all(threads_query)
 
             return {
-                'total_checkpoints': row['total'],
-                'oldest_checkpoint': datetime.fromisoformat(row['oldest']) if row['oldest'] else None,
-                'newest_checkpoint': datetime.fromisoformat(row['newest']) if row['newest'] else None,
-                'threads': threads
+                'total_checkpoints': row['total'] if row else 0,
+                'oldest_checkpoint': datetime.fromisoformat(row['oldest']) if row and row['oldest'] else None,
+                'newest_checkpoint': datetime.fromisoformat(row['newest']) if row and row['newest'] else None,
+                'threads': [t['thread_id'] for t in threads] if threads else []
             }
 
     async def close(self) -> None:
-        """Close database connection"""
-        if self.db:
-            await self.db.disconnect()
-
-    def _row_to_checkpoint(self, row: Dict[str, Any]) -> Checkpoint:
-        """Convert database row to Checkpoint object"""
-        # Parse JSON fields
-        state = json.loads(row['state']) if isinstance(row['state'], str) else row['state']
-        metadata = json.loads(row['metadata']) if isinstance(row['metadata'], str) else row['metadata']
-
-        return Checkpoint(
-            checkpoint_id=row['checkpoint_id'],
-            thread_id=row['thread_id'],
-            pipeline_id=row['pipeline_id'],
-            pipeline_version=row.get('pipeline_version'),
-            step_id=row['step_id'],
-            step_index=row['step_index'],
-            step_name=row.get('step_name', row['step_id']),
-            timestamp=datetime.fromisoformat(row['timestamp']) if isinstance(row['timestamp'], str) else row['timestamp'],
-            state=state,
-            metadata=metadata,
-            status=CheckpointStatus(row.get('status', 'completed')),
-            parent_checkpoint_id=row.get('parent_checkpoint_id')
-        )
+        """Close (no-op for SQL - DatabaseManager handles connections)"""
+        pass

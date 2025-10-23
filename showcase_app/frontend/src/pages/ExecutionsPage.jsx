@@ -152,7 +152,7 @@ function ExecutionRow({ execution }) {
           </button>
         </td>
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-          {execution.pipeline_id.substring(0, 8)}...
+          {execution.pipeline_name || execution.pipeline_id?.substring(0, 8) + '...' || 'Unknown'}
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
           {getStatusBadge(execution.status)}

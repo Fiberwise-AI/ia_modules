@@ -120,18 +120,8 @@ class BaseCheckpointer(ABC):
     Abstract base class for checkpoint storage backends.
 
     Implementations must provide methods to save, load, list, and delete checkpoints.
+    All initialization must happen in __init__ constructor.
     """
-
-    @abstractmethod
-    async def initialize(self) -> None:
-        """
-        Initialize the checkpointer (create schema, connect, etc.)
-
-        Example:
-            >>> checkpointer = PostgresCheckpointer(...)
-            >>> await checkpointer.initialize()
-        """
-        pass
 
     @abstractmethod
     async def save_checkpoint(

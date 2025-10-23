@@ -113,10 +113,6 @@ class LLMProviderService:
         self.providers: Dict[str, LLMConfig] = {}
         self.default_provider: Optional[str] = None
 
-    async def initialize(self):
-        """Initialize the service"""
-        self.logger.info("LLM Provider Service initialized")
-
     async def cleanup(self):
         """Cleanup the service"""
         self.logger.info("LLM Provider Service cleaned up")

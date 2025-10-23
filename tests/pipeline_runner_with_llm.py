@@ -65,7 +65,6 @@ async def setup_llm_service():
         )
         logging.info("Anthropic/Claude LLM provider configured")
 
-    await llm_service.initialize()
     return llm_service
 
 

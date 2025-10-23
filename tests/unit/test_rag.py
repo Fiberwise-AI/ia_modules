@@ -52,7 +52,6 @@ class TestMemoryVectorStore:
         """Store can be initialized."""
         store = MemoryVectorStore()
 
-        await store.initialize()
 
         # No-op for memory store
         assert True
@@ -60,7 +59,6 @@ class TestMemoryVectorStore:
     async def test_add_documents(self):
         """Documents can be added."""
         store = MemoryVectorStore()
-        await store.initialize()
 
         docs = [
             Document(id="doc1", content="Python programming"),
@@ -75,7 +73,6 @@ class TestMemoryVectorStore:
     async def test_search_simple(self):
         """Simple text search works."""
         store = MemoryVectorStore()
-        await store.initialize()
 
         docs = [
             Document(id="doc1", content="Python is a programming language"),
@@ -94,7 +91,6 @@ class TestMemoryVectorStore:
     async def test_search_relevance_scoring(self):
         """Search results are scored by relevance."""
         store = MemoryVectorStore()
-        await store.initialize()
 
         docs = [
             Document(id="doc1", content="Python Python Python"),  # High relevance
@@ -113,7 +109,6 @@ class TestMemoryVectorStore:
     async def test_search_limit(self):
         """Search respects limit parameter."""
         store = MemoryVectorStore()
-        await store.initialize()
 
         docs = [Document(id=f"doc{i}", content="Python programming") for i in range(10)]
 
@@ -126,7 +121,6 @@ class TestMemoryVectorStore:
     async def test_search_empty_collection(self):
         """Searching empty collection returns empty list."""
         store = MemoryVectorStore()
-        await store.initialize()
 
         results = await store.search("anything")
 
@@ -135,7 +129,6 @@ class TestMemoryVectorStore:
     async def test_search_nonexistent_collection(self):
         """Searching nonexistent collection returns empty list."""
         store = MemoryVectorStore()
-        await store.initialize()
 
         results = await store.search("query", collection_name="nonexistent")
 
@@ -144,7 +137,6 @@ class TestMemoryVectorStore:
     async def test_delete_collection(self):
         """Collections can be deleted."""
         store = MemoryVectorStore()
-        await store.initialize()
 
         docs = [Document(id="doc1", content="Test")]
         await store.add_documents(docs, collection_name="test")
@@ -156,7 +148,6 @@ class TestMemoryVectorStore:
     async def test_list_collections(self):
         """All collections can be listed."""
         store = MemoryVectorStore()
-        await store.initialize()
 
         # Add to multiple collections
         await store.add_documents([Document(id="d1", content="Test")], collection_name="col1")
@@ -171,7 +162,6 @@ class TestMemoryVectorStore:
     async def test_multiple_collections_isolated(self):
         """Different collections are isolated."""
         store = MemoryVectorStore()
-        await store.initialize()
 
         await store.add_documents([Document(id="d1", content="Python")], collection_name="col1")
         await store.add_documents([Document(id="d2", content="JavaScript")], collection_name="col2")
@@ -185,7 +175,6 @@ class TestMemoryVectorStore:
     async def test_case_insensitive_search(self):
         """Search is case insensitive."""
         store = MemoryVectorStore()
-        await store.initialize()
 
         docs = [Document(id="doc1", content="PYTHON Programming")]
 
@@ -198,7 +187,6 @@ class TestMemoryVectorStore:
     async def test_store_repr(self):
         """Store has useful repr."""
         store = MemoryVectorStore()
-        await store.initialize()
 
         await store.add_documents([Document(id="d1", content="Test")])
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ia_modules"
-version = "0.0.3"
+version = "0.0.4"
 description = "Production-ready AI agent framework with enterprise-grade reliability and observability"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -93,3 +93,43 @@ addopts = [
     "--strict-markers",
     "--tb=short",
 ]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "e2e: marks tests as end-to-end tests",
+    "redis: marks tests that require Redis server",
+    "postgres: marks tests that require PostgreSQL server",
+]
+
+[tool.coverage.run]
+source = ["ia_modules"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/conftest.py",
+    "tests/llm_config_example.py",
+    "tests/manual_database_test.py",
+    "tests/pipeline_runner.py",
+    "tests/pipeline_runner_with_llm.py",
+    "showcase_app/*",
+]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[tool.coverage.html]
+directory = "htmlcov"

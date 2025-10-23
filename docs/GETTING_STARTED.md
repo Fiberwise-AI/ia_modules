@@ -317,8 +317,6 @@ config = ConnectionConfig(
 )
 
 storage = SQLMetricStorage(config)
-await storage.initialize()
-
 metrics = ReliabilityMetrics(storage)
 ```
 

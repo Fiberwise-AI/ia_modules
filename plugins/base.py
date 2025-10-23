@@ -51,30 +51,11 @@ class Plugin(ABC):
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config = config or {}
         self.logger = logging.getLogger(f"Plugin.{self.__class__.__name__}")
-        self._initialized = False
 
     @property
     @abstractmethod
     def metadata(self) -> PluginMetadata:
         """Return plugin metadata"""
-        pass
-
-    async def initialize(self) -> None:
-        """
-        Initialize the plugin
-
-        Called once when plugin is loaded. Override to add custom
-        initialization logic (e.g., connecting to external services).
-        """
-        if self._initialized:
-            return
-
-        self.logger.debug(f"Initializing plugin: {self.metadata.name}")
-        await self._initialize()
-        self._initialized = True
-
-    async def _initialize(self) -> None:
-        """Override for custom initialization logic"""
         pass
 
     async def shutdown(self) -> None:
@@ -84,12 +65,8 @@ class Plugin(ABC):
         Called when plugin is unloaded or system shuts down.
         Override to add custom cleanup logic.
         """
-        if not self._initialized:
-            return
-
         self.logger.debug(f"Shutting down plugin: {self.metadata.name}")
         await self._shutdown()
-        self._initialized = False
 
     async def _shutdown(self) -> None:
         """Override for custom shutdown logic"""

@@ -37,8 +37,7 @@ class RedisMetricStorage(MetricStorage):
 
     Example:
         >>> storage = RedisMetricStorage(redis_url="redis://localhost:6379")
-        >>> await storage.initialize()
-        >>> await storage.record_step({
+                >>> await storage.record_step({
         ...     "agent": "researcher",
         ...     "success": True,
         ...     "timestamp": datetime.now(timezone.utc)
@@ -66,32 +65,15 @@ class RedisMetricStorage(MetricStorage):
         self.key_prefix = key_prefix
         self.ttl_seconds = ttl_days * 86400 if ttl_days else None
         self.client: Optional[redis.Redis] = None
-        self._initialized = False
         self.logger = logging.getLogger("RedisMetricStorage")
         self._step_counter = 0
         self._workflow_counter = 0
         self._slo_counter = 0
 
-    async def initialize(self):
-        """Connect to Redis and verify connection."""
-        if self._initialized:
-            return
-
-        try:
-            self.client = redis.from_url(self.redis_url, decode_responses=True)
-            # Test connection
-            await self.client.ping()
-            self._initialized = True
-            self.logger.info(f"Connected to Redis at {self.redis_url}")
-        except Exception as e:
-            self.logger.error(f"Failed to connect to Redis: {e}")
-            raise
-
     async def close(self):
         """Close Redis connection."""
         if self.client:
             await self.client.close()
-            self._initialized = False
             self.logger.info("Closed Redis connection")
 
     def _get_key(self, *parts: str) -> str:
@@ -105,8 +87,6 @@ class RedisMetricStorage(MetricStorage):
         Args:
             record: Step record with agent, success, timestamp, etc.
         """
-        if not self._initialized:
-            await self.initialize()
 
         agent = record["agent"]
         timestamp = record.get("timestamp", datetime.now(timezone.utc))
@@ -154,8 +134,6 @@ class RedisMetricStorage(MetricStorage):
         Args:
             record: Workflow record with workflow_id, steps, retries, etc.
         """
-        if not self._initialized:
-            await self.initialize()
 
         workflow_id = record["workflow_id"]
         timestamp = record.get("timestamp", datetime.now(timezone.utc))
@@ -208,8 +186,6 @@ class RedisMetricStorage(MetricStorage):
         Returns:
             List of step records
         """
-        if not self._initialized:
-            await self.initialize()
 
         # Determine time range
         min_score = since.timestamp() if since else "-inf"
@@ -266,8 +242,6 @@ class RedisMetricStorage(MetricStorage):
         Returns:
             List of workflow records
         """
-        if not self._initialized:
-            await self.initialize()
 
         # Determine time range
         min_score = since.timestamp() if since else "-inf"
@@ -308,8 +282,6 @@ class RedisMetricStorage(MetricStorage):
             success: Whether measurement was successful
             metadata: Additional metadata
         """
-        if not self._initialized:
-            await self.initialize()
 
         timestamp = datetime.now(timezone.utc)
 
@@ -365,8 +337,6 @@ class RedisMetricStorage(MetricStorage):
         Returns:
             List of SLO measurement records
         """
-        if not self._initialized:
-            await self.initialize()
 
         # Determine time range
         min_score = since.timestamp() if since else "-inf"

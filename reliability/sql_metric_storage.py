@@ -6,7 +6,7 @@ Supports PostgreSQL, MySQL, SQLite, and DuckDB.
 """
 
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 import json
 
@@ -38,13 +38,12 @@ class SQLMetricStorage(MetricStorage):
         self.db = db_manager
         self.logger = logging.getLogger("SQLMetricStorage")
 
-        # Initialize - schema created by migrations (V007__reliability_metrics.sql)
+        # Schema created by migrations (V007__reliability_metrics.sql)
         if not self.db.table_exists("reliability_steps"):
             raise RuntimeError(
                 "reliability_steps table not found. Run database migrations first."
             )
 
-        self._initialized = True
         self.logger.info(f"Initialized SQL metric storage ({self.db.config.database_type.value})")
 
     async def record_step(self, record: Dict[str, Any]):
@@ -54,11 +53,6 @@ class SQLMetricStorage(MetricStorage):
         Args:
             record: Step metric data
         """
-        if not self._initialized:
-            await self.initialize()
-
-        from datetime import timezone
-
         query = """
         INSERT INTO reliability_steps (
             agent_name, success, required_compensation, required_human,
@@ -91,11 +85,6 @@ class SQLMetricStorage(MetricStorage):
         Args:
             record: Workflow metric data
         """
-        if not self._initialized:
-            await self.initialize()
-
-        from datetime import timezone
-
         query = """
         INSERT INTO reliability_workflows (
             workflow_id, steps, retries, success, required_human, timestamp
@@ -132,9 +121,6 @@ class SQLMetricStorage(MetricStorage):
         Returns:
             List of step records
         """
-        if not self._initialized:
-            await self.initialize()
-
         query = "SELECT * FROM reliability_steps WHERE 1=1"
         params = {}
 
@@ -180,9 +166,6 @@ class SQLMetricStorage(MetricStorage):
         Returns:
             List of workflow records
         """
-        if not self._initialized:
-            await self.initialize()
-
         query = "SELECT * FROM reliability_workflows WHERE 1=1"
         params = {}
 
@@ -231,9 +214,6 @@ class SQLMetricStorage(MetricStorage):
             success: Whether measurement succeeded
             error: Error message if failed
         """
-        if not self._initialized:
-            await self.initialize()
-
         from datetime import timezone
 
         query = """
@@ -272,9 +252,6 @@ class SQLMetricStorage(MetricStorage):
         Returns:
             List of measurements
         """
-        if not self._initialized:
-            await self.initialize()
-
         query = "SELECT * FROM reliability_slo_measurements WHERE measurement_type = :measurement_type"
         params = {"measurement_type": measurement_type}
 
@@ -299,4 +276,3 @@ class SQLMetricStorage(MetricStorage):
         """Close database connection."""
         if self.db:
             self.db.disconnect()
-            self._initialized = False

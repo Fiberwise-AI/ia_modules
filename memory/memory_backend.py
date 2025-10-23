@@ -34,11 +34,6 @@ class MemoryConversationMemory(ConversationMemory):
         self.messages: Dict[str, List[Message]] = defaultdict(list)  # thread_id -> messages
         self.user_messages: Dict[str, List[str]] = defaultdict(list)  # user_id -> message_ids
         self._lock = asyncio.Lock()
-        self._initialized = False
-
-    async def initialize(self) -> None:
-        """Initialize (no-op for memory backend)"""
-        self._initialized = True
 
     async def add_message(
         self,

@@ -67,15 +67,13 @@ class TestPluginBase:
 
         plugin = TestPlugin({'key': 'value'})
         assert plugin.config == {'key': 'value'}
-        assert not plugin._initialized
 
     @pytest.mark.asyncio
-    async def test_plugin_initialize(self):
-        """Test plugin initialize/shutdown"""
+    async def test_plugin_shutdown(self):
+        """Test plugin shutdown"""
         class TestPlugin(ConditionPlugin):
             def __init__(self, config=None):
                 super().__init__(config)
-                self.init_called = False
                 self.shutdown_called = False
 
             @property
@@ -86,9 +84,6 @@ class TestPluginBase:
                     plugin_type=PluginType.CONDITION
                 )
 
-            async def _initialize(self):
-                self.init_called = True
-
             async def _shutdown(self):
                 self.shutdown_called = True
 
@@ -96,15 +91,8 @@ class TestPluginBase:
                 return True
 
         plugin = TestPlugin()
-        assert not plugin.init_called
-
-        await plugin.initialize()
-        assert plugin.init_called
-        assert plugin._initialized
-
         await plugin.shutdown()
         assert plugin.shutdown_called
-        assert not plugin._initialized
 
     def test_plugin_get_info(self):
         """Test getting plugin info"""
@@ -122,12 +110,12 @@ class TestPluginBase:
                 return True
 
         plugin = TestPlugin()
-        info = plugin.get_info()
 
-        assert info['name'] == "test_plugin"
-        assert info['version'] == "2.0.0"
-        assert info['author'] == "Test Author"
-        assert info['type'] == "condition"
+        # Metadata is accessed via plugin.metadata
+        assert plugin.metadata.name == "test_plugin"
+        assert plugin.metadata.version == "2.0.0"
+        assert plugin.metadata.author == "Test Author"
+        assert plugin.metadata.plugin_type == PluginType.CONDITION
 
 
 class TestConditionPlugin:

@@ -294,10 +294,6 @@ class DatabaseManager:
         """
         return self.execute(query, params)
 
-    # Deprecated alias for backwards compatibility
-    async def execute_query(self, query: str, params: Optional[Dict] = None) -> Any:
-        """Deprecated: Use execute_async() instead."""
-        return await self.execute_async(query, params)
 
     def _execute_raw(self, query: str, params: Optional[Dict] = None):
         """

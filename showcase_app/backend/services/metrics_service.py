@@ -23,7 +23,6 @@ class MetricsService:
 
         # Use SQL storage with database
         self.storage = SQLMetricStorage(self.db_manager)
-        self.storage.initialize()
         self.metrics = ReliabilityMetrics(self.storage)
 
         # Extended metrics tracking

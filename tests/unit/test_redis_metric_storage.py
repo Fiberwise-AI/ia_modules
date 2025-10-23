@@ -17,10 +17,30 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
 
+# Check if Redis server is actually running
+REDIS_SERVER_AVAILABLE = False
+if REDIS_AVAILABLE:
+    try:
+        import asyncio
+        async def check_redis():
+            try:
+                client = redis.Redis.from_url("redis://localhost:6379/15", decode_responses=True)
+                await client.ping()
+                await client.close()
+                return True
+            except:
+                return False
+        REDIS_SERVER_AVAILABLE = asyncio.run(check_redis())
+    except:
+        REDIS_SERVER_AVAILABLE = False
+
 from reliability.redis_metric_storage import RedisMetricStorage
 
 
-pytestmark = pytest.mark.skipif(not REDIS_AVAILABLE, reason="redis package not installed")
+pytestmark = pytest.mark.skipif(
+    not REDIS_AVAILABLE or not REDIS_SERVER_AVAILABLE,
+    reason="redis package not installed or Redis server not running"
+)
 
 
 @pytest.fixture
@@ -33,7 +53,6 @@ async def redis_storage():
     )
 
     try:
-        await storage.initialize()
 
         # Clean up any existing test data
         await storage.client.flushdb()
@@ -41,9 +60,8 @@ async def redis_storage():
         yield storage
     finally:
         # Clean up
-        if storage._initialized:
-            await storage.client.flushdb()
-            await storage.close()
+        await storage.client.flushdb()
+        await storage.close()
 
 
 @pytest.mark.asyncio
@@ -59,7 +77,6 @@ async def test_redis_storage_creation():
 @pytest.mark.asyncio
 async def test_redis_storage_initialization(redis_storage):
     """Test Redis connection initialization."""
-    assert redis_storage._initialized
     assert redis_storage.client is not None
 
     # Test ping
@@ -327,11 +344,9 @@ async def test_workflow_with_compensation(redis_storage):
 @pytest.mark.asyncio
 async def test_close_connection(redis_storage):
     """Test closing Redis connection."""
-    assert redis_storage._initialized
 
     await redis_storage.close()
 
-    assert not redis_storage._initialized
 
 
 @pytest.mark.asyncio

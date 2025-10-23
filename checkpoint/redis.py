@@ -28,8 +28,7 @@ class RedisCheckpointer(BaseCheckpointer):
         >>> import redis.asyncio as redis
         >>> redis_client = await redis.from_url("redis://localhost")
         >>> checkpointer = RedisCheckpointer(redis_client, ttl=86400)
-        >>> await checkpointer.initialize()
-    """
+            """
 
     def __init__(self, redis_client: Any, ttl: int = 86400):
         """
@@ -46,106 +45,6 @@ class RedisCheckpointer(BaseCheckpointer):
         """
         self.redis = redis_client
         self.ttl = ttl
-        self._initialized = False
-
-    async def initialize(self) -> None:
-        """Initialize (test connection)"""
-        try:
-            await self.redis.ping()
-            self._initialized = True
-        except Exception as e:
-            raise CheckpointSaveError(f"Failed to connect to Redis: {e}")
-
-    async def save_checkpoint(
-        self,
-        thread_id: str,
-        pipeline_id: str,
-        step_id: str,
-        step_index: int,
-        state: Dict[str, Any],
-        metadata: Optional[Dict[str, Any]] = None,
-        step_name: Optional[str] = None,
-        parent_checkpoint_id: Optional[str] = None
-    ) -> str:
-        """Save checkpoint to Redis"""
-        if not self._initialized:
-            raise CheckpointSaveError("Checkpointer not initialized")
-
-        checkpoint_id = f"ckpt-{uuid.uuid4()}"
-        timestamp = datetime.now()
-
-        checkpoint_data = {
-            'checkpoint_id': checkpoint_id,
-            'thread_id': thread_id,
-            'pipeline_id': pipeline_id,
-            'step_id': step_id,
-            'step_index': step_index,
-            'step_name': step_name or step_id,
-            'timestamp': timestamp.isoformat(),
-            'state': state,
-            'metadata': metadata or {},
-            'status': CheckpointStatus.COMPLETED.value,
-            'parent_checkpoint_id': parent_checkpoint_id
-        }
-
-        checkpoint_json = json.dumps(checkpoint_data)
-        checkpoint_key = f"checkpoint:{thread_id}:{checkpoint_id}"
-
-        try:
-            # Store checkpoint with TTL
-            await self.redis.setex(checkpoint_key, self.ttl, checkpoint_json)
-
-            # Update latest checkpoint pointer
-            latest_key = f"checkpoint:{thread_id}:latest"
-            await self.redis.setex(latest_key, self.ttl, checkpoint_id)
-
-            # Add to sorted set for ordering (score = timestamp)
-            list_key = f"checkpoints:{thread_id}"
-            await self.redis.zadd(list_key, {checkpoint_id: timestamp.timestamp()})
-            await self.redis.expire(list_key, self.ttl)
-
-            return checkpoint_id
-
-        except Exception as e:
-            raise CheckpointSaveError(f"Failed to save checkpoint to Redis: {e}")
-
-    async def load_checkpoint(
-        self,
-        thread_id: str,
-        checkpoint_id: Optional[str] = None
-    ) -> Optional[Checkpoint]:
-        """Load checkpoint from Redis"""
-        if not self._initialized:
-            raise CheckpointLoadError("Checkpointer not initialized")
-
-        try:
-            if not checkpoint_id:
-                # Load latest checkpoint
-                latest_key = f"checkpoint:{thread_id}:latest"
-                checkpoint_id = await self.redis.get(latest_key)
-
-                if not checkpoint_id:
-                    return None
-
-                if isinstance(checkpoint_id, bytes):
-                    checkpoint_id = checkpoint_id.decode('utf-8')
-
-            # Load checkpoint data
-            checkpoint_key = f"checkpoint:{thread_id}:{checkpoint_id}"
-            checkpoint_json = await self.redis.get(checkpoint_key)
-
-            if not checkpoint_json:
-                return None
-
-            if isinstance(checkpoint_json, bytes):
-                checkpoint_json = checkpoint_json.decode('utf-8')
-
-            checkpoint_data = json.loads(checkpoint_json)
-            return self._dict_to_checkpoint(checkpoint_data)
-
-        except Exception as e:
-            raise CheckpointLoadError(f"Failed to load checkpoint from Redis: {e}")
-
     async def list_checkpoints(
         self,
         thread_id: str,
@@ -153,9 +52,6 @@ class RedisCheckpointer(BaseCheckpointer):
         offset: int = 0
     ) -> List[Checkpoint]:
         """List checkpoints for thread (most recent first)"""
-        if not self._initialized:
-            raise CheckpointLoadError("Checkpointer not initialized")
-
         try:
             list_key = f"checkpoints:{thread_id}"
 
@@ -197,9 +93,6 @@ class RedisCheckpointer(BaseCheckpointer):
         keep_latest: int = 0
     ) -> int:
         """Delete checkpoints"""
-        if not self._initialized:
-            raise CheckpointDeleteError("Checkpointer not initialized")
-
         try:
             list_key = f"checkpoints:{thread_id}"
 
@@ -275,9 +168,6 @@ class RedisCheckpointer(BaseCheckpointer):
         thread_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get checkpoint statistics"""
-        if not self._initialized:
-            return {}
-
         try:
             if thread_id:
                 # Stats for specific thread

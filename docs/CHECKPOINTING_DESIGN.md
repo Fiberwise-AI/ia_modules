@@ -965,7 +965,7 @@ from ia_modules.checkpoint import PostgresCheckpointer
 checkpointer = PostgresCheckpointer(
     connection_string="postgresql://localhost/ia_modules"
 )
-await checkpointer.initialize()
+
 
 # Create pipeline with checkpointing
 pipeline = Pipeline(
@@ -1208,7 +1208,7 @@ pip install aioredis  # For Redis backend
 from ia_modules.checkpoint import PostgresCheckpointer
 
 checkpointer = PostgresCheckpointer("postgresql://...")
-await checkpointer.initialize()
+
 ```
 
 **Step 3**: Add to pipeline (optional)

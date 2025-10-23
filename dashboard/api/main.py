@@ -316,8 +316,6 @@ async def general_exception_handler(request, exc):
 async def startup_event():
     """Initialize services on startup"""
     logger.info("Starting IA Modules Dashboard API...")
-    await pipeline_service.initialize()
-    await execution_service.initialize()
     logger.info("Dashboard API ready!")
 
 

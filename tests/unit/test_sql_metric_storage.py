@@ -33,7 +33,6 @@ class TestSQLMetricStorage:
         storage = SQLMetricStorage(db_manager)
 
         assert storage.db == db_manager
-        assert storage._initialized is True
 
     async def test_initialize(self, db_manager):
         """Can initialize storage."""
@@ -41,7 +40,6 @@ class TestSQLMetricStorage:
 
         
 
-        assert storage._initialized is True
 
     async def test_record_step(self, db_manager):
         """Can record step metrics."""
@@ -162,7 +160,6 @@ class TestSQLMetricStorage:
 
         await storage.close()
 
-        assert storage._initialized is False
 
     async def test_step_with_mode_violation(self, db_manager):
         """Can record step with mode violation."""

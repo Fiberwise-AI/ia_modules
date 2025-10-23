@@ -25,7 +25,6 @@ class ReliabilityService:
 
         # Initialize metric storage using library's SQLMetricStorage
         storage = SQLMetricStorage(self.db_manager)
-        storage.initialize()
 
         # Initialize reliability metrics
         self.metrics = ReliabilityMetrics(storage=storage)

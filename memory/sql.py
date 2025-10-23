@@ -21,17 +21,6 @@ class SQLConversationMemory(ConversationMemory):
 
     def __init__(self, db_manager):
         self.db = db_manager
-        self._initialized = False
-
-    async def initialize(self) -> None:
-        """Initialize conversation memory - schema created by migrations"""
-        # Schema is created by database migrations (V004__conversation_memory.sql)
-        if not await self.db.table_exists("conversation_messages"):
-            raise RuntimeError(
-                "conversation_messages table not found. Run database migrations first."
-            )
-        self._initialized = True
-
     async def add_message(
         self,
         thread_id: str,

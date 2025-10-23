@@ -768,8 +768,6 @@ from ia_modules.database.manager import DatabaseManager
 
 # Setup services
 db_manager = DatabaseManager("sqlite:///app.db")
-await db_manager.initialize()
-
 services = ServiceRegistry()
 services.register('database', db_manager)
 

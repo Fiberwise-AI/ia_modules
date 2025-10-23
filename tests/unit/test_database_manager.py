@@ -23,7 +23,7 @@ class TestDatabaseManager:
         """Test database connection"""
         assert db_manager._connection is not None
 
-    def test_execute_query(self, db_manager):
+    def test_execute_async(self, db_manager):
         """Test execute query with named parameters"""
         # Create table
         db_manager.execute("""

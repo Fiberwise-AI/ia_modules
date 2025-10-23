@@ -838,17 +838,13 @@ class HTTPService:
     async def get(self, url: str, **kwargs) -> aiohttp.ClientResponse:
         """Make GET request"""
         if not self._session:
-            await self.initialize()
-
-        full_url = f"{self.base_url.rstrip('/')}/{url.lstrip('/')}" if self.base_url else url
+                    full_url = f"{self.base_url.rstrip('/')}/{url.lstrip('/')}" if self.base_url else url
         return await self._session.get(full_url, **kwargs)
 
     async def post(self, url: str, **kwargs) -> aiohttp.ClientResponse:
         """Make POST request"""
         if not self._session:
-            await self.initialize()
-
-        full_url = f"{self.base_url.rstrip('/')}/{url.lstrip('/')}" if self.base_url else url
+                    full_url = f"{self.base_url.rstrip('/')}/{url.lstrip('/')}" if self.base_url else url
         return await self._session.post(full_url, **kwargs)
 
 class CacheService:
@@ -927,8 +923,7 @@ async def setup_services() -> ServiceRegistry:
 
     # HTTP service
     http_service = HTTPService(base_url="https://api.example.com", timeout=60)
-    await http_service.initialize()
-    services.register('http', http_service)
+        services.register('http', http_service)
 
     # Cache service
     cache_service = CacheService(ttl=1800)  # 30 minutes

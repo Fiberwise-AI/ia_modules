@@ -632,8 +632,6 @@ config = ConnectionConfig(
 )
 
 sql_storage = SQLMetricStorage(config)
-await sql_storage.initialize()
-
 # Use with metrics
 metrics = ReliabilityMetrics(storage=sql_storage)
 ```
@@ -647,8 +645,6 @@ redis_storage = RedisMetricStorage(
     redis_url="redis://localhost:6379",
     ttl_days=90  # Auto-cleanup after 90 days
 )
-await redis_storage.initialize()
-
 # Use with metrics
 metrics = ReliabilityMetrics(storage=redis_storage)
 ```

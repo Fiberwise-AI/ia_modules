@@ -21,14 +21,8 @@ class BenchmarkService:
         self.pipeline_service = pipeline_service
         self.db_manager = db_manager
         self.results = {}
-
-        logger.info("Initializing benchmark service with ia_modules library...")
-
-        # Initialize benchmark runner using library
         self.runner = BenchmarkRunner()
         self.comparator = BenchmarkComparator()
-
-        logger.info("Benchmark service initialized")
 
     async def run_benchmark(
         self,

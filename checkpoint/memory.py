@@ -28,7 +28,6 @@ class MemoryCheckpointer(BaseCheckpointer):
 
     Example:
         >>> checkpointer = MemoryCheckpointer()
-        >>> await checkpointer.initialize()
         >>> checkpoint_id = await checkpointer.save_checkpoint(
         ...     thread_id="test-123",
         ...     pipeline_id="my-pipeline",
@@ -42,11 +41,6 @@ class MemoryCheckpointer(BaseCheckpointer):
         """Initialize memory storage"""
         self.checkpoints: Dict[str, List[Checkpoint]] = defaultdict(list)
         self._lock = asyncio.Lock()
-        self._initialized = False
-
-    async def initialize(self) -> None:
-        """Initialize (no-op for memory backend)"""
-        self._initialized = True
 
     async def save_checkpoint(
         self,
@@ -60,9 +54,6 @@ class MemoryCheckpointer(BaseCheckpointer):
         parent_checkpoint_id: Optional[str] = None
     ) -> str:
         """Save checkpoint to memory"""
-        if not self._initialized:
-            raise CheckpointSaveError("Checkpointer not initialized")
-
         checkpoint_id = f"ckpt-{uuid.uuid4()}"
 
         checkpoint = Checkpoint(
@@ -73,7 +64,7 @@ class MemoryCheckpointer(BaseCheckpointer):
             step_index=step_index,
             step_name=step_name or step_id,
             timestamp=datetime.now(),
-            state=copy.deepcopy(state),  # Deep copy to prevent mutations
+            state=copy.deepcopy(state),
             metadata=copy.deepcopy(metadata or {}),
             status=CheckpointStatus.COMPLETED,
             parent_checkpoint_id=parent_checkpoint_id
@@ -90,9 +81,6 @@ class MemoryCheckpointer(BaseCheckpointer):
         checkpoint_id: Optional[str] = None
     ) -> Optional[Checkpoint]:
         """Load checkpoint from memory"""
-        if not self._initialized:
-            raise CheckpointLoadError("Checkpointer not initialized")
-
         async with self._lock:
             checkpoints = self.checkpoints.get(thread_id, [])
 
@@ -100,10 +88,8 @@ class MemoryCheckpointer(BaseCheckpointer):
                 return None
 
             if checkpoint_id:
-                # Find specific checkpoint
                 for cp in checkpoints:
                     if cp.checkpoint_id == checkpoint_id:
-                        # Return deep copy to prevent mutations
                         return Checkpoint(
                             checkpoint_id=cp.checkpoint_id,
                             thread_id=cp.thread_id,
@@ -120,7 +106,6 @@ class MemoryCheckpointer(BaseCheckpointer):
                         )
                 return None
             else:
-                # Return latest checkpoint (deep copy)
                 latest = checkpoints[-1]
                 return Checkpoint(
                     checkpoint_id=latest.checkpoint_id,
@@ -144,19 +129,11 @@ class MemoryCheckpointer(BaseCheckpointer):
         offset: int = 0
     ) -> List[Checkpoint]:
         """List checkpoints for thread"""
-        if not self._initialized:
-            raise CheckpointLoadError("Checkpointer not initialized")
-
         async with self._lock:
             checkpoints = self.checkpoints.get(thread_id, [])
-
-            # Sort by timestamp descending (most recent first)
             sorted_checkpoints = sorted(checkpoints, key=lambda cp: cp.timestamp, reverse=True)
-
-            # Apply pagination
             paginated = sorted_checkpoints[offset:offset + limit]
 
-            # Return deep copies
             return [
                 Checkpoint(
                     checkpoint_id=cp.checkpoint_id,
@@ -182,35 +159,25 @@ class MemoryCheckpointer(BaseCheckpointer):
         keep_latest: int = 0
     ) -> int:
         """Delete checkpoints"""
-        if not self._initialized:
-            raise CheckpointDeleteError("Checkpointer not initialized")
-
         async with self._lock:
             checkpoints = self.checkpoints.get(thread_id, [])
 
             if not checkpoints:
                 return 0
 
-            # Sort by timestamp descending
             sorted_checkpoints = sorted(checkpoints, key=lambda cp: cp.timestamp, reverse=True)
-
             to_delete = []
 
             if keep_latest > 0:
-                # Keep N latest, delete rest
                 to_delete = sorted_checkpoints[keep_latest:]
             elif before:
-                # Delete checkpoints before timestamp
                 to_delete = [cp for cp in checkpoints if cp.timestamp < before]
             else:
-                # Delete all
-                to_delete = list(checkpoints)  # Create a copy to avoid modifying while iterating
+                to_delete = list(checkpoints)
 
-            # Remove checkpoints
             for cp in to_delete:
                 checkpoints.remove(cp)
 
-            # Update storage
             if checkpoints:
                 self.checkpoints[thread_id] = checkpoints
             else:
@@ -223,19 +190,12 @@ class MemoryCheckpointer(BaseCheckpointer):
         thread_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get checkpoint statistics"""
-        if not self._initialized:
-            return {}
-
         async with self._lock:
             if thread_id:
-                # Stats for specific thread
                 checkpoints = self.checkpoints.get(thread_id, [])
 
                 if not checkpoints:
-                    return {
-                        'total_checkpoints': 0,
-                        'thread_id': thread_id
-                    }
+                    return {'total_checkpoints': 0, 'thread_id': thread_id}
 
                 timestamps = [cp.timestamp for cp in checkpoints]
                 return {
@@ -245,15 +205,11 @@ class MemoryCheckpointer(BaseCheckpointer):
                     'thread_id': thread_id
                 }
             else:
-                # Stats for all threads
                 all_threads = list(self.checkpoints.keys())
                 total_checkpoints = sum(len(cps) for cps in self.checkpoints.values())
 
                 if total_checkpoints == 0:
-                    return {
-                        'total_checkpoints': 0,
-                        'threads': []
-                    }
+                    return {'total_checkpoints': 0, 'threads': []}
 
                 all_timestamps = []
                 for cps in self.checkpoints.values():

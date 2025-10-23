@@ -74,8 +74,6 @@ config = ConnectionConfig(
 )
 
 storage = SQLMetricStorage(config)
-await storage.initialize()
-
 metrics = ReliabilityMetrics(storage)
 runner = PipelineRunner(metrics=metrics)
 ```
@@ -332,8 +330,6 @@ config = ConnectionConfig(
     database_url=os.environ["DATABASE_URL"]
 )
 storage = SQLMetricStorage(config)
-await storage.initialize()
-
 # Add metrics to runner
 metrics = ReliabilityMetrics(storage)
 runner = PipelineRunner(
@@ -410,9 +406,7 @@ async def test_sql_storage():
     )
 
     storage = SQLMetricStorage(config)
-    await storage.initialize()
-
-    # Test write
+        # Test write
     await storage.record_step_measurement(
         agent_name="test",
         success=True,

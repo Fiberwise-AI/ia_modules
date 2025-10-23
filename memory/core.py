@@ -80,11 +80,6 @@ class ConversationMemory(ABC):
     """
 
     @abstractmethod
-    async def initialize(self) -> None:
-        """Initialize the memory backend"""
-        pass
-
-    @abstractmethod
     async def add_message(
         self,
         thread_id: str,

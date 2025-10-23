@@ -5,6 +5,58 @@ All notable changes to IA Modules will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.4] - 2025-10-23 [WIP]
+
+### 🔧 Bug Fixes & Improvements
+
+**Pipeline Execution**
+- Fixed conditional pipeline with proper inputs/outputs routing for GraphPipelineRunner
+- Added quality_score field usage in quality checker step
+- Fixed data flow between pipeline steps for graph-based execution
+
+**Database Layer**
+- Added automatic transaction rollback on error in DatabaseManager.execute()
+- Fixed PostgreSQL JSONB cast syntax (::jsonb → CAST(:json AS jsonb))
+- Moved initialize() to constructors for SQLMetricStorage and SQLCheckpointer
+- Fixed table_exists() to be synchronous (removed incorrect async)
+
+**Module Dependencies**
+- Made auth module imports conditional (requires FastAPI)
+- Added dashboard/__init__.py with conditional imports
+- Fixed ModuleNotFoundError when FastAPI not installed
+- Core functionality now works without optional web dependencies
+
+**Showcase App**
+- Integrated all ia_modules features: GraphPipelineRunner, telemetry, checkpointing, reliability metrics
+- Added ReliabilityMetrics and SQLMetricStorage to services
+- Registered telemetry and checkpointer in ServiceRegistry
+- Removed reinvented pipeline code, using ia_modules properly
+
+### 🧪 Test Suite Enhancements
+
+**Test Improvements**
+- 1028 core tests passing (0 failures, 0 warnings)
+- 18 PostgreSQL integration tests passing
+- Fixed SQLite concurrency tests for thread safety
+- Fixed database lifecycle test to use file-based DB
+- Removed incorrect @pytest.mark.asyncio decorators from sync test classes
+
+**PostgreSQL Support**
+- Added docker-compose.test.yml for test containers
+- Updated docker-test-runner.sh with correct file paths
+- Fixed transaction handling with automatic rollback
+
+**Warning Cleanup**
+- Removed 21 PytestWarnings from test files
+- Suppressed 17 SQLite datetime adapter deprecation warnings
+- Added filterwarnings to pyproject.toml
+
+### 📊 Statistics
+- **Tests**: 1046 tests passing (1028 core + 18 PostgreSQL)
+- **Failures**: 0
+- **Warnings**: 0 (down from 38)
+- **Test Coverage**: All core features
+
 ## [0.0.3] - 2025-10-20
 
 ### 🚀 Major Release: Complete AI Agent Framework
@@ -424,8 +476,6 @@ db = await create_database("postgresql://localhost/mydb")
 
 # Create SQL checkpointer
 checkpointer = SQLCheckpointer(db)
-await checkpointer.initialize()
-
 # Use with pipeline
 pipeline = Pipeline(..., checkpointer=checkpointer)
 ```
@@ -440,8 +490,6 @@ redis_client = await redis.from_url("redis://localhost")
 
 # Create Redis checkpointer with 7-day TTL
 checkpointer = RedisCheckpointer(redis_client, ttl=604800)
-await checkpointer.initialize()
-
 # Use with pipeline
 pipeline = Pipeline(..., checkpointer=checkpointer)
 ```
@@ -571,8 +619,6 @@ from ia_modules.memory import MemoryConversationMemory
 
 # Create memory backend
 memory = MemoryConversationMemory()
-await memory.initialize()
-
 # Add messages to conversation thread
 await memory.add_message(
     thread_id="conv-123",
@@ -901,8 +947,6 @@ result = await registry.execute("search", {"query": "Python"})
 from ia_modules.rag import Document, MemoryVectorStore
 
 store = MemoryVectorStore()
-await store.initialize()
-
 # Add documents
 docs = [
     Document(id="doc1", content="Python is a programming language"),

@@ -15,14 +15,11 @@ class TestMemoryCheckpointerBasic:
     async def test_initialize(self):
         """Test checkpointer initialization"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
-        assert checkpointer._initialized is True
 
     @pytest.mark.asyncio
     async def test_save_checkpoint(self):
         """Test saving a checkpoint"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         checkpoint_id = await checkpointer.save_checkpoint(
             thread_id="test-thread",
@@ -39,7 +36,6 @@ class TestMemoryCheckpointerBasic:
     async def test_load_latest_checkpoint(self):
         """Test loading the latest checkpoint"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         # Save two checkpoints
         await checkpointer.save_checkpoint(
@@ -69,7 +65,6 @@ class TestMemoryCheckpointerBasic:
     async def test_load_specific_checkpoint(self):
         """Test loading a specific checkpoint by ID"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         # Save checkpoints
         ckpt1_id = await checkpointer.save_checkpoint(
@@ -100,24 +95,9 @@ class TestMemoryCheckpointerBasic:
     async def test_load_nonexistent_checkpoint(self):
         """Test loading a checkpoint that doesn't exist"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         checkpoint = await checkpointer.load_checkpoint("nonexistent-thread")
         assert checkpoint is None
-
-    @pytest.mark.asyncio
-    async def test_save_without_initialize(self):
-        """Test that saving without initialization raises error"""
-        checkpointer = MemoryCheckpointer()
-
-        with pytest.raises(CheckpointSaveError):
-            await checkpointer.save_checkpoint(
-                thread_id="test-thread",
-                pipeline_id="test-pipeline",
-                step_id="step1",
-                step_index=0,
-                state={}
-            )
 
 
 class TestMemoryCheckpointerList:
@@ -127,7 +107,6 @@ class TestMemoryCheckpointerList:
     async def test_list_checkpoints(self):
         """Test listing checkpoints for a thread"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         # Save multiple checkpoints
         for i in range(5):
@@ -150,7 +129,6 @@ class TestMemoryCheckpointerList:
     async def test_list_with_limit(self):
         """Test listing with limit"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         # Save 10 checkpoints
         for i in range(10):
@@ -171,7 +149,6 @@ class TestMemoryCheckpointerList:
     async def test_list_with_pagination(self):
         """Test listing with pagination"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         # Save 10 checkpoints
         for i in range(10):
@@ -197,7 +174,6 @@ class TestMemoryCheckpointerDelete:
     async def test_delete_all_checkpoints(self):
         """Test deleting all checkpoints for a thread"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         # Save checkpoints
         for i in range(5):
@@ -222,7 +198,6 @@ class TestMemoryCheckpointerDelete:
     async def test_delete_with_keep_latest(self):
         """Test deleting with keep_latest"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         # Save 10 checkpoints
         for i in range(10):
@@ -249,7 +224,6 @@ class TestMemoryCheckpointerDelete:
     async def test_delete_before_timestamp(self):
         """Test deleting checkpoints before a timestamp"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         # Save checkpoints at different times
         now = datetime.now()
@@ -280,7 +254,6 @@ class TestMemoryCheckpointerStats:
     async def test_stats_single_thread(self):
         """Test getting stats for a single thread"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         # Save checkpoints
         for i in range(5):
@@ -303,7 +276,6 @@ class TestMemoryCheckpointerStats:
     async def test_stats_all_threads(self):
         """Test getting stats for all threads"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         # Save checkpoints in multiple threads
         for thread in ['thread1', 'thread2', 'thread3']:
@@ -329,7 +301,6 @@ class TestMemoryCheckpointerIsolation:
     async def test_thread_isolation(self):
         """Test that threads are isolated from each other"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         # Save checkpoints in different threads
         await checkpointer.save_checkpoint(
@@ -360,7 +331,6 @@ class TestMemoryCheckpointerIsolation:
     async def test_state_deep_copy(self):
         """Test that state is deep copied to prevent mutations"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         original_state = {'data': [1, 2, 3]}
 
@@ -387,7 +357,6 @@ class TestMemoryCheckpointerMetadata:
     async def test_save_with_metadata(self):
         """Test saving checkpoint with metadata"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         metadata = {'user': 'john@example.com', 'session': 'abc123'}
 
@@ -408,7 +377,6 @@ class TestMemoryCheckpointerMetadata:
     async def test_save_with_step_name(self):
         """Test saving checkpoint with custom step name"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         await checkpointer.save_checkpoint(
             thread_id="test-thread",
@@ -427,7 +395,6 @@ class TestMemoryCheckpointerMetadata:
     async def test_parent_checkpoint_id(self):
         """Test checkpoint with parent reference"""
         checkpointer = MemoryCheckpointer()
-        await checkpointer.initialize()
 
         parent_id = await checkpointer.save_checkpoint(
             thread_id="test-thread",

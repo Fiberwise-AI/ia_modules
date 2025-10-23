@@ -85,12 +85,7 @@ class DatabaseInterface(ABC):
     async def disconnect(self) -> None:
         """Disconnect from the database"""
         pass
-    
-    @abstractmethod
-    async def execute_query(self, query: str, parameters: Optional[Tuple] = None) -> QueryResult:
-        """Execute a SQL query"""
-        pass
-    
+
     @abstractmethod
     async def fetch_all(self, query: str, parameters: Optional[Tuple] = None) -> QueryResult:
         """Fetch all results from a query"""

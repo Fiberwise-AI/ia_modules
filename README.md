@@ -4,7 +4,8 @@
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-644%20passing-success.svg)](tests/)
+[![Tests](https://github.com/yourusername/ia_modules/actions/workflows/test.yml/badge.svg)](https://github.com/yourusername/ia_modules/actions/workflows/test.yml)
+[![Coverage](https://img.shields.io/badge/coverage-49%25-yellow.svg)](htmlcov/index.html)
 [![EARF Compliant](https://img.shields.io/badge/EARF-compliant-success.svg)](docs/RELIABILITY_USAGE_GUIDE.md)
 
 Build reliable, observable, and verifiable AI agent systems with graph-based pipelines, comprehensive reliability metrics, and enterprise-grade features.

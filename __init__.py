@@ -5,7 +5,7 @@ A modular framework for building intelligent automation solutions.
 Provides modules for agents, databases, pipelines, and other automation components.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.0.4"
 
 # Import main modules
 from . import database
