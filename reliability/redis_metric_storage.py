@@ -75,7 +75,7 @@ class RedisMetricStorage(MetricStorage):
     async def close(self):
         """Close Redis connection."""
         if self.client:
-            await self.client.close()
+            await self.client.aclose()
             self.logger.info("Closed Redis connection")
 
     def _get_key(self, *parts: str) -> str:

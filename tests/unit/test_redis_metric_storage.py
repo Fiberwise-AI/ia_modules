@@ -26,7 +26,7 @@ if REDIS_AVAILABLE:
             try:
                 client = redis.Redis.from_url("redis://localhost:6379/15", decode_responses=True)
                 await client.ping()
-                await client.close()
+                await client.aclose()
                 return True
             except:
                 return False
