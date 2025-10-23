@@ -70,6 +70,13 @@ class RedisMetricStorage(MetricStorage):
         self._workflow_counter = 0
         self._slo_counter = 0
 
+    async def initialize(self):
+        """Initialize Redis connection (truly async operation)."""
+        if not self.client:
+            self.client = redis.Redis.from_url(self.redis_url, decode_responses=True)
+            await self.client.ping()
+            self.logger.info(f"Connected to Redis at {self.redis_url}")
+
     async def close(self):
         """Close Redis connection."""
         if self.client:
