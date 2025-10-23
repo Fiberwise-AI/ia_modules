@@ -1,7 +1,7 @@
 """Tests for anomaly detection."""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from reliability.anomaly_detection import (
     AnomalyDetector,
@@ -278,7 +278,7 @@ def test_get_anomalies_filtering():
     ))
 
     # Record anomalies at different times
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     detector.record_value("metric1", 5.0, timestamp=now - timedelta(hours=2))
     detector.record_value("metric1", 15.0, timestamp=now - timedelta(hours=1))  # Anomaly
 
@@ -369,7 +369,7 @@ def test_anomaly_to_dict():
         current_value=0.92,
         expected_value=0.95,
         deviation=3.16,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         agent="researcher",
         context={"threshold": 0.95}
     )

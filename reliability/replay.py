@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional, Callable
 from enum import Enum
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .decision_trail import DecisionTrail, ToolCall
 
@@ -134,7 +134,7 @@ class Replayer:
             >>> assert result.success
             >>> assert result.is_exact_match
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         self.logger.info(f"Starting strict replay for {self.trail.thread_id}")
 
         try:
@@ -168,7 +168,7 @@ class Replayer:
                 )
                 differences.extend(tool_diffs)
 
-            duration = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            duration = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
 
             return ReplayResult(
                 mode=ReplayMode.STRICT,
@@ -181,7 +181,7 @@ class Replayer:
 
         except Exception as e:
             self.logger.error(f"Strict replay failed: {e}")
-            duration = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            duration = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
             return ReplayResult(
                 mode=ReplayMode.STRICT,
                 success=False,
@@ -214,7 +214,7 @@ class Replayer:
             >>> result = await replayer.simulated_replay(orchestrator)
             >>> # Verifies agents made same decisions given same tool responses
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         self.logger.info(f"Starting simulated replay for {self.trail.thread_id}")
 
         try:
@@ -233,7 +233,7 @@ class Replayer:
 
             # Note: Would need to inject mocks into orchestrator's tool registry
             # For now, return simulated result
-            duration = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            duration = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
 
             return ReplayResult(
                 mode=ReplayMode.SIMULATED,
@@ -247,7 +247,7 @@ class Replayer:
 
         except Exception as e:
             self.logger.error(f"Simulated replay failed: {e}")
-            duration = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            duration = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
             return ReplayResult(
                 mode=ReplayMode.SIMULATED,
                 success=False,
@@ -288,7 +288,7 @@ class Replayer:
             >>> print(f"Original: {result.original_outcome}")
             >>> print(f"Alternative: {result.replayed_outcome}")
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         self.logger.info(f"Starting counterfactual replay for {self.trail.thread_id}")
 
         try:
@@ -318,7 +318,7 @@ class Replayer:
             for diff in differences:
                 diff.significance = "expected"
 
-            duration = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            duration = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
 
             return ReplayResult(
                 mode=ReplayMode.COUNTERFACTUAL,
@@ -335,7 +335,7 @@ class Replayer:
 
         except Exception as e:
             self.logger.error(f"Counterfactual replay failed: {e}")
-            duration = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            duration = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
             return ReplayResult(
                 mode=ReplayMode.COUNTERFACTUAL,
                 success=False,

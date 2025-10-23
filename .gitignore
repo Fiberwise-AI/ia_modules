@@ -51,8 +51,40 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+*.cover
+.hypothesis/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Virtual Environments
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Session artifacts (from cleanup)
+archive/
+.aider.*
+COMMIT_MESSAGE_*.md
+*_SUMMARY.md
+*_COMPLETION.md
 
 # Temporary files
 *.tmp
 *.temp
-.aider*
+tmp/
+temp/

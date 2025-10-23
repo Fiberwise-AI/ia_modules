@@ -1,7 +1,7 @@
 """Tests for circuit breaker."""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import time
 
 from reliability.circuit_breaker import (

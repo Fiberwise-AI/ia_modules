@@ -6,7 +6,7 @@ Tracks agent performance metrics (SVR, CR, PC, HIR, MA) for production monitorin
 
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 
 
@@ -135,12 +135,12 @@ class MemoryMetricStorage(MetricStorage):
 
     async def record_step(self, record: Dict[str, Any]):
         """Record a step metric."""
-        record["timestamp"] = datetime.utcnow()
+        record["timestamp"] = datetime.now(timezone.utc)
         self.steps.append(record)
 
     async def record_workflow(self, record: Dict[str, Any]):
         """Record a workflow metric."""
-        record["timestamp"] = datetime.utcnow()
+        record["timestamp"] = datetime.now(timezone.utc)
         self.workflows.append(record)
 
     async def get_steps(
@@ -440,7 +440,7 @@ class ReliabilityMetrics:
         """
         # Determine time period
         period_start = since or datetime.min
-        period_end = datetime.utcnow()
+        period_end = datetime.now(timezone.utc)
 
         # Get all data
         steps = await self.storage.get_steps(since=since)

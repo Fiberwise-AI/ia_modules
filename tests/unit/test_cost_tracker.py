@@ -1,7 +1,7 @@
 """Tests for cost tracking."""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from reliability.cost_tracker import (
     CostTracker,
@@ -160,7 +160,7 @@ def test_get_report_with_time_filter():
         amount=1.0,
         quantity=1000,
         unit_cost=0.001,
-        timestamp=datetime.utcnow() - timedelta(hours=2),
+        timestamp=datetime.now(timezone.utc) - timedelta(hours=2),
         agent="researcher"
     )
     tracker._costs.append(past_cost)
@@ -169,7 +169,7 @@ def test_get_report_with_time_filter():
     tracker.record_llm_cost("researcher", 1000, 500, "gpt-4")
 
     # Get report for last hour
-    since = datetime.utcnow() - timedelta(hours=1)
+    since = datetime.now(timezone.utc) - timedelta(hours=1)
     report = tracker.get_report(since=since)
 
     # Should only include recent cost
@@ -338,7 +338,7 @@ def test_get_costs_time_filter():
         amount=1.0,
         quantity=1000,
         unit_cost=0.001,
-        timestamp=datetime.utcnow() - timedelta(hours=2),
+        timestamp=datetime.now(timezone.utc) - timedelta(hours=2),
         agent="agent1"
     )
     tracker._costs.append(old_cost)
@@ -347,7 +347,7 @@ def test_get_costs_time_filter():
     tracker.record_llm_cost("agent1", 1000, 500, "gpt-4")
 
     # Filter to recent costs
-    since = datetime.utcnow() - timedelta(hours=1)
+    since = datetime.now(timezone.utc) - timedelta(hours=1)
     recent_costs = tracker.get_costs(since=since)
 
     assert len(recent_costs) == 1
@@ -375,7 +375,7 @@ def test_cost_entry_to_dict():
         amount=0.09,
         quantity=1500,
         unit_cost=0.00006,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         agent="researcher",
         workflow_id="workflow-123",
         context={"model": "gpt-4"}

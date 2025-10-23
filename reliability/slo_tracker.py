@@ -8,7 +8,7 @@ Measures and tracks Service Level Objectives for agent reliability:
 
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import time
 import logging
 
@@ -142,7 +142,7 @@ class SLOTracker:
             thread_id=thread_id,
             checkpoint_id=checkpoint_id,
             duration_ms=duration_ms,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             success=success,
             error=error
         )
@@ -181,7 +181,7 @@ class SLOTracker:
             checkpoint_id=checkpoint_id,
             replay_mode=replay_mode,
             success=success,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             error=error
         )
 
@@ -297,7 +297,7 @@ class SLOTracker:
 
         return SLOReport(
             period_start=since or datetime.min,
-            period_end=datetime.utcnow(),
+            period_end=datetime.now(timezone.utc),
             mtte_avg_ms=mtte_stats["avg_ms"],
             mtte_p50_ms=mtte_stats["p50_ms"],
             mtte_p95_ms=mtte_stats["p95_ms"],

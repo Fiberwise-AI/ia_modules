@@ -20,13 +20,13 @@ async def test_pipeline_import_from_file():
     
     # Mock database methods to be async
     async def mock_fetch_one(*args):
-        return Mock(data=None)
-    
-    async def mock_execute_query(*args):
+        return None
+
+    async def mock_execute_async(*args):
         return Mock(success=True)
-    
+
     mock_db.fetch_one = mock_fetch_one
-    mock_db.execute_query = mock_execute_query
+    mock_db.execute_async = mock_execute_async
 
     # Create a temporary pipeline file inside a temp directory that becomes the pipelines_dir
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -73,6 +73,17 @@ async def test_pipeline_import_from_file():
 async def test_pipeline_import_with_validation_errors():
     """Test pipeline import with validation errors"""
     mock_db = Mock()
+
+    # Mock database methods to be async
+    async def mock_fetch_one(*args):
+        return None
+
+    async def mock_execute_async(*args):
+        return Mock(success=True)
+
+    mock_db.fetch_one = mock_fetch_one
+    mock_db.execute_async = mock_execute_async
+
     importer = PipelineImportService(mock_db)
     
     # Create invalid pipeline data
@@ -105,13 +116,13 @@ async def test_pipeline_directory_scan():
     
     # Mock the database methods that will be called (must be async)
     async def mock_fetch_one(*args):
-        return Mock(data=None)
-    
-    async def mock_execute_query(*args):
+        return None
+
+    async def mock_execute_async(*args):
         return Mock(success=True)
-    
+
     mock_db.fetch_one = mock_fetch_one
-    mock_db.execute_query = mock_execute_query
+    mock_db.execute_async = mock_execute_async
     
     # Create temporary directory with pipeline files
     with tempfile.TemporaryDirectory() as temp_dir:

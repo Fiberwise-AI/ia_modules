@@ -37,7 +37,7 @@ class PipelineImportService:
         logger.info("Clearing all imported pipelines from database")
 
         query = "DELETE FROM pipelines WHERE is_system = 0"
-        result = await self.db_provider.execute_query(query)
+        result = await self.db_provider.execute_async(query)
 
         if not result.success:
             logger.error(f"Failed to clear pipelines: {result}")
@@ -182,7 +182,7 @@ class PipelineImportService:
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
         """
 
-        result = await self.db_provider.execute_query(
+        result = await self.db_provider.execute_async(
             query,
             (pipeline_id, slug, name, description, version, pipeline_json, file_path, content_hash)
         )
@@ -206,7 +206,7 @@ class PipelineImportService:
         WHERE id = ?
         """
 
-        result = await self.db_provider.execute_query(
+        result = await self.db_provider.execute_async(
             query,
             (name, description, version, pipeline_json, file_path, content_hash, pipeline_id)
         )

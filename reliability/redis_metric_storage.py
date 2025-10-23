@@ -41,7 +41,7 @@ class RedisMetricStorage(MetricStorage):
         >>> await storage.record_step({
         ...     "agent": "researcher",
         ...     "success": True,
-        ...     "timestamp": datetime.utcnow()
+        ...     "timestamp": datetime.now(timezone.utc)
         ... })
     """
 
@@ -109,7 +109,7 @@ class RedisMetricStorage(MetricStorage):
             await self.initialize()
 
         agent = record["agent"]
-        timestamp = record.get("timestamp", datetime.utcnow())
+        timestamp = record.get("timestamp", datetime.now(timezone.utc))
 
         # Generate unique step ID
         self._step_counter += 1
@@ -158,7 +158,7 @@ class RedisMetricStorage(MetricStorage):
             await self.initialize()
 
         workflow_id = record["workflow_id"]
-        timestamp = record.get("timestamp", datetime.utcnow())
+        timestamp = record.get("timestamp", datetime.now(timezone.utc))
 
         # Store workflow data in hash
         workflow_key = self._get_key("workflow", workflow_id)
@@ -311,7 +311,7 @@ class RedisMetricStorage(MetricStorage):
         if not self._initialized:
             await self.initialize()
 
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc)
 
         # Generate unique measurement ID
         self._slo_counter += 1

@@ -117,8 +117,9 @@ async def run_pipeline_with_llm(
     try:
         # Load pipeline configuration
         if slug:
-            # TODO: Implement database loading
-            raise NotImplementedError("Database loading not implemented yet")
+            # Note: Database loading for pipelines is a planned feature for v0.0.4
+            # For now, this test utility only supports loading from JSON files
+            raise NotImplementedError("Database loading not implemented yet. Use --pipeline-file instead.")
         else:
             if not pipeline_file or not os.path.exists(pipeline_file):
                 raise FileNotFoundError(f"Pipeline file '{pipeline_file}' not found")

@@ -5,7 +5,7 @@ Tests Evidence, StepRecord, DecisionTrail, and DecisionTrailBuilder.
 """
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from ia_modules.reliability.decision_trail import (
     Evidence,
     StepRecord,
@@ -43,7 +43,6 @@ class MockCheckpoint:
         self.metadata = metadata or {}
 
 
-@pytest.mark.asyncio
 class TestEvidence:
     """Test Evidence dataclass."""
 
@@ -91,7 +90,6 @@ class TestEvidence:
         assert evidence.metadata["duration_ms"] == 50
 
 
-@pytest.mark.asyncio
 class TestStepRecord:
     """Test StepRecord dataclass."""
 
@@ -146,7 +144,6 @@ class TestStepRecord:
         assert step.state_before["draft"] != step.state_after["draft"]
 
 
-@pytest.mark.asyncio
 class TestDecisionTrail:
     """Test DecisionTrail dataclass."""
 
@@ -220,6 +217,7 @@ class TestDecisionTrail:
 class TestDecisionTrailBuilder:
     """Test DecisionTrailBuilder."""
 
+    @pytest.mark.asyncio
     async def test_builder_creation(self):
         """Builder can be created."""
         builder = DecisionTrailBuilder()
@@ -228,6 +226,7 @@ class TestDecisionTrailBuilder:
         assert builder.tool_registry is None
         assert builder.checkpointer is None
 
+    @pytest.mark.asyncio
     async def test_builder_with_components(self):
         """Builder can be created with components."""
         state = StateManager(thread_id="test")
@@ -244,6 +243,7 @@ class TestDecisionTrailBuilder:
         assert builder.tool_registry is not None
         assert builder.checkpointer is not None
 
+    @pytest.mark.asyncio
     async def test_build_trail_minimal(self):
         """Can build trail with minimal data."""
         builder = DecisionTrailBuilder()
@@ -254,6 +254,7 @@ class TestDecisionTrailBuilder:
         assert trail.checkpoint_id == "unknown"
         assert isinstance(trail.duration_ms, int)
 
+    @pytest.mark.asyncio
     async def test_build_trail_with_state_history(self):
         """Can build trail with state history."""
         state = StateManager(thread_id="test")
@@ -272,6 +273,7 @@ class TestDecisionTrailBuilder:
         assert "key1" in trail.outcome
         assert trail.outcome["key1"] == "value1_updated"
 
+    @pytest.mark.asyncio
     async def test_build_trail_with_tool_logs(self):
         """Can build trail with tool execution logs."""
         registry = ToolRegistry()
@@ -292,6 +294,7 @@ class TestDecisionTrailBuilder:
         assert len(trail.evidence) == 2
         assert all(e.confidence == "verified" for e in trail.evidence)
 
+    @pytest.mark.asyncio
     async def test_build_trail_with_checkpoint(self):
         """Can build trail with checkpoint metadata."""
         checkpointer = MockCheckpointer()
@@ -313,6 +316,7 @@ class TestDecisionTrailBuilder:
         assert trail.input_data["test"] == "data"
         assert trail.execution_path == ["agent1", "agent2"]
 
+    @pytest.mark.asyncio
     async def test_build_trail_success_determination(self):
         """Trail success is determined by tool call success."""
         registry = ToolRegistry()
@@ -334,6 +338,7 @@ class TestDecisionTrailBuilder:
         # Success should be False because one tool failed
         assert trail2.success is False
 
+    @pytest.mark.asyncio
     async def test_explain_decision_minimal(self):
         """Can explain decision with minimal trail."""
         builder = DecisionTrailBuilder()
@@ -350,6 +355,7 @@ class TestDecisionTrailBuilder:
         assert "thread-123" in explanation
         assert "Test goal" in explanation
 
+    @pytest.mark.asyncio
     async def test_explain_decision_with_execution_path(self):
         """Explanation includes execution path."""
         builder = DecisionTrailBuilder()
@@ -367,6 +373,7 @@ class TestDecisionTrailBuilder:
         assert "coder" in explanation
         assert "critic" in explanation
 
+    @pytest.mark.asyncio
     async def test_explain_decision_with_tool_calls(self):
         """Explanation includes tool calls."""
         builder = DecisionTrailBuilder()
@@ -391,6 +398,7 @@ class TestDecisionTrailBuilder:
         assert "search" in explanation
         assert "100ms" in explanation
 
+    @pytest.mark.asyncio
     async def test_explain_decision_with_evidence(self):
         """Explanation includes evidence."""
         builder = DecisionTrailBuilder()

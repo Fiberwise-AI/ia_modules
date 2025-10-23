@@ -5,7 +5,7 @@ Automatically extracts evidence from tool results, agent outputs, and state chan
 """
 
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 # Import Evidence from decision_trail to avoid duplication
@@ -68,7 +68,7 @@ class EvidenceCollector:
             type="tool_result",
             source=tool_name,
             content=result,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             confidence="verified",
             metadata=metadata or {}
         )
@@ -106,7 +106,7 @@ class EvidenceCollector:
             type="database_read",
             source=database or "database",
             content=results,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             confidence="verified",
             metadata=meta
         )
@@ -143,7 +143,7 @@ class EvidenceCollector:
             type="api_response",
             source=endpoint,
             content=response,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             confidence="verified",
             metadata=meta
         )
@@ -177,7 +177,7 @@ class EvidenceCollector:
             type="user_input",
             source=f"user:{user_id}",
             content=input_data,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             confidence="verified",
             metadata=meta
         )
@@ -208,7 +208,7 @@ class EvidenceCollector:
             type="agent_claim",
             source=agent_name,
             content=output,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             confidence="claimed",
             metadata=metadata or {}
         )
@@ -245,7 +245,7 @@ class EvidenceCollector:
             type="agent_claim",  # Inferences are still agent claims
             source=source,
             content=conclusion,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             confidence="inferred",
             metadata=meta
         )

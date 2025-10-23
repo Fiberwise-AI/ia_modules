@@ -7,7 +7,7 @@ and detect performance degradation or improvement patterns.
 
 from typing import Dict, Any, Optional, List, Tuple
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 import statistics
 import logging
@@ -79,7 +79,7 @@ class TrendAnalyzer:
         >>> analyzer = TrendAnalyzer()
         >>>
         >>> # Record metric values over time
-        >>> base_time = datetime.utcnow()
+        >>> base_time = datetime.now(timezone.utc)
         >>> for i in range(30):
         ...     timestamp = base_time + timedelta(hours=i)
         ...     # Simulate degrading success rate
@@ -131,7 +131,7 @@ class TrendAnalyzer:
             timestamp: When value was recorded (default: now)
         """
         if timestamp is None:
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now(timezone.utc)
 
         if metric_name not in self._history:
             self._history[metric_name] = []
@@ -139,7 +139,7 @@ class TrendAnalyzer:
         self._history[metric_name].append((value, timestamp))
 
         # Keep only recent history
-        cutoff = datetime.utcnow() - timedelta(hours=self.lookback_hours * 2)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=self.lookback_hours * 2)
         self._history[metric_name] = [
             (v, t) for v, t in self._history[metric_name]
             if t >= cutoff
@@ -164,7 +164,7 @@ class TrendAnalyzer:
             return None
 
         lookback = lookback_hours or self.lookback_hours
-        cutoff = datetime.utcnow() - timedelta(hours=lookback)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=lookback)
 
         # Filter to lookback window
         data = [
@@ -206,7 +206,7 @@ class TrendAnalyzer:
             current_value=current_value,
             predicted_value=predicted_value,
             trend_strength=trend_strength,
-            analyzed_at=datetime.utcnow(),
+            analyzed_at=datetime.now(timezone.utc),
             data_points=len(data),
             context={
                 "intercept": intercept,
@@ -306,7 +306,7 @@ class TrendAnalyzer:
         # Check if any forecast point falls below threshold
         for timestamp, value in forecast:
             if value < threshold:
-                hours_until = (timestamp - datetime.utcnow()).total_seconds() / 3600
+                hours_until = (timestamp - datetime.now(timezone.utc)).total_seconds() / 3600
 
                 return {
                     "metric_name": metric_name,

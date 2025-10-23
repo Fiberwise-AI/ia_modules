@@ -5,7 +5,7 @@ Tests SLOTracker, MTTEMeasurement, RSRMeasurement, and SLOReport.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from ia_modules.reliability.slo_tracker import (
     MTTEMeasurement,
     RSRMeasurement,
@@ -14,7 +14,6 @@ from ia_modules.reliability.slo_tracker import (
 )
 
 
-@pytest.mark.asyncio
 class TestMTTEMeasurement:
     """Test MTTEMeasurement dataclass."""
 
@@ -49,7 +48,6 @@ class TestMTTEMeasurement:
         assert measurement.error == "StateManager not initialized"
 
 
-@pytest.mark.asyncio
 class TestRSRMeasurement:
     """Test RSRMeasurement dataclass."""
 
@@ -82,7 +80,6 @@ class TestRSRMeasurement:
         assert measurement.error == "Tool not available"
 
 
-@pytest.mark.asyncio
 class TestSLOReport:
     """Test SLOReport dataclass."""
 
@@ -107,8 +104,8 @@ class TestSLOReport:
     def test_is_mtte_compliant_pass(self):
         """is_mtte_compliant returns True when under target."""
         report = SLOReport(
-            period_start=datetime.utcnow(),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
             mtte_avg_ms=2000,
             mtte_p50_ms=1800,
             mtte_p95_ms=250000,  # 4min 10sec - under 5min
@@ -121,8 +118,8 @@ class TestSLOReport:
     def test_is_mtte_compliant_fail(self):
         """is_mtte_compliant returns False when over target."""
         report = SLOReport(
-            period_start=datetime.utcnow(),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
             mtte_avg_ms=2000,
             mtte_p50_ms=1800,
             mtte_p95_ms=350000,  # 5min 50sec - over 5min
@@ -135,8 +132,8 @@ class TestSLOReport:
     def test_is_rsr_compliant_pass(self):
         """is_rsr_compliant returns True when meeting target."""
         report = SLOReport(
-            period_start=datetime.utcnow(),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
             mtte_avg_ms=2000,
             mtte_p50_ms=1800,
             mtte_p95_ms=250000,
@@ -149,8 +146,8 @@ class TestSLOReport:
     def test_is_rsr_compliant_fail(self):
         """is_rsr_compliant returns False when below target."""
         report = SLOReport(
-            period_start=datetime.utcnow(),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
             mtte_avg_ms=2000,
             mtte_p50_ms=1800,
             mtte_p95_ms=250000,
@@ -163,8 +160,8 @@ class TestSLOReport:
     def test_is_compliant_all_pass(self):
         """is_compliant returns True when all SLOs met."""
         report = SLOReport(
-            period_start=datetime.utcnow(),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
             mtte_avg_ms=2000,
             mtte_p50_ms=1800,
             mtte_p95_ms=250000,  # Under 5min
@@ -177,8 +174,8 @@ class TestSLOReport:
     def test_is_compliant_mtte_fail(self):
         """is_compliant returns False when MTTE fails."""
         report = SLOReport(
-            period_start=datetime.utcnow(),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
             mtte_avg_ms=2000,
             mtte_p50_ms=1800,
             mtte_p95_ms=350000,  # Over 5min - FAIL
@@ -191,8 +188,8 @@ class TestSLOReport:
     def test_get_violations_none(self):
         """get_violations returns empty when compliant."""
         report = SLOReport(
-            period_start=datetime.utcnow(),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
             mtte_avg_ms=2000,
             mtte_p50_ms=1800,
             mtte_p95_ms=250000,
@@ -206,8 +203,8 @@ class TestSLOReport:
     def test_get_violations_both(self):
         """get_violations returns all violations."""
         report = SLOReport(
-            period_start=datetime.utcnow(),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
             mtte_avg_ms=2000,
             mtte_p50_ms=1800,
             mtte_p95_ms=350000,  # FAIL
@@ -221,7 +218,6 @@ class TestSLOReport:
         assert any("RSR" in v for v in violations)
 
 
-@pytest.mark.asyncio
 class TestSLOTracker:
     """Test SLOTracker class."""
 
@@ -404,7 +400,7 @@ class TestSLOTracker:
             thread_id="old",
             checkpoint_id="c1",
             duration_ms=9999,
-            timestamp=(datetime.utcnow() - timedelta(hours=2)).isoformat(),
+            timestamp=(datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
             success=True
         )
         tracker.mtte_measurements.append(old_mtte)
@@ -413,7 +409,7 @@ class TestSLOTracker:
         await tracker.record_mtte("new", "c2", 1000, success=True)
 
         # Get report from last hour
-        since = datetime.utcnow() - timedelta(hours=1)
+        since = datetime.now(timezone.utc) - timedelta(hours=1)
         report = await tracker.get_report(since=since)
 
         # Should only include new measurement
@@ -441,7 +437,7 @@ class TestSLOTracker:
             thread_id="old",
             checkpoint_id="c1",
             duration_ms=9999,
-            timestamp=(datetime.utcnow() - timedelta(hours=2)).isoformat(),
+            timestamp=(datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
             success=True
         )
         tracker.mtte_measurements.append(old_mtte)
@@ -450,7 +446,7 @@ class TestSLOTracker:
         await tracker.record_mtte("new", "c2", 1000, success=True)
 
         # Clear old measurements
-        cutoff = datetime.utcnow() - timedelta(hours=1)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
         await tracker.clear_measurements(before=cutoff)
 
         # Should only keep new measurement

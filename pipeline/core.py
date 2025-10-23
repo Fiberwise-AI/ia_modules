@@ -486,6 +486,12 @@ class Pipeline:
                     with self.telemetry.trace_step(self.name, step_name, parent_span) as step_ctx:
                         step_result = await step.execute_with_error_handling(current_data)
                         step_ctx.set_output(step_result)
+
+                        # Extract and set LLM usage if present in result
+                        if isinstance(step_result, dict) and 'llm_response' in step_result:
+                            llm_resp = step_result['llm_response']
+                            if isinstance(llm_resp, dict) and 'usage' in llm_resp:
+                                step_ctx.set_attribute('usage', llm_resp['usage'])
                 else:
                     step_result = await step.execute_with_error_handling(current_data)
 

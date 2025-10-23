@@ -7,7 +7,7 @@ import json
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
-from ia_modules.database.interfaces import DatabaseInterface, DatabaseType
+
 
 from .core import ConversationMemory, Message, MessageRole
 
@@ -19,58 +19,18 @@ class SQLConversationMemory(ConversationMemory):
     Uses DatabaseInterface for PostgreSQL, SQLite, MySQL, DuckDB support.
     """
 
-    def __init__(self, db_interface: DatabaseInterface):
-        self.db = db_interface
+    def __init__(self, db_manager):
+        self.db = db_manager
         self._initialized = False
 
     async def initialize(self) -> None:
-        """Create schema if not exists"""
-        await self._create_schema()
+        """Initialize conversation memory - schema created by migrations"""
+        # Schema is created by database migrations (V004__conversation_memory.sql)
+        if not await self.db.table_exists("conversation_messages"):
+            raise RuntimeError(
+                "conversation_messages table not found. Run database migrations first."
+            )
         self._initialized = True
-
-    async def _create_schema(self) -> None:
-        """Create messages table"""
-        if self.db.db_type == DatabaseType.POSTGRESQL:
-            schema_sql = """
-                CREATE TABLE IF NOT EXISTS conversation_messages (
-                    message_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    thread_id VARCHAR(255) NOT NULL,
-                    user_id VARCHAR(255),
-                    role VARCHAR(50) NOT NULL,
-                    content TEXT NOT NULL,
-                    metadata JSONB DEFAULT '{}'::jsonb,
-                    timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
-                    function_call JSONB,
-                    function_name VARCHAR(255)
-                );
-
-                CREATE INDEX IF NOT EXISTS idx_msg_thread_id ON conversation_messages(thread_id);
-                CREATE INDEX IF NOT EXISTS idx_msg_user_id ON conversation_messages(user_id);
-                CREATE INDEX IF NOT EXISTS idx_msg_timestamp ON conversation_messages(timestamp);
-            """
-        else:
-            schema_sql = """
-                CREATE TABLE IF NOT EXISTS conversation_messages (
-                    message_id TEXT PRIMARY KEY,
-                    thread_id TEXT NOT NULL,
-                    user_id TEXT,
-                    role TEXT NOT NULL,
-                    content TEXT NOT NULL,
-                    metadata TEXT DEFAULT '{}',
-                    timestamp TEXT NOT NULL,
-                    function_call TEXT,
-                    function_name TEXT
-                );
-
-                CREATE INDEX IF NOT EXISTS idx_msg_thread_id ON conversation_messages(thread_id);
-                CREATE INDEX IF NOT EXISTS idx_msg_user_id ON conversation_messages(user_id);
-                CREATE INDEX IF NOT EXISTS idx_msg_timestamp ON conversation_messages(timestamp);
-            """
-
-        for statement in schema_sql.split(';'):
-            statement = statement.strip()
-            if statement:
-                await self.db.execute_query(statement)
 
     async def add_message(
         self,
@@ -104,7 +64,7 @@ class SQLConversationMemory(ConversationMemory):
             """
             params = (message_id, thread_id, user_id, role, content, metadata_json, timestamp, function_call_json, function_name)
 
-        await self.db.execute_query(query, params)
+        await self.db.execute_async(query, params)
         return message_id
 
     async def get_messages(
@@ -216,7 +176,7 @@ class SQLConversationMemory(ConversationMemory):
             query = "DELETE FROM conversation_messages WHERE thread_id = ?"
             params = (thread_id,)
 
-        result = await self.db.execute_query(query, params)
+        result = await self.db.execute_async(query, params)
         return result.row_count
 
     async def get_thread_stats(self, thread_id: str) -> Dict[str, Any]:

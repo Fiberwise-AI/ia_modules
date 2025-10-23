@@ -7,7 +7,7 @@ the financial efficiency of agent systems. Implements EARF FinOps metrics.
 
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 import logging
 
@@ -257,7 +257,7 @@ class CostTracker:
             amount=total_cost,
             quantity=total_tokens,
             unit_cost=total_cost / total_tokens if total_tokens > 0 else 0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             agent=agent,
             workflow_id=workflow_id,
             context={
@@ -294,7 +294,7 @@ class CostTracker:
             amount=cost,
             quantity=1,
             unit_cost=cost,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             agent=agent,
             workflow_id=workflow_id,
             context={
@@ -342,7 +342,7 @@ class CostTracker:
             CostReport with aggregated costs
         """
         if until is None:
-            until = datetime.utcnow()
+            until = datetime.now(timezone.utc)
 
         if since is None:
             # Use earliest cost
@@ -430,7 +430,7 @@ class CostTracker:
 
             # Determine period
             if budget.period_hours:
-                since = datetime.utcnow() - timedelta(hours=budget.period_hours)
+                since = datetime.now(timezone.utc) - timedelta(hours=budget.period_hours)
             else:
                 since = None
 
@@ -486,7 +486,7 @@ class CostTracker:
 
         # Determine period
         if budget.period_hours:
-            since = datetime.utcnow() - timedelta(hours=budget.period_hours)
+            since = datetime.now(timezone.utc) - timedelta(hours=budget.period_hours)
         else:
             since = None
 

@@ -145,7 +145,7 @@ async def execute_pipeline(pipeline_id: str, request: ExecutionRequest):
             execution_id=execution_id,
             pipeline_id=pipeline_id,
             status="started",
-            started_at=datetime.utcnow().isoformat()
+            started_at=datetime.now(timezone.utc).isoformat()
         )
     except Exception as e:
         logger.error(f"Failed to start execution: {e}")
@@ -267,7 +267,7 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "version": "0.1.0"
     }
 
@@ -292,7 +292,7 @@ async def get_stats():
 async def http_exception_handler(request, exc):
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail, "timestamp": datetime.utcnow().isoformat()}
+        content={"detail": exc.detail, "timestamp": datetime.now(timezone.utc).isoformat()}
     )
 
 
@@ -303,7 +303,7 @@ async def general_exception_handler(request, exc):
         status_code=500,
         content={
             "detail": "Internal server error",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
     )
 

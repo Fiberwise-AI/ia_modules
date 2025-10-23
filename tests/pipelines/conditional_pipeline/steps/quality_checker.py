@@ -36,23 +36,30 @@ class QualityCheckerStep(Step):
     def _calculate_quality_score(self, data: Any) -> float:
         """Calculate a simple quality score"""
         if isinstance(data, dict):
-            # For single record, check how many fields are not null
+            # If record has quality_score field, use it
+            if 'quality_score' in data:
+                return float(data['quality_score'])
+            # Otherwise check how many fields are not null
             non_null_fields = sum(1 for value in data.values() if value is not None)
             total_fields = len(data)
             return non_null_fields / total_fields if total_fields > 0 else 0
-            
+
         elif isinstance(data, list) and len(data) > 0:
             # For multiple records, calculate average quality
             scores = []
             for record in data:
                 if isinstance(record, dict):
-                    non_null_fields = sum(1 for value in record.values() if value is not None)
-                    total_fields = len(record)
-                    score = non_null_fields / total_fields if total_fields > 0 else 0
-                    scores.append(score)
-            
+                    # If record has quality_score field, use it
+                    if 'quality_score' in record:
+                        scores.append(float(record['quality_score']))
+                    else:
+                        non_null_fields = sum(1 for value in record.values() if value is not None)
+                        total_fields = len(record)
+                        score = non_null_fields / total_fields if total_fields > 0 else 0
+                        scores.append(score)
+
             return sum(scores) / len(scores) if scores else 0
-            
+
         else:
             return 0.5  # Default quality for unknown data types
             

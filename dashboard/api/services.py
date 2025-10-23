@@ -86,7 +86,7 @@ class PipelineService:
     async def create_pipeline(self, pipeline_create: PipelineCreate) -> Pipeline:
         """Create a new pipeline"""
         pipeline_id = str(uuid.uuid4())
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         pipeline = Pipeline(
             id=pipeline_id,
@@ -126,7 +126,7 @@ class PipelineService:
         if pipeline_update.enabled is not None:
             pipeline.enabled = pipeline_update.enabled
 
-        pipeline.updated_at = datetime.utcnow()
+        pipeline.updated_at = datetime.now(timezone.utc)
 
         await self._save_pipeline_to_disk(pipeline)
 
@@ -223,7 +223,7 @@ class ExecutionService:
             execution_id=execution_id,
             pipeline_id=pipeline_id,
             status=ExecutionStatusEnum.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
             input_data=input_data,
             steps=[],
             progress_percent=0.0
@@ -236,7 +236,7 @@ class ExecutionService:
         await ws_manager.send_message(execution_id, WSMessage(
             type=WSMessageType.EXECUTION_STARTED,
             execution_id=execution_id,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             data={"pipeline_id": pipeline_id}
         ))
 
@@ -252,7 +252,7 @@ class ExecutionService:
 
             # Update execution status
             execution.status = ExecutionStatusEnum.COMPLETED
-            execution.completed_at = datetime.utcnow()
+            execution.completed_at = datetime.now(timezone.utc)
             execution.duration_seconds = (execution.completed_at - execution.started_at).total_seconds()
             execution.output_data = result
             execution.progress_percent = 100.0
@@ -261,7 +261,7 @@ class ExecutionService:
             await ws_manager.send_message(execution_id, WSMessage(
                 type=WSMessageType.EXECUTION_COMPLETED,
                 execution_id=execution_id,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
                 data={
                     "duration_seconds": execution.duration_seconds,
                     "output": result
@@ -272,7 +272,7 @@ class ExecutionService:
             logger.error(f"Pipeline execution failed: {e}", exc_info=True)
 
             execution.status = ExecutionStatusEnum.FAILED
-            execution.completed_at = datetime.utcnow()
+            execution.completed_at = datetime.now(timezone.utc)
             execution.duration_seconds = (execution.completed_at - execution.started_at).total_seconds()
             execution.error = str(e)
 
@@ -280,7 +280,7 @@ class ExecutionService:
             await ws_manager.send_message(execution_id, WSMessage(
                 type=WSMessageType.EXECUTION_FAILED,
                 execution_id=execution_id,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
                 data={"error": str(e)}
             ))
 
@@ -299,7 +299,7 @@ class ExecutionService:
             return False
 
         execution.status = ExecutionStatusEnum.CANCELLED
-        execution.completed_at = datetime.utcnow()
+        execution.completed_at = datetime.now(timezone.utc)
         execution.duration_seconds = (execution.completed_at - execution.started_at).total_seconds()
 
         return True
@@ -313,7 +313,7 @@ class ExecutionService:
 
     async def count_executions_today(self) -> int:
         """Count executions started today"""
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         return sum(
             1 for e in self.executions.values()
             if e.started_at.date() == today
@@ -380,7 +380,8 @@ class MetricsService:
         limit: int = 50
     ) -> List[BenchmarkResponse]:
         """Get benchmark history"""
-        # TODO: Implement benchmark history storage and retrieval
+        # Note: Benchmark history storage will be implemented in v0.0.4
+        # For now, benchmarks are run on-demand only
         return []
 
 

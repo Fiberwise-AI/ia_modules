@@ -31,7 +31,7 @@ class SessionManager:
             INSERT INTO user_sessions (user_id, session_token, expires_at)
             VALUES (?, ?, ?)
             """
-            result = await self.db_provider.execute_query(query, (user_id, session_token, expires_at.isoformat()))
+            result = await self.db_provider.execute_async(query, (user_id, session_token, expires_at.isoformat()))
             
             return session_token if result.success else None
         except Exception as e:
@@ -61,7 +61,7 @@ class SessionManager:
             return False
         
         try:
-            result = await self.db_provider.execute_query("DELETE FROM user_sessions WHERE session_token = ?", (session_token,))
+            result = await self.db_provider.execute_async("DELETE FROM user_sessions WHERE session_token = ?", (session_token,))
             return result.success
         except Exception as e:
             logger.error(f"Error deleting session: {e}")
@@ -73,7 +73,7 @@ class SessionManager:
             return False
         
         try:
-            result = await self.db_provider.execute_query("DELETE FROM user_sessions WHERE user_id = ?", (user_id,))
+            result = await self.db_provider.execute_async("DELETE FROM user_sessions WHERE user_id = ?", (user_id,))
             return result.success
         except Exception as e:
             logger.error(f"Error deleting user sessions: {e}")
@@ -85,7 +85,7 @@ class SessionManager:
             return 0
         
         try:
-            result = await self.db_provider.execute_query("DELETE FROM user_sessions WHERE expires_at <= datetime('now')")
+            result = await self.db_provider.execute_async("DELETE FROM user_sessions WHERE expires_at <= datetime('now')")
             return result.row_count if result.success else 0
         except Exception as e:
             logger.error(f"Error cleaning up sessions: {e}")
@@ -121,7 +121,7 @@ class SessionManager:
             INSERT INTO users (uuid, email, password_hash, first_name, last_name, role, active)
             VALUES (?, ?, ?, ?, ?, ?, 1)
             """
-            result = await self.db_provider.execute_query(query, (user_uuid, email, password_hash, first_name, last_name, role))
+            result = await self.db_provider.execute_async(query, (user_uuid, email, password_hash, first_name, last_name, role))
             
             if result.success:
                 # Get the created user ID

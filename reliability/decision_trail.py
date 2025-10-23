@@ -6,7 +6,7 @@ Provides unified API to reconstruct complete decision history for agent workflow
 
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional, Literal
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 
@@ -123,7 +123,7 @@ class DecisionTrail:
     thread_id: str
     checkpoint_id: str
     workflow_name: Optional[str] = None
-    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     # Context
     goal: str = ""  # What was the agent trying to do?
@@ -210,7 +210,7 @@ class DecisionTrailBuilder:
             >>> print(f"Took {trail.duration_ms}ms")
             >>> print(f"Used {len(trail.tool_calls)} tools")
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
 
         # Get checkpoint metadata
         checkpoint = None
@@ -289,7 +289,7 @@ class DecisionTrailBuilder:
                     trail.evidence.append(evidence)
 
         # Calculate duration
-        end_time = datetime.utcnow()
+        end_time = datetime.now(timezone.utc)
         trail.duration_ms = int((end_time - start_time).total_seconds() * 1000)
 
         # Determine success (if all tool calls succeeded)

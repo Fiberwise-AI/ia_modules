@@ -204,7 +204,7 @@ class MemoryCheckpointer(BaseCheckpointer):
                 to_delete = [cp for cp in checkpoints if cp.timestamp < before]
             else:
                 # Delete all
-                to_delete = checkpoints
+                to_delete = list(checkpoints)  # Create a copy to avoid modifying while iterating
 
             # Remove checkpoints
             for cp in to_delete:

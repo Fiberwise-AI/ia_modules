@@ -8,7 +8,7 @@ severity-based routing.
 
 from typing import Dict, Any, Optional, List, Callable, Set
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 import asyncio
 import logging
@@ -276,7 +276,7 @@ class AlertManager:
         if cooldown_key in self._last_alert_time:
             last_time = self._last_alert_time[cooldown_key]
             # Use default 60 minute cooldown
-            if datetime.utcnow() - last_time < timedelta(minutes=60):
+            if datetime.now(timezone.utc) - last_time < timedelta(minutes=60):
                 self.logger.debug(f"Alert {cooldown_key} in cooldown, skipping")
                 return
 
@@ -284,7 +284,7 @@ class AlertManager:
         self.alerts.append(alert)
 
         # Update last alert time
-        self._last_alert_time[cooldown_key] = datetime.utcnow()
+        self._last_alert_time[cooldown_key] = datetime.now(timezone.utc)
 
         # Update alert counts
         if alert.type not in self._alert_counts:
@@ -324,7 +324,7 @@ class AlertManager:
             severity=severity,
             title=f"Metric Threshold Breach: {metric_name}",
             message=f"{metric_name} = {current_value:.4f} (threshold: {threshold:.4f})",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             source=metric_name,
             context={
                 "metric_name": metric_name,
@@ -364,7 +364,7 @@ class AlertManager:
             severity=AlertSeverity.CRITICAL,
             title=f"SLO Breach: {slo_name.upper()}",
             message=f"{slo_name.upper()} = {value} (target: {target})",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             source=slo_name,
             context={
                 "slo_name": slo_name,
@@ -396,7 +396,7 @@ class AlertManager:
             severity=severity_map.get(anomaly.severity, AlertSeverity.WARNING),
             title=f"Anomaly Detected: {anomaly.metric_name}",
             message=f"{anomaly.type.value} in {anomaly.metric_name}: {anomaly.current_value:.4f} (expected: {anomaly.expected_value:.4f}, deviation: {anomaly.deviation:.2f})",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             source=anomaly.metric_name,
             context=anomaly.to_dict()
         )
@@ -420,7 +420,7 @@ class AlertManager:
             severity=AlertSeverity.ERROR,
             title="Agent Health Check Failed",
             message=f"Failed checks: {', '.join(failed_checks)}",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             source="health_check",
             context={
                 "failed_checks": failed_checks,
@@ -448,7 +448,7 @@ class AlertManager:
         if 0 <= alert_index < len(self.alerts):
             alert = self.alerts[alert_index]
             alert.acknowledged = True
-            alert.acknowledged_at = datetime.utcnow()
+            alert.acknowledged_at = datetime.now(timezone.utc)
             alert.acknowledged_by = acknowledged_by
             self.logger.info(f"Alert acknowledged by {acknowledged_by}: {alert.title}")
             return True

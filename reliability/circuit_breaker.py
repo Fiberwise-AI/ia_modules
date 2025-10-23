@@ -7,7 +7,7 @@ and allows them to recover gracefully.
 
 from typing import Dict, Any, Optional, List, Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 import logging
 
@@ -112,7 +112,7 @@ class CircuitBreaker:
         self._consecutive_successes = 0
 
         # State transition tracking
-        self._last_state_change = datetime.utcnow()
+        self._last_state_change = datetime.now(timezone.utc)
         self._open_since: Optional[datetime] = None
 
         # Callbacks
@@ -140,7 +140,7 @@ class CircuitBreaker:
         """Record successful operation."""
         self.metrics.total_requests += 1
         self.metrics.successful_requests += 1
-        self.metrics.last_success_time = datetime.utcnow()
+        self.metrics.last_success_time = datetime.now(timezone.utc)
 
         if self.state == CircuitState.HALF_OPEN:
             self._consecutive_successes += 1
@@ -153,10 +153,10 @@ class CircuitBreaker:
         """Record failed operation."""
         self.metrics.total_requests += 1
         self.metrics.failed_requests += 1
-        self.metrics.last_failure_time = datetime.utcnow()
+        self.metrics.last_failure_time = datetime.now(timezone.utc)
 
         # Track recent failure
-        self._recent_failures.append(datetime.utcnow())
+        self._recent_failures.append(datetime.now(timezone.utc))
 
         # Clean old failures outside window
         self._clean_old_failures()
@@ -231,7 +231,7 @@ class CircuitBreaker:
         """Update state based on timeout (open -> half-open transition)."""
         if self.state == CircuitState.OPEN:
             if self._open_since:
-                elapsed = (datetime.utcnow() - self._open_since).total_seconds()
+                elapsed = (datetime.now(timezone.utc) - self._open_since).total_seconds()
 
                 if elapsed >= self.config.timeout_seconds:
                     self._transition_to_half_open()
@@ -240,7 +240,7 @@ class CircuitBreaker:
         """Transition to CLOSED state."""
         old_state = self.state
         self.state = CircuitState.CLOSED
-        self._last_state_change = datetime.utcnow()
+        self._last_state_change = datetime.now(timezone.utc)
         self._open_since = None
         self._recent_failures.clear()
         self._consecutive_successes = 0
@@ -254,8 +254,8 @@ class CircuitBreaker:
         """Transition to OPEN state."""
         old_state = self.state
         self.state = CircuitState.OPEN
-        self._last_state_change = datetime.utcnow()
-        self._open_since = datetime.utcnow()
+        self._last_state_change = datetime.now(timezone.utc)
+        self._open_since = datetime.now(timezone.utc)
         self._consecutive_successes = 0
 
         if old_state != CircuitState.OPEN:
@@ -267,7 +267,7 @@ class CircuitBreaker:
         """Transition to HALF_OPEN state."""
         old_state = self.state
         self.state = CircuitState.HALF_OPEN
-        self._last_state_change = datetime.utcnow()
+        self._last_state_change = datetime.now(timezone.utc)
         self._consecutive_successes = 0
 
         if old_state != CircuitState.HALF_OPEN:
@@ -277,7 +277,7 @@ class CircuitBreaker:
 
     def _clean_old_failures(self):
         """Remove failures outside the tracking window."""
-        cutoff = datetime.utcnow() - timedelta(seconds=self.config.window_seconds)
+        cutoff = datetime.now(timezone.utc) - timedelta(seconds=self.config.window_seconds)
         self._recent_failures = [
             failure_time for failure_time in self._recent_failures
             if failure_time >= cutoff

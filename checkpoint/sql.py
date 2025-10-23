@@ -1,15 +1,13 @@
 """
-SQL-based checkpoint storage using DatabaseInterface
+SQL-based checkpoint storage using DatabaseManager
 
-Supports PostgreSQL, SQLite, MySQL, and DuckDB through unified interface.
+Supports PostgreSQL and SQLite with named parameter support.
 """
 
 import uuid
 import json
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-
-from ia_modules.database.interfaces import DatabaseInterface, DatabaseType
 
 from .core import (
     BaseCheckpointer,
@@ -23,103 +21,33 @@ from .core import (
 
 class SQLCheckpointer(BaseCheckpointer):
     """
-    SQL-based checkpoint storage using DatabaseInterface.
+    SQL-based checkpoint storage using DatabaseManager.
 
-    Works with PostgreSQL, SQLite, MySQL, and DuckDB through the unified interface.
+    Works with PostgreSQL and SQLite using named parameters (:param).
 
     Example:
-        >>> from ia_modules.database import get_database_interface
-        >>> db = await get_database_interface("postgresql://localhost/mydb")
+        >>> from ia_modules.database import DatabaseManager
+        >>> db = DatabaseManager("postgresql://localhost/mydb")
+        >>> await db.initialize()
         >>> checkpointer = SQLCheckpointer(db)
         >>> await checkpointer.initialize()
     """
 
-    def __init__(self, db_interface: DatabaseInterface):
+    def __init__(self, db_manager):
         """
-        Initialize with any SQL database.
+        Initialize with DatabaseManager.
 
         Args:
-            db_interface: DatabaseInterface instance (already connected)
+            db_manager: DatabaseManager instance (already connected)
         """
-        self.db = db_interface
-        self._initialized = False
+        self.db = db_manager
 
-    async def initialize(self) -> None:
-        """Create checkpoint schema if not exists"""
-        await self._create_schema()
+        # Initialize - schema created by migrations (V003__checkpoint_system.sql)
+        if not self.db.table_exists("pipeline_checkpoints"):
+            raise CheckpointSaveError(
+                "pipeline_checkpoints table not found. Run database migrations first."
+            )
         self._initialized = True
-
-    async def _create_schema(self) -> None:
-        """Create checkpoint table with database-specific adaptations"""
-        # Adapt schema based on database type
-        if self.db.db_type == DatabaseType.POSTGRESQL:
-            schema_sql = """
-                CREATE TABLE IF NOT EXISTS pipeline_checkpoints (
-                    checkpoint_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    thread_id VARCHAR(255) NOT NULL,
-                    pipeline_id VARCHAR(255) NOT NULL,
-                    step_id VARCHAR(255) NOT NULL,
-                    step_index INTEGER NOT NULL,
-                    step_name VARCHAR(255),
-                    timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
-                    state JSONB NOT NULL,
-                    metadata JSONB DEFAULT '{}'::jsonb,
-                    status VARCHAR(50) DEFAULT 'completed',
-                    parent_checkpoint_id UUID,
-
-                    CONSTRAINT fk_parent_checkpoint
-                        FOREIGN KEY (parent_checkpoint_id)
-                        REFERENCES pipeline_checkpoints(checkpoint_id)
-                        ON DELETE SET NULL
-                );
-
-                CREATE INDEX IF NOT EXISTS idx_checkpoint_thread_id
-                    ON pipeline_checkpoints(thread_id);
-                CREATE INDEX IF NOT EXISTS idx_checkpoint_pipeline_id
-                    ON pipeline_checkpoints(pipeline_id);
-                CREATE INDEX IF NOT EXISTS idx_checkpoint_timestamp
-                    ON pipeline_checkpoints(timestamp);
-                CREATE INDEX IF NOT EXISTS idx_checkpoint_thread_timestamp
-                    ON pipeline_checkpoints(thread_id, timestamp DESC);
-            """
-        else:
-            # SQLite, MySQL, DuckDB - use TEXT for UUID, JSON for state
-            schema_sql = """
-                CREATE TABLE IF NOT EXISTS pipeline_checkpoints (
-                    checkpoint_id TEXT PRIMARY KEY,
-                    thread_id TEXT NOT NULL,
-                    pipeline_id TEXT NOT NULL,
-                    step_id TEXT NOT NULL,
-                    step_index INTEGER NOT NULL,
-                    step_name TEXT,
-                    timestamp TEXT NOT NULL,
-                    state TEXT NOT NULL,
-                    metadata TEXT DEFAULT '{}',
-                    status TEXT DEFAULT 'completed',
-                    parent_checkpoint_id TEXT,
-
-                    FOREIGN KEY (parent_checkpoint_id)
-                        REFERENCES pipeline_checkpoints(checkpoint_id)
-                        ON DELETE SET NULL
-                );
-
-                CREATE INDEX IF NOT EXISTS idx_checkpoint_thread_id
-                    ON pipeline_checkpoints(thread_id);
-                CREATE INDEX IF NOT EXISTS idx_checkpoint_pipeline_id
-                    ON pipeline_checkpoints(pipeline_id);
-                CREATE INDEX IF NOT EXISTS idx_checkpoint_timestamp
-                    ON pipeline_checkpoints(timestamp);
-                CREATE INDEX IF NOT EXISTS idx_checkpoint_thread_timestamp
-                    ON pipeline_checkpoints(thread_id, timestamp);
-            """
-
-        # Execute schema creation (handle multi-statement SQL)
-        for statement in schema_sql.split(';'):
-            statement = statement.strip()
-            if statement:
-                result = await self.db.execute_query(statement)
-                if not result.success:
-                    raise CheckpointSaveError(f"Failed to create schema: {result.error_message}")
 
     async def save_checkpoint(
         self,
@@ -170,7 +98,7 @@ class SQLCheckpointer(BaseCheckpointer):
                 CheckpointStatus.COMPLETED.value, parent_checkpoint_id
             )
 
-        result = await self.db.execute_query(query, params)
+        result = await self.db.execute_async(query, params)
 
         if not result.success:
             raise CheckpointSaveError(f"Failed to save checkpoint: {result.error_message}")
@@ -319,7 +247,7 @@ class SQLCheckpointer(BaseCheckpointer):
                 query = "DELETE FROM pipeline_checkpoints WHERE thread_id = ?"
                 params = (thread_id,)
 
-        result = await self.db.execute_query(query, params)
+        result = await self.db.execute_async(query, params)
 
         if not result.success:
             raise CheckpointDeleteError(f"Failed to delete checkpoints: {result.error_message}")

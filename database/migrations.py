@@ -48,48 +48,52 @@ class MigrationRunner:
     
     async def initialize_migration_table(self) -> bool:
         """Create migrations tracking table if it doesn't exist."""
-        # Create table with proper SQL since schema dict doesn't support constraints
-        create_sql = """
-        CREATE TABLE IF NOT EXISTS ia_migrations (
-            version TEXT NOT NULL,
-            filename TEXT NOT NULL,
-            migration_type TEXT NOT NULL CHECK (migration_type IN ('system', 'app')),
-            description TEXT NOT NULL,
-            applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            checksum TEXT,
-            PRIMARY KEY (version, migration_type)
-        )
-        """
-        
         try:
-            exists = await self.database.table_exists(self._migrations_table)
-            if not exists:
-                result = await self.database.execute_query(create_sql)
-                return result.success
+            exists = self.database.table_exists(self._migrations_table)
+            if exists:
+                return True
+
+            create_sql = """
+            CREATE TABLE IF NOT EXISTS ia_migrations (
+                version TEXT NOT NULL,
+                filename TEXT NOT NULL,
+                migration_type TEXT NOT NULL,
+                description TEXT NOT NULL,
+                applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                checksum TEXT,
+                PRIMARY KEY (version, migration_type)
+            )
+            """
+            result = await self.database.execute_async(create_sql)
+            if not result.success:
+                logger.error(f"Failed to create migrations table: {getattr(result, 'error_message', result.error)}")
+                return False
             return True
         except Exception as e:
             logger.error(f"Failed to initialize migration table: {e}")
+            logger.exception(e)
             return False
     
     async def get_applied_migrations(self) -> List[MigrationRecord]:
         """Get list of applied migrations for this migration type."""
-        result = await self.database.fetch_all(
-            f"SELECT version, filename, migration_type, description, applied_at, checksum FROM {self._migrations_table} WHERE migration_type = ? ORDER BY version",
-            (self.migration_type,)
+        result = self.database.fetch_all(
+            f"SELECT version, filename, migration_type, description, applied_at, checksum FROM {self._migrations_table} WHERE migration_type = :migration_type ORDER BY version",
+            {"migration_type": self.migration_type}
         )
-        
-        if not result.success or not result.data:
+
+        # fetch_all returns a list directly
+        if not result:
             return []
-        
+
         migrations = []
-        for row in result.data:
+        for row in result:
             migrations.append(MigrationRecord(
                 version=row['version'],
                 description=row['description'],
                 applied_at=row['applied_at'] if isinstance(row['applied_at'], datetime) else datetime.fromisoformat(row['applied_at']),
                 checksum=row.get('checksum')
             ))
-        
+
         return migrations
     
     async def record_migration(
@@ -101,21 +105,31 @@ class MigrationRunner:
         checksum: Optional[str] = None
     ) -> bool:
         """Record that a migration has been applied."""
-        result = await self.database.execute_query(
-            f"""
-            INSERT INTO {self._migrations_table} (version, filename, migration_type, description, checksum)
-            VALUES (:version, :filename, :migration_type, :description, :checksum)
-            """,
-            {
-                'version': version,
-                'filename': filename,
-                'migration_type': migration_type,
-                'description': description,
-                'checksum': checksum
-            }
-        )
-        
-        return result.success
+        try:
+            result = await self.database.execute_async(
+                f"""
+                INSERT INTO {self._migrations_table} (version, filename, migration_type, description, checksum)
+                VALUES (:version, :filename, :migration_type, :description, :checksum)
+                """,
+                {
+                    'version': version,
+                    'filename': filename,
+                    'migration_type': migration_type,
+                    'description': description,
+                    'checksum': checksum
+                }
+            )
+
+            if not result.success:
+                error_msg = getattr(result, 'error_message', None) or getattr(result, 'error', None) or str(result)
+                logger.error(f"Failed to insert migration record: {error_msg}")
+                logger.error(f"Attempted to insert: version={version}, filename={filename}, type={migration_type}")
+
+            return result.success
+        except Exception as e:
+            logger.error(f"Exception recording migration: {e}")
+            logger.exception(e)
+            return False
     
     async def run_migration_file(self, migration_file: Path) -> bool:
         """Run a single migration file."""
@@ -133,7 +147,7 @@ class MigrationRunner:
             migration_type = self.migration_type
             
             logger.info(f"Running migration {version} ({migration_type}): {description}")
-            
+
             # Execute migration
             result = await self.database.execute_script(migration_sql)
             if not result.success:

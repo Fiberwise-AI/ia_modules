@@ -30,7 +30,6 @@ class DummyAgent(BaseAgent):
         return {"status": "success"}
 
 
-@pytest.mark.asyncio
 class TestReplayMode:
     """Test ReplayMode enum."""
 
@@ -47,7 +46,6 @@ class TestReplayMode:
         assert ReplayMode.COUNTERFACTUAL.value == "counterfactual"
 
 
-@pytest.mark.asyncio
 class TestDifference:
     """Test Difference dataclass."""
 
@@ -88,7 +86,6 @@ class TestDifference:
         assert minor.significance == "minor"
 
 
-@pytest.mark.asyncio
 class TestReplayResult:
     """Test ReplayResult dataclass."""
 
@@ -150,7 +147,6 @@ class TestReplayResult:
         assert all(d.significance == "critical" for d in critical)
 
 
-@pytest.mark.asyncio
 class TestReplayer:
     """Test Replayer class."""
 

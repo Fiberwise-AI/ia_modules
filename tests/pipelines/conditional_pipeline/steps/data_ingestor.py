@@ -15,18 +15,12 @@ class DataIngestorStep(Step):
         super().__init__(name, config)
         
     async def run(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Ingest data from the configured source or use input data"""
-        # First try to get test data from config
-        test_data = self.config.get('test_data')
-
-        # If no test data in config, use the input data directly
-        if not test_data:
-            raw_data = data.get('raw_data', data)
-        else:
-            raw_data = test_data
+        """Ingest data from pipeline input"""
+        # Get test_data from pipeline input
+        test_data = data.get('test_data', [])
 
         return {
-            "ingested_data": raw_data,
-            "source": "inline_test_data",
-            "record_count": len(raw_data) if isinstance(raw_data, list) else 1
+            "ingested_data": test_data,
+            "source": "pipeline_input",
+            "record_count": len(test_data) if isinstance(test_data, list) else 1
         }

@@ -109,7 +109,7 @@ class DatabaseInterface(ABC):
     async def health_check(self) -> bool:
         """Check database health"""
         try:
-            result = await self.execute_query("SELECT 1 as health_check")
+            result = await self.execute_async("SELECT 1 as health_check")
             return result.success
         except Exception:
             return False

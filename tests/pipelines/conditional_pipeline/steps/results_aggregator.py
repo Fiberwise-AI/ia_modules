@@ -15,16 +15,8 @@ class ResultsAggregatorStep(Step):
         
     async def run(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Aggregate results from different processing paths"""
-        # Get the processed data from either high or low quality path
-        processed_data = data.get('processed_data') or data.get('cleaned_data')
+        processed_data = data.get('processed_data')
 
-        if not processed_data:
-            # If no processed data, check if we have any data to work with
-            if data.get('raw_data') or data.get('ingested_data'):
-                processed_data = data.get('raw_data') or data.get('ingested_data')
-            else:
-                raise ValueError(f"No processed data to aggregate. Available keys: {list(data.keys())}")
-            
         # Aggregate the results
         aggregation_results = self._aggregate_results(processed_data)
         

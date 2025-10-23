@@ -1,7 +1,7 @@
 """Tests for alert system."""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, Mock
 
 from reliability.alert_system import (
@@ -134,7 +134,7 @@ async def test_trigger_alert():
         severity=AlertSeverity.WARNING,
         title="Test Alert",
         message="This is a test",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         source="test"
     )
 
@@ -177,8 +177,8 @@ async def test_trigger_slo_alert():
     manager = AlertManager()
 
     slo_report = SLOReport(
-        period_start=datetime.utcnow() - timedelta(hours=24),
-        period_end=datetime.utcnow(),
+        period_start=datetime.now(timezone.utc) - timedelta(hours=24),
+        period_end=datetime.now(timezone.utc),
         mtte_avg_ms=350000,
         mtte_p50_ms=300000,
         mtte_p95_ms=400000,  # Exceeds 5 min target
@@ -213,7 +213,7 @@ async def test_trigger_anomaly_alert():
         current_value=500.0,
         expected_value=100.0,
         deviation=4.5,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         agent="researcher"
     )
 
@@ -233,8 +233,8 @@ async def test_trigger_health_check_alert():
     manager = AlertManager()
 
     metrics_report = MetricsReport(
-        period_start=datetime.utcnow() - timedelta(hours=24),
-        period_end=datetime.utcnow(),
+        period_start=datetime.now(timezone.utc) - timedelta(hours=24),
+        period_end=datetime.now(timezone.utc),
         total_workflows=10,
         total_steps=100,
         svr=0.92,  # Below target
@@ -356,7 +356,7 @@ async def test_get_alerts_time_filter():
         severity=AlertSeverity.WARNING,
         title="Past Alert",
         message="Old alert",
-        timestamp=datetime.utcnow() - timedelta(hours=2),
+        timestamp=datetime.now(timezone.utc) - timedelta(hours=2),
         source="test"
     )
     await manager.trigger_alert(past_alert)
@@ -369,7 +369,7 @@ async def test_get_alerts_time_filter():
     )
 
     # Filter by time
-    since = datetime.utcnow() - timedelta(hours=1)
+    since = datetime.now(timezone.utc) - timedelta(hours=1)
     recent = manager.get_alerts(since=since)
 
     assert len(recent) == 1
@@ -392,7 +392,7 @@ async def test_get_alert_counts():
         current_value=500.0,
         expected_value=100.0,
         deviation=4.5,
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
     await manager.trigger_anomaly_alert(anomaly)
 
@@ -433,7 +433,7 @@ async def test_callback_alert_channel_async():
         severity=AlertSeverity.WARNING,
         title="Test",
         message="Test",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         source="test"
     )
 
@@ -451,7 +451,7 @@ async def test_alert_to_dict():
         severity=AlertSeverity.WARNING,
         title="Test Alert",
         message="Test message",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         source="test_metric",
         context={"value": 0.92}
     )

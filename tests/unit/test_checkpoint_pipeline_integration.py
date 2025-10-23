@@ -24,9 +24,9 @@ class TestPipelineCheckpointBasic:
         """Test pipeline runs normally without checkpointer"""
         flow = {
             'start_at': 'step1',
-            'transitions': [
-                {'from': 'step1', 'to': 'step2'},
-                {'from': 'step2', 'to': 'end'}
+            'paths': [
+                {'from_step': 'step1', 'to_step': 'step2'},
+                {'from_step': 'step2', 'to_step': 'end_with_success'}
             ]
         }
         steps = [DummyStep('step1', {}), DummyStep('step2', {})]
@@ -45,9 +45,9 @@ class TestPipelineCheckpointBasic:
 
         flow = {
             'start_at': 'step1',
-            'transitions': [
-                {'from': 'step1', 'to': 'step2'},
-                {'from': 'step2', 'to': 'end'}
+            'paths': [
+                {'from_step': 'step1', 'to_step': 'step2'},
+                {'from_step': 'step2', 'to_step': 'end_with_success'}
             ]
         }
         steps = [DummyStep('step1', {}), DummyStep('step2', {})]
@@ -73,9 +73,9 @@ class TestPipelineCheckpointBasic:
 
         flow = {
             'start_at': 'step1',
-            'transitions': [
-                {'from': 'step1', 'to': 'step2'},
-                {'from': 'step2', 'to': 'end'}
+            'paths': [
+                {'from_step': 'step1', 'to_step': 'step2'},
+                {'from_step': 'step2', 'to_step': 'end_with_success'}
             ]
         }
         steps = [DummyStep('step1', {}), DummyStep('step2', {})]
@@ -105,10 +105,10 @@ class TestPipelineResume:
 
         flow = {
             'start_at': 'step1',
-            'transitions': [
-                {'from': 'step1', 'to': 'step2'},
-                {'from': 'step2', 'to': 'step3'},
-                {'from': 'step3', 'to': 'end'}
+            'paths': [
+                {'from_step': 'step1', 'to_step': 'step2'},
+                {'from_step': 'step2', 'to_step': 'step3'},
+                {'from_step': 'step3', 'to_step': 'end_with_success'}
             ]
         }
         steps = [
@@ -141,10 +141,10 @@ class TestPipelineResume:
 
         flow = {
             'start_at': 'step1',
-            'transitions': [
-                {'from': 'step1', 'to': 'step2'},
-                {'from': 'step2', 'to': 'step3'},
-                {'from': 'step3', 'to': 'end'}
+            'paths': [
+                {'from_step': 'step1', 'to_step': 'step2'},
+                {'from_step': 'step2', 'to_step': 'step3'},
+                {'from_step': 'step3', 'to_step': 'end_with_success'}
             ]
         }
         steps = [
@@ -198,8 +198,8 @@ class TestPipelineCheckpointThreadIsolation:
 
         flow = {
             'start_at': 'step1',
-            'transitions': [
-                {'from': 'step1', 'to': 'end'}
+            'paths': [
+                {'from_step': 'step1', 'to_step': 'end_with_success'}
             ]
         }
         steps = [DummyStep('step1', {})]
@@ -233,9 +233,9 @@ class TestPipelineCheckpointMetadata:
 
         flow = {
             'start_at': 'step1',
-            'transitions': [
-                {'from': 'step1', 'to': 'step2'},
-                {'from': 'step2', 'to': 'end'}
+            'paths': [
+                {'from_step': 'step1', 'to_step': 'step2'},
+                {'from_step': 'step2', 'to_step': 'end_with_success'}
             ]
         }
         steps = [DummyStep('step1', {}), DummyStep('step2', {})]
@@ -258,9 +258,9 @@ class TestPipelineCheckpointMetadata:
 
         flow = {
             'start_at': 'step1',
-            'transitions': [
-                {'from': 'step1', 'to': 'step2'},
-                {'from': 'step2', 'to': 'end'}
+            'paths': [
+                {'from_step': 'step1', 'to_step': 'step2'},
+                {'from_step': 'step2', 'to_step': 'end_with_success'}
             ]
         }
         steps = [DummyStep('step1', {}), DummyStep('step2', {})]

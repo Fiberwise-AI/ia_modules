@@ -1,7 +1,7 @@
 """Tests for trend analysis."""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from reliability.trend_analysis import (
     TrendAnalyzer,
@@ -23,7 +23,7 @@ def test_record_value():
     """Test recording metric values."""
     analyzer = TrendAnalyzer()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     analyzer.record_value("svr", 0.98, now)
     analyzer.record_value("svr", 0.97, now + timedelta(hours=1))
 
@@ -48,7 +48,7 @@ def test_analyze_improving_trend():
     """Test detecting improving trend."""
     analyzer = TrendAnalyzer(min_data_points=10)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record improving metric (increasing values)
     for i in range(20):
@@ -68,7 +68,7 @@ def test_analyze_degrading_trend():
     """Test detecting degrading trend."""
     analyzer = TrendAnalyzer(min_data_points=10)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record degrading metric (decreasing values)
     for i in range(20):
@@ -87,7 +87,7 @@ def test_analyze_stable_trend():
     """Test detecting stable trend."""
     analyzer = TrendAnalyzer(min_data_points=10)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record stable metric (constant with tiny variations)
     for i in range(20):
@@ -105,7 +105,7 @@ def test_analyze_volatile_trend():
     """Test detecting volatile trend."""
     analyzer = TrendAnalyzer(min_data_points=10)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record volatile metric (high variation)
     for i in range(20):
@@ -124,7 +124,7 @@ def test_trend_confidence():
     """Test trend confidence (R²) calculation."""
     analyzer = TrendAnalyzer(min_data_points=10)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record perfect linear trend
     for i in range(20):
@@ -142,7 +142,7 @@ def test_trend_strength_classification():
     """Test trend strength classification."""
     analyzer = TrendAnalyzer(min_data_points=10, confidence_threshold=0.7)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record strong trend (high R²)
     for i in range(20):
@@ -160,7 +160,7 @@ def test_predict_next_value():
     """Test prediction of next value."""
     analyzer = TrendAnalyzer(min_data_points=10)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record linear trend
     for i in range(20):
@@ -179,7 +179,7 @@ def test_forecast():
     """Test forecasting future values."""
     analyzer = TrendAnalyzer(min_data_points=10)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record trend
     for i in range(20):
@@ -206,7 +206,7 @@ def test_detect_degradation():
     """Test detecting future degradation below threshold."""
     analyzer = TrendAnalyzer(min_data_points=10)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record degrading metric that will fall below 0.90
     for i in range(20):
@@ -227,7 +227,7 @@ def test_no_degradation_detected():
     """Test when no degradation is expected."""
     analyzer = TrendAnalyzer(min_data_points=10)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record stable high metric
     for i in range(20):
@@ -245,7 +245,7 @@ def test_analyze_all():
     """Test analyzing all tracked metrics."""
     analyzer = TrendAnalyzer(min_data_points=5)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record multiple metrics
     for i in range(10):
@@ -269,7 +269,7 @@ def test_get_summary():
     """Test getting summary statistics."""
     analyzer = TrendAnalyzer()
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record values
     for i in range(10):
@@ -289,7 +289,7 @@ def test_lookback_window():
     """Test that lookback window filters old data."""
     analyzer = TrendAnalyzer(min_data_points=5, lookback_hours=10)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record values: some old, some recent
     for i in range(20):
@@ -308,7 +308,7 @@ def test_custom_lookback():
     """Test analyzing with custom lookback period."""
     analyzer = TrendAnalyzer(min_data_points=5, lookback_hours=24)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record 20 hours of data
     for i in range(20):
@@ -327,7 +327,7 @@ def test_trend_to_dict():
     """Test converting trend analysis to dictionary."""
     analyzer = TrendAnalyzer(min_data_points=5)
 
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     for i in range(10):
         timestamp = base_time + timedelta(hours=i)

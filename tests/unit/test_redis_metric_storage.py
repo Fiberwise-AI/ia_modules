@@ -70,7 +70,7 @@ async def test_redis_storage_initialization(redis_storage):
 @pytest.mark.asyncio
 async def test_record_step(redis_storage):
     """Test recording a step metric."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     await redis_storage.record_step({
         "agent": "researcher",
@@ -95,7 +95,7 @@ async def test_record_step(redis_storage):
 @pytest.mark.asyncio
 async def test_record_multiple_steps(redis_storage):
     """Test recording multiple step metrics."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     for i in range(5):
         await redis_storage.record_step({
@@ -115,7 +115,7 @@ async def test_record_multiple_steps(redis_storage):
 @pytest.mark.asyncio
 async def test_get_steps_with_time_filter(redis_storage):
     """Test retrieving steps with time range filter."""
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record steps across 10 seconds
     for i in range(10):
@@ -141,7 +141,7 @@ async def test_get_steps_with_time_filter(redis_storage):
 @pytest.mark.asyncio
 async def test_record_workflow(redis_storage):
     """Test recording a workflow metric."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     await redis_storage.record_workflow({
         "workflow_id": "workflow-123",
@@ -167,7 +167,7 @@ async def test_record_workflow(redis_storage):
 @pytest.mark.asyncio
 async def test_get_workflows_with_time_filter(redis_storage):
     """Test retrieving workflows with time range filter."""
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record workflows across 5 seconds
     for i in range(5):
@@ -230,7 +230,7 @@ async def test_record_rsr_measurement(redis_storage):
 @pytest.mark.asyncio
 async def test_get_slo_measurements_with_time_filter(redis_storage):
     """Test retrieving SLO measurements with time range filter."""
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     # Record MTTE measurements across 10 seconds
     for i in range(10):
@@ -263,7 +263,7 @@ async def test_get_slo_measurements_with_time_filter(redis_storage):
 @pytest.mark.asyncio
 async def test_multiple_agents(redis_storage):
     """Test tracking metrics for multiple agents."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # Record steps for different agents
     for agent in ["researcher", "planner", "executor"]:
@@ -293,7 +293,7 @@ async def test_step_with_mode_violation(redis_storage):
         "mode": "explore",
         "declared_mode": "execute",
         "mode_violation": True,
-        "timestamp": datetime.utcnow()
+        "timestamp": datetime.now(timezone.utc)
     })
 
     steps = await redis_storage.get_steps(agent="executor")
@@ -314,7 +314,7 @@ async def test_workflow_with_compensation(redis_storage):
         "required_compensation": True,
         "required_human": False,
         "agents_involved": ["executor"],
-        "timestamp": datetime.utcnow()
+        "timestamp": datetime.now(timezone.utc)
     })
 
     workflows = await redis_storage.get_workflows()

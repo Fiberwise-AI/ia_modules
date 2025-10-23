@@ -53,7 +53,7 @@ class PipelineStateManager:
 
         if self.db_manager:
             try:
-                await self.db_manager.execute_query("""
+                await self.db_manager.execute_async("""
                     INSERT OR REPLACE INTO pipeline_states
                     (interaction_id, pipeline_name, step_name, data, created_at, expires_at, status)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -126,7 +126,7 @@ class PipelineStateManager:
         """Mark state as completed with human input"""
         if self.db_manager:
             try:
-                await self.db_manager.execute_query("""
+                await self.db_manager.execute_async("""
                     UPDATE pipeline_states
                     SET status = 'completed', completed_at = ?, human_input = ?
                     WHERE interaction_id = ?

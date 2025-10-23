@@ -117,7 +117,8 @@ class TestE2EPipelines:
 
         # Test with high-quality data
         high_quality_input = {
-            "raw_data": [
+            "threshold": 0.8,
+            "test_data": [
                 {"quality_score": 0.95, "content": "high quality data 1"},
                 {"quality_score": 0.88, "content": "high quality data 2"},
                 {"quality_score": 0.92, "content": "high quality data 3"}

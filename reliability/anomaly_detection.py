@@ -8,7 +8,7 @@ Reliability Framework (EARF) monitoring requirements.
 
 from typing import Dict, Any, Optional, List, Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 import statistics
 import logging
@@ -199,7 +199,7 @@ class AnomalyDetector:
             timestamp: When value was recorded (default: now)
         """
         if timestamp is None:
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now(timezone.utc)
 
         if metric_name not in self._history:
             self._history[metric_name] = []

@@ -5,7 +5,7 @@ Tests AgentMetrics, MetricsReport, MetricStorage, and ReliabilityMetrics.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from ia_modules.reliability.metrics import (
     AgentMetrics,
     MetricsReport,
@@ -15,7 +15,6 @@ from ia_modules.reliability.metrics import (
 )
 
 
-@pytest.mark.asyncio
 class TestAgentMetrics:
     """Test AgentMetrics dataclass."""
 
@@ -93,7 +92,6 @@ class TestAgentMetrics:
         assert metrics.ma == 1.0
 
 
-@pytest.mark.asyncio
 class TestMetricsReport:
     """Test MetricsReport dataclass."""
 
@@ -117,8 +115,8 @@ class TestMetricsReport:
     def test_is_healthy_all_pass(self):
         """is_healthy returns True when all metrics pass."""
         report = MetricsReport(
-            period_start=datetime.utcnow(),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
             total_workflows=10,
             total_steps=100,
             svr=0.97,  # >95%
@@ -133,8 +131,8 @@ class TestMetricsReport:
     def test_is_healthy_svr_fail(self):
         """is_healthy returns False when SVR fails."""
         report = MetricsReport(
-            period_start=datetime.utcnow(),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
             total_workflows=10,
             total_steps=100,
             svr=0.94,  # ≤95% - FAIL
@@ -149,8 +147,8 @@ class TestMetricsReport:
     def test_is_healthy_cr_fail(self):
         """is_healthy returns False when CR fails."""
         report = MetricsReport(
-            period_start=datetime.utcnow(),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
             total_workflows=10,
             total_steps=100,
             svr=0.97,
@@ -165,8 +163,8 @@ class TestMetricsReport:
     def test_get_violations_none(self):
         """get_violations returns empty list when healthy."""
         report = MetricsReport(
-            period_start=datetime.utcnow(),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
             total_workflows=10,
             total_steps=100,
             svr=0.97,
@@ -182,8 +180,8 @@ class TestMetricsReport:
     def test_get_violations_multiple(self):
         """get_violations returns all violations."""
         report = MetricsReport(
-            period_start=datetime.utcnow(),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
             total_workflows=10,
             total_steps=100,
             svr=0.94,  # FAIL
@@ -202,10 +200,10 @@ class TestMetricsReport:
         assert any("MA" in v for v in violations)
 
 
-@pytest.mark.asyncio
 class TestMemoryMetricStorage:
     """Test MemoryMetricStorage implementation."""
 
+    @pytest.mark.asyncio
     async def test_record_step(self):
         """Can record step metrics."""
         storage = MemoryMetricStorage()
@@ -219,6 +217,7 @@ class TestMemoryMetricStorage:
         assert storage.steps[0]["agent"] == "planner"
         assert "timestamp" in storage.steps[0]
 
+    @pytest.mark.asyncio
     async def test_record_workflow(self):
         """Can record workflow metrics."""
         storage = MemoryMetricStorage()
@@ -232,6 +231,7 @@ class TestMemoryMetricStorage:
         assert len(storage.workflows) == 1
         assert storage.workflows[0]["workflow_id"] == "wf-123"
 
+    @pytest.mark.asyncio
     async def test_get_steps_all(self):
         """Can get all steps."""
         storage = MemoryMetricStorage()
@@ -242,6 +242,7 @@ class TestMemoryMetricStorage:
         steps = await storage.get_steps()
         assert len(steps) == 2
 
+    @pytest.mark.asyncio
     async def test_get_steps_filtered_by_agent(self):
         """Can filter steps by agent."""
         storage = MemoryMetricStorage()
@@ -254,30 +255,31 @@ class TestMemoryMetricStorage:
         assert len(steps) == 2
         assert all(s["agent"] == "agent1" for s in steps)
 
+    @pytest.mark.asyncio
     async def test_get_steps_filtered_by_time(self):
         """Can filter steps by time."""
         storage = MemoryMetricStorage()
 
         # Record old step
         old_step = {"agent": "agent1", "success": True}
-        old_step["timestamp"] = datetime.utcnow() - timedelta(hours=2)
+        old_step["timestamp"] = datetime.now(timezone.utc) - timedelta(hours=2)
         storage.steps.append(old_step)
 
         # Record new step
         await storage.record_step({"agent": "agent2", "success": True})
 
         # Get steps from last hour
-        since = datetime.utcnow() - timedelta(hours=1)
+        since = datetime.now(timezone.utc) - timedelta(hours=1)
         steps = await storage.get_steps(since=since)
 
         assert len(steps) == 1
         assert steps[0]["agent"] == "agent2"
 
 
-@pytest.mark.asyncio
 class TestReliabilityMetrics:
     """Test ReliabilityMetrics class."""
 
+    @pytest.mark.asyncio
     async def test_reliability_metrics_creation(self):
         """ReliabilityMetrics can be created."""
         metrics = ReliabilityMetrics()
@@ -285,6 +287,7 @@ class TestReliabilityMetrics:
         assert metrics.storage is not None
         assert isinstance(metrics.storage, MemoryMetricStorage)
 
+    @pytest.mark.asyncio
     async def test_record_step(self):
         """Can record step metrics."""
         metrics = ReliabilityMetrics()
@@ -300,6 +303,7 @@ class TestReliabilityMetrics:
         assert steps[0]["agent"] == "coder"
         assert steps[0]["success"] is True
 
+    @pytest.mark.asyncio
     async def test_record_step_with_mode_violation(self):
         """Records mode violations correctly."""
         metrics = ReliabilityMetrics()
@@ -314,6 +318,7 @@ class TestReliabilityMetrics:
         steps = await metrics.storage.get_steps()
         assert steps[0]["mode_violation"] is True
 
+    @pytest.mark.asyncio
     async def test_record_workflow(self):
         """Can record workflow metrics."""
         metrics = ReliabilityMetrics()
@@ -330,6 +335,7 @@ class TestReliabilityMetrics:
         assert workflows[0]["workflow_id"] == "wf-123"
         assert workflows[0]["retries"] == 2
 
+    @pytest.mark.asyncio
     async def test_get_svr_perfect(self):
         """SVR is 1.0 when all steps succeed."""
         metrics = ReliabilityMetrics()
@@ -341,6 +347,7 @@ class TestReliabilityMetrics:
         svr = await metrics.get_svr()
         assert svr == 1.0
 
+    @pytest.mark.asyncio
     async def test_get_svr_with_failures(self):
         """SVR calculates correctly with failures."""
         metrics = ReliabilityMetrics()
@@ -354,6 +361,7 @@ class TestReliabilityMetrics:
         svr = await metrics.get_svr()
         assert svr == 0.8
 
+    @pytest.mark.asyncio
     async def test_get_svr_per_agent(self):
         """SVR can be calculated per agent."""
         metrics = ReliabilityMetrics()
@@ -372,6 +380,7 @@ class TestReliabilityMetrics:
         assert agent1_svr == 1.0
         assert agent2_svr == 0.5
 
+    @pytest.mark.asyncio
     async def test_get_cr(self):
         """CR calculates correctly."""
         metrics = ReliabilityMetrics()
@@ -385,6 +394,7 @@ class TestReliabilityMetrics:
         cr = await metrics.get_cr()
         assert cr == 0.2
 
+    @pytest.mark.asyncio
     async def test_get_pc(self):
         """PC calculates correctly."""
         metrics = ReliabilityMetrics()
@@ -397,6 +407,7 @@ class TestReliabilityMetrics:
         pc = await metrics.get_pc()
         assert pc == 1.0
 
+    @pytest.mark.asyncio
     async def test_get_hir(self):
         """HIR calculates correctly."""
         metrics = ReliabilityMetrics()
@@ -409,6 +420,7 @@ class TestReliabilityMetrics:
         hir = await metrics.get_hir()
         assert hir == 0.1
 
+    @pytest.mark.asyncio
     async def test_get_ma(self):
         """MA calculates correctly."""
         metrics = ReliabilityMetrics()
@@ -421,6 +433,7 @@ class TestReliabilityMetrics:
         ma = await metrics.get_ma()
         assert ma == 0.9
 
+    @pytest.mark.asyncio
     async def test_get_report(self):
         """Can generate comprehensive report."""
         metrics = ReliabilityMetrics()
@@ -437,20 +450,21 @@ class TestReliabilityMetrics:
         assert report.svr == 1.0
         assert "agent1" in report.agent_metrics
 
+    @pytest.mark.asyncio
     async def test_get_report_with_time_range(self):
         """Can generate report for time range."""
         metrics = ReliabilityMetrics()
 
         # Add old data manually
         old_step = {"agent": "agent1", "success": True}
-        old_step["timestamp"] = datetime.utcnow() - timedelta(hours=2)
+        old_step["timestamp"] = datetime.now(timezone.utc) - timedelta(hours=2)
         metrics.storage.steps.append(old_step)
 
         # Add new data
         await metrics.record_step("agent2", success=False)
 
         # Get report from last hour
-        since = datetime.utcnow() - timedelta(hours=1)
+        since = datetime.now(timezone.utc) - timedelta(hours=1)
         report = await metrics.get_report(since=since)
 
         # Should only include new data
@@ -458,6 +472,7 @@ class TestReliabilityMetrics:
         assert "agent2" in report.agent_metrics
         assert "agent1" not in report.agent_metrics
 
+    @pytest.mark.asyncio
     async def test_report_agent_metrics(self):
         """Report includes per-agent breakdowns."""
         metrics = ReliabilityMetrics()

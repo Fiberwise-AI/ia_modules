@@ -104,7 +104,7 @@ class JSONReporter:
             JSON string
         """
         data = {
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'total_benchmarks': len(results),
             'benchmarks': [r.to_dict() for r in results]
         }
@@ -408,7 +408,7 @@ class MarkdownReporter:
         lines = [
             "# Benchmark Results",
             "",
-            f"**Date**: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
+            f"**Date**: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC",
             f"**Total Benchmarks**: {len(results)}",
             "",
             "## Results",

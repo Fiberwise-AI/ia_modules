@@ -1,113 +1,219 @@
--- Complete Database Schema - Single Source of Truth
--- Version: V001
--- Description: All tables needed for the pipeline system
+-- Complete Database Schema - Consolidated
+-- All tables for ia_modules pipeline system
 
--- Users table
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    uuid TEXT UNIQUE NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT,
-    first_name TEXT,
-    last_name TEXT,
-    name TEXT,
-    role TEXT DEFAULT 'user',
-    active BOOLEAN DEFAULT 1,
-    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
+-- ===========================
+-- CORE PIPELINE TABLES
+-- ===========================
+
+CREATE TABLE IF NOT EXISTS pipelines (
+    id TEXT PRIMARY KEY,
+    slug TEXT UNIQUE,
+    name TEXT NOT NULL,
+    description TEXT,
+    version TEXT DEFAULT '1.0',
+    pipeline_json TEXT,
+    config_json TEXT,
+    file_path TEXT,
+    content_hash TEXT,
+    is_system INTEGER DEFAULT 0,
+    is_active INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- User sessions table for authentication
-CREATE TABLE IF NOT EXISTS user_sessions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    session_token TEXT UNIQUE NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
--- Pipeline configurations table
-CREATE TABLE IF NOT EXISTS pipeline_configurations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    uuid TEXT UNIQUE NOT NULL,
+CREATE TABLE IF NOT EXISTS pipeline_templates (
+    id TEXT PRIMARY KEY,
+    slug TEXT UNIQUE,
     name TEXT NOT NULL,
     description TEXT,
-    pipeline_json TEXT NOT NULL,
-    user_id INTEGER,
+    category TEXT DEFAULT 'example',
+    pipeline_json TEXT,
+    config_json TEXT,
+    is_system INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Pipeline step logging
-CREATE TABLE IF NOT EXISTS pipeline_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    job_id TEXT NOT NULL,
-    step_name TEXT NOT NULL,
-    step_number INTEGER NOT NULL,
-    event_type TEXT NOT NULL CHECK (event_type IN ('start', 'complete', 'error')),
-    timestamp TEXT NOT NULL,
-    data TEXT,
-    duration REAL,
+CREATE TABLE IF NOT EXISTS pipeline_executions (
+    execution_id TEXT PRIMARY KEY,
+    id INTEGER UNIQUE,
+    pipeline_id TEXT,
+    pipeline_slug TEXT,
+    pipeline_name TEXT,
+    user_id INTEGER,
+    status TEXT NOT NULL,
+    started_at TIMESTAMP NOT NULL,
+    completed_at TIMESTAMP,
+    total_steps INTEGER DEFAULT 0,
+    completed_steps INTEGER DEFAULT 0,
+    failed_steps INTEGER DEFAULT 0,
+    input_data TEXT,
+    output_data TEXT,
+    current_step TEXT,
+    error_message TEXT,
+    execution_time_ms INTEGER,
+    duration_seconds REAL,
+    metadata_json TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create essential indexes
-CREATE INDEX IF NOT EXISTS idx_users_uuid ON users(uuid);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
-CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON user_sessions(expires_at);
-CREATE INDEX IF NOT EXISTS idx_pipeline_logs_job_id ON pipeline_logs(job_id);
-CREATE INDEX IF NOT EXISTS idx_pipeline_logs_step_name ON pipeline_logs(step_name);
-
--- Wiki pages table for knowledge base
-CREATE TABLE IF NOT EXISTS wiki_pages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    page_id TEXT UNIQUE NOT NULL,
-    topic TEXT NOT NULL,
-    title TEXT NOT NULL,
-    summary TEXT,
-    content_json TEXT NOT NULL, -- Full wiki page structure as JSON
-    word_count INTEGER DEFAULT 0,
-    sections_count INTEGER DEFAULT 0,
-    quality_score INTEGER DEFAULT 0,
-    version INTEGER DEFAULT 1,
-    is_current_version BOOLEAN DEFAULT 1,
-    parent_version_id INTEGER, -- Reference to previous version
-    source_data_json TEXT, -- Metadata about sources used
-    change_summary TEXT, -- Summary of what changed in this version
-    created_by TEXT DEFAULT 'system',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (parent_version_id) REFERENCES wiki_pages(id)
+CREATE TABLE IF NOT EXISTS step_executions (
+    id SERIAL PRIMARY KEY,
+    execution_id TEXT NOT NULL,
+    step_id TEXT NOT NULL,
+    step_name TEXT NOT NULL,
+    status TEXT NOT NULL,
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    duration_seconds REAL,
+    result_json TEXT,
+    error_message TEXT,
+    step_order INTEGER,
+    FOREIGN KEY (execution_id) REFERENCES pipeline_executions (execution_id)
 );
 
--- Wiki page revision history table
-CREATE TABLE IF NOT EXISTS wiki_page_revisions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    page_id TEXT NOT NULL,
-    version INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    content_json TEXT NOT NULL,
-    change_summary TEXT,
-    created_by TEXT DEFAULT 'system',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (page_id) REFERENCES wiki_pages(page_id)
+CREATE TABLE IF NOT EXISTS pipeline_logs (
+    id SERIAL PRIMARY KEY,
+    execution_id TEXT,
+    job_id TEXT,
+    step_id TEXT,
+    step_name TEXT,
+    event_type TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    data TEXT,
+    duration_ms INTEGER
 );
 
--- Wiki pages indexes
-CREATE INDEX IF NOT EXISTS idx_wiki_pages_page_id ON wiki_pages(page_id);
-CREATE INDEX IF NOT EXISTS idx_wiki_pages_topic ON wiki_pages(topic);
-CREATE INDEX IF NOT EXISTS idx_wiki_pages_title ON wiki_pages(title);
-CREATE INDEX IF NOT EXISTS idx_wiki_pages_created_at ON wiki_pages(created_at);
-CREATE INDEX IF NOT EXISTS idx_wiki_pages_version ON wiki_pages(version);
-CREATE INDEX IF NOT EXISTS idx_wiki_pages_current ON wiki_pages(is_current_version);
-CREATE INDEX IF NOT EXISTS idx_wiki_revisions_page_id ON wiki_page_revisions(page_id);
-CREATE INDEX IF NOT EXISTS idx_wiki_revisions_version ON wiki_page_revisions(version);
+CREATE TABLE IF NOT EXISTS execution_logs (
+    id SERIAL PRIMARY KEY,
+    execution_id TEXT NOT NULL,
+    step_id TEXT,
+    log_level TEXT DEFAULT 'INFO',
+    message TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    metadata_json TEXT,
+    FOREIGN KEY (execution_id) REFERENCES pipeline_executions (execution_id)
+);
 
--- Default system user (optional user_id for pipeline executions)
-INSERT OR IGNORE INTO users (uuid, email, name, role, active) VALUES
-    ('system-default-user', 'system@pipeline.local', 'System Default User', 'system', 1);
+-- ===========================
+-- CHECKPOINT SYSTEM
+-- ===========================
+
+CREATE TABLE IF NOT EXISTS pipeline_checkpoints (
+    checkpoint_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    thread_id VARCHAR(255) NOT NULL,
+    pipeline_id VARCHAR(255) NOT NULL,
+    step_id VARCHAR(255) NOT NULL,
+    step_index INTEGER NOT NULL,
+    step_name VARCHAR(255),
+    timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
+    state JSONB NOT NULL,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    status VARCHAR(50) DEFAULT 'completed',
+    parent_checkpoint_id UUID,
+    CONSTRAINT fk_parent_checkpoint FOREIGN KEY (parent_checkpoint_id) REFERENCES pipeline_checkpoints(checkpoint_id) ON DELETE SET NULL
+);
+
+-- ===========================
+-- CONVERSATION MEMORY
+-- ===========================
+
+CREATE TABLE IF NOT EXISTS conversation_messages (
+    message_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    thread_id VARCHAR(255) NOT NULL,
+    user_id VARCHAR(255),
+    role VARCHAR(50) NOT NULL,
+    content TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
+    function_call JSONB,
+    function_name VARCHAR(255)
+);
+
+-- ===========================
+-- RELIABILITY METRICS
+-- ===========================
+
+CREATE TABLE IF NOT EXISTS reliability_steps (
+    id SERIAL PRIMARY KEY,
+    agent_name VARCHAR(255) NOT NULL,
+    success BOOLEAN NOT NULL,
+    required_compensation BOOLEAN DEFAULT FALSE,
+    required_human BOOLEAN DEFAULT FALSE,
+    mode VARCHAR(50),
+    declared_mode VARCHAR(50),
+    mode_violation BOOLEAN DEFAULT FALSE,
+    timestamp TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS reliability_workflows (
+    id SERIAL PRIMARY KEY,
+    workflow_id VARCHAR(255) NOT NULL UNIQUE,
+    steps INTEGER NOT NULL,
+    retries INTEGER DEFAULT 0,
+    success BOOLEAN NOT NULL,
+    required_human BOOLEAN DEFAULT FALSE,
+    timestamp TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS reliability_slo_measurements (
+    id SERIAL PRIMARY KEY,
+    measurement_type VARCHAR(10) NOT NULL CHECK (measurement_type IN ('mtte', 'rsr')),
+    thread_id VARCHAR(255) NOT NULL,
+    checkpoint_id VARCHAR(255),
+    duration_ms INTEGER,
+    replay_mode VARCHAR(50),
+    success BOOLEAN NOT NULL,
+    error TEXT,
+    timestamp TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS reliability_anomalies (
+    id SERIAL PRIMARY KEY,
+    anomaly_type VARCHAR(100) NOT NULL,
+    metric_name VARCHAR(100) NOT NULL,
+    expected_value REAL,
+    actual_value REAL,
+    deviation REAL,
+    severity VARCHAR(20) NOT NULL CHECK (severity IN ('low', 'medium', 'high', 'critical')),
+    details TEXT,
+    timestamp TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS reliability_costs (
+    id SERIAL PRIMARY KEY,
+    entity_type VARCHAR(20) NOT NULL CHECK (entity_type IN ('agent', 'workflow', 'tool')),
+    entity_id VARCHAR(255) NOT NULL,
+    cost_type VARCHAR(100) NOT NULL,
+    amount REAL NOT NULL,
+    currency VARCHAR(10) DEFAULT 'USD',
+    metadata JSONB,
+    timestamp TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- ===========================
+-- INDEXES
+-- ===========================
+
+CREATE INDEX IF NOT EXISTS idx_pipelines_slug ON pipelines(slug);
+CREATE INDEX IF NOT EXISTS idx_pipelines_active ON pipelines(is_active);
+CREATE INDEX IF NOT EXISTS idx_pipeline_templates_slug ON pipeline_templates(slug);
+CREATE INDEX IF NOT EXISTS idx_pipeline_logs_execution ON pipeline_logs(execution_id);
+CREATE INDEX IF NOT EXISTS idx_pipeline_executions_pipeline_id ON pipeline_executions(pipeline_id);
+CREATE INDEX IF NOT EXISTS idx_pipeline_executions_status ON pipeline_executions(status);
+CREATE INDEX IF NOT EXISTS idx_step_executions_execution_id ON step_executions(execution_id);
+CREATE INDEX IF NOT EXISTS idx_execution_logs_execution_id ON execution_logs(execution_id);
+
+CREATE INDEX IF NOT EXISTS idx_checkpoint_thread_id ON pipeline_checkpoints(thread_id);
+CREATE INDEX IF NOT EXISTS idx_checkpoint_pipeline_id ON pipeline_checkpoints(pipeline_id);
+CREATE INDEX IF NOT EXISTS idx_checkpoint_timestamp ON pipeline_checkpoints(timestamp);
+
+CREATE INDEX IF NOT EXISTS idx_msg_thread_id ON conversation_messages(thread_id);
+CREATE INDEX IF NOT EXISTS idx_msg_timestamp ON conversation_messages(timestamp);
+
+CREATE INDEX IF NOT EXISTS idx_reliability_steps_agent ON reliability_steps(agent_name);
+CREATE INDEX IF NOT EXISTS idx_reliability_steps_timestamp ON reliability_steps(timestamp);
+CREATE INDEX IF NOT EXISTS idx_reliability_workflows_timestamp ON reliability_workflows(timestamp);
+CREATE INDEX IF NOT EXISTS idx_slo_measurements_type ON reliability_slo_measurements(measurement_type);
+CREATE INDEX IF NOT EXISTS idx_anomalies_timestamp ON reliability_anomalies(timestamp);
+CREATE INDEX IF NOT EXISTS idx_costs_entity ON reliability_costs(entity_type, entity_id);

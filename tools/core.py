@@ -161,10 +161,10 @@ class ToolRegistry:
         # Execute tool
         self.logger.info(f"Executing tool: {tool_name}")
         import time
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         start_time = time.time()
-        timestamp = datetime.utcnow().isoformat()
+        timestamp = datetime.now(timezone.utc).isoformat()
 
         try:
             result = await tool.function(**parameters)
