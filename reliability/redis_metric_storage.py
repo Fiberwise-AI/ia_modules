@@ -6,7 +6,7 @@ Optimized for high-throughput, low-latency metric storage and retrieval.
 """
 
 from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import logging
 
@@ -64,18 +64,13 @@ class RedisMetricStorage(MetricStorage):
         self.redis_url = redis_url
         self.key_prefix = key_prefix
         self.ttl_seconds = ttl_days * 86400 if ttl_days else None
-        self.client: Optional[redis.Redis] = None
         self.logger = logging.getLogger("RedisMetricStorage")
         self._step_counter = 0
         self._workflow_counter = 0
         self._slo_counter = 0
 
-    async def initialize(self):
-        """Initialize Redis connection (truly async operation)."""
-        if not self.client:
-            self.client = redis.Redis.from_url(self.redis_url, decode_responses=True)
-            await self.client.ping()
-            self.logger.info(f"Connected to Redis at {self.redis_url}")
+        # Create Redis client (lazy connection on first use)
+        self.client = redis.Redis.from_url(self.redis_url, decode_responses=True)
 
     async def close(self):
         """Close Redis connection."""

@@ -53,8 +53,6 @@ async def redis_storage():
     )
 
     try:
-        await storage.initialize()
-
         # Clean up any existing test data
         await storage.client.flushdb()
 
