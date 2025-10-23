@@ -6,7 +6,7 @@ Tests use a separate Redis database (db=15) to avoid conflicts.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 import json
 
