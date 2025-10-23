@@ -71,7 +71,7 @@ echo -e "${GREEN}All databases are ready!${NC}"
 echo ""
 
 # Set environment variables for tests
-export TEST_POSTGRESQL_URL="postgresql://testuser:testpass@localhost:5432/ia_modules_test"
+export TEST_POSTGRESQL_URL="postgresql://testuser:testpass@localhost:5434/ia_modules_test"
 export TEST_MYSQL_URL="mysql://testuser:testpass@localhost:3306/ia_modules_test"
 export TEST_MSSQL_URL="mssql://testuser:TestPass123!@localhost:1433/ia_modules_test"
 export TEST_REDIS_URL="redis://localhost:6379/0"

@@ -14,9 +14,9 @@ if (-not (Get-Command docker-compose -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-# Navigate to project root
+# Navigate to tests directory
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location (Join-Path $scriptPath "..")
+Set-Location $scriptPath
 
 Write-Host "Step 1: Starting test databases..." -ForegroundColor Yellow
 docker-compose -f docker-compose.test.yml up -d
@@ -40,7 +40,7 @@ function Wait-ForContainer {
     while ($elapsed -lt $TimeoutSeconds) {
         try {
             if (& $HealthCheck) {
-                Write-Host " ✓" -ForegroundColor Green
+                Write-Host " OK" -ForegroundColor Green
                 return $true
             }
         } catch {
@@ -52,7 +52,7 @@ function Wait-ForContainer {
         $elapsed += $interval
     }
 
-    Write-Host " ✗" -ForegroundColor Red
+    Write-Host " FAILED" -ForegroundColor Red
     Write-Host "$DisplayName failed to start" -ForegroundColor Red
     docker-compose -f docker-compose.test.yml logs $ContainerName
     return $false
@@ -92,7 +92,7 @@ Write-Host "All databases are ready!" -ForegroundColor Green
 Write-Host ""
 
 # Set environment variables for tests
-$env:TEST_POSTGRESQL_URL = "postgresql://testuser:testpass@localhost:5432/ia_modules_test"
+$env:TEST_POSTGRESQL_URL = "postgresql://testuser:testpass@localhost:5434/ia_modules_test"
 $env:TEST_MYSQL_URL = "mysql://testuser:testpass@localhost:3306/ia_modules_test"
 $env:TEST_MSSQL_URL = "mssql://testuser:TestPass123!@localhost:1433/ia_modules_test"
 $env:TEST_REDIS_URL = "redis://localhost:6379/0"
@@ -106,7 +106,8 @@ Write-Host "  MSSQL: $env:TEST_MSSQL_URL"
 Write-Host "  Redis: $env:TEST_REDIS_URL"
 Write-Host ""
 
-# Run tests
+# Run tests from project root
+Set-Location (Join-Path $scriptPath "..")
 $testArgs = @("tests/", "-v", "--tb=short") + $args
 if (pytest @testArgs) {
     Write-Host ""
@@ -124,14 +125,15 @@ if (pytest @testArgs) {
 
 Write-Host ""
 Write-Host "Cleanup Options:" -ForegroundColor Yellow
-Write-Host "  Keep databases running: docker-compose -f docker-compose.test.yml ps"
-Write-Host "  Stop databases: docker-compose -f docker-compose.test.yml stop"
-Write-Host "  Remove databases: docker-compose -f docker-compose.test.yml down -v"
+Write-Host "  Keep databases running: docker-compose -f tests/docker-compose.test.yml ps"
+Write-Host "  Stop databases: docker-compose -f tests/docker-compose.test.yml stop"
+Write-Host "  Remove databases: docker-compose -f tests/docker-compose.test.yml down -v"
 Write-Host ""
 
 $cleanup = Read-Host "Stop and remove test databases? [y/N]"
 if ($cleanup -eq "y" -or $cleanup -eq "Y") {
     Write-Host "Stopping and removing databases..." -ForegroundColor Yellow
+    Set-Location $scriptPath
     docker-compose -f docker-compose.test.yml down -v
     Write-Host "Cleanup complete" -ForegroundColor Green
 } else {

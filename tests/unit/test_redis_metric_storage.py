@@ -246,14 +246,27 @@ async def test_record_rsr_measurement(redis_storage):
 @pytest.mark.asyncio
 async def test_get_slo_measurements_with_time_filter(redis_storage):
     """Test retrieving SLO measurements with time range filter."""
-    base_time = datetime.now(timezone.utc)
+    import asyncio
 
-    # Record MTTE measurements across 10 seconds
-    for i in range(10):
-        # Simulate recording at specific times
-        timestamp = base_time + timedelta(seconds=i)
+    # Record some measurements before the time window
+    for i in range(3):
+        await redis_storage.record_slo_measurement(
+            measurement_type="mtte",
+            thread_id=f"thread-before-{i}",
+            checkpoint_id=f"checkpoint-before-{i}",
+            value=1000.0,
+            success=True
+        )
 
-        # Temporarily override datetime for consistent timestamps
+    # Small delay to ensure timestamp separation
+    await asyncio.sleep(0.1)
+
+    # Mark the start of our query window
+    since = datetime.now(timezone.utc)
+    await asyncio.sleep(0.05)
+
+    # Record measurements within the time window
+    for i in range(6):
         await redis_storage.record_slo_measurement(
             measurement_type="mtte",
             thread_id=f"thread-{i}",
@@ -261,19 +274,31 @@ async def test_get_slo_measurements_with_time_filter(redis_storage):
             value=1000.0 + i * 100,
             success=True
         )
+        await asyncio.sleep(0.01)  # Small delay between records
 
-    # Query middle 6 seconds (account for small timing variations)
-    since = base_time + timedelta(seconds=2)
-    until = base_time + timedelta(seconds=8)
+    # Mark the end of our query window
+    await asyncio.sleep(0.05)
+    until = datetime.now(timezone.utc)
 
+    # Record some measurements after the time window
+    for i in range(3):
+        await redis_storage.record_slo_measurement(
+            measurement_type="mtte",
+            thread_id=f"thread-after-{i}",
+            checkpoint_id=f"checkpoint-after-{i}",
+            value=2000.0,
+            success=True
+        )
+
+    # Query the time window
     measurements = await redis_storage.get_slo_measurements(
         "mtte",
         since=since,
         until=until
     )
 
-    # Should get approximately 6 measurements
-    assert len(measurements) >= 5  # Allow for timing variations
+    # Should get the 6 measurements in the window
+    assert len(measurements) >= 5  # Allow for small timing variations
 
 
 @pytest.mark.asyncio

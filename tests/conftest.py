@@ -85,6 +85,17 @@ async def db_manager(request):
     db = DatabaseManager(config)
     db.connect()
 
+    # Clean up any test tables from previous runs
+    test_tables = [
+        'test_users', 'test_products', 'test_data', 'test_table', 'test_items', 'test_async',
+        'test_booleans', 'test_json', 'test_varchar', 'test_uuid', 'test_timestamps'
+    ]
+    for table in test_tables:
+        try:
+            db.execute(f'DROP TABLE IF EXISTS {table} CASCADE')
+        except:
+            pass
+
     yield db
 
     # Cleanup

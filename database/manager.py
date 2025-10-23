@@ -4,6 +4,8 @@ Database manager implementation
 
 import sqlite3
 import logging
+import re
+
 from pathlib import Path
 from typing import Optional, Any, Dict, List
 from .interfaces import ConnectionConfig, DatabaseType
@@ -167,11 +169,18 @@ class DatabaseManager:
             Translated SQL string for the target database
         """
         if self.config.database_type == DatabaseType.POSTGRESQL:
-            # No translation needed - PostgreSQL is canonical
-            return sql
+            # Translate SQLite-style to PostgreSQL if needed
+
+            result = sql
+
+            # INTEGER PRIMARY KEY (SQLite auto-increment) → SERIAL PRIMARY KEY (PostgreSQL)
+            result = re.sub(r'\bINTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b', 'SERIAL PRIMARY KEY', result, flags=re.IGNORECASE)
+            result = re.sub(r'\bINTEGER\s+PRIMARY\s+KEY\b', 'SERIAL PRIMARY KEY', result, flags=re.IGNORECASE)
+
+            return result
 
         if self.config.database_type == DatabaseType.SQLITE:
-            import re
+            
             result = sql
 
             # Remove transaction statements (executescript handles transactions)
@@ -236,7 +245,7 @@ class DatabaseManager:
 
         # MySQL translation (future)
         if self.config.database_type == DatabaseType.MYSQL:
-            import re
+
             result = sql
             # AUTO_INCREMENT instead of SERIAL
             result = result.replace('SERIAL PRIMARY KEY', 'INTEGER PRIMARY KEY AUTO_INCREMENT')
