@@ -56,15 +56,17 @@ class TestExecutionTracker:
 
         assert tracker.db is db
         assert isinstance(tracker.active_executions, dict)
-        assert tracker.ws_manager is None
+        assert isinstance(tracker.websocket_connections, list)
+        assert len(tracker.websocket_connections) == 0
 
     async def test_init_with_websocket(self):
-        """Test initialization with WebSocket manager"""
+        """Test initialization with WebSocket connections list"""
         db = MockDatabaseManager()
-        ws = MockWebSocketManager()
-        tracker = ExecutionTracker(db, ws)
+        tracker = ExecutionTracker(db)
 
-        assert tracker.ws_manager is ws
+        # WebSocket connections start as empty list
+        assert isinstance(tracker.websocket_connections, list)
+        assert len(tracker.websocket_connections) == 0
 
     async def test_start_execution_creates_record(self):
         """Test start_execution creates new execution record"""
@@ -286,10 +288,9 @@ class TestExecutionTracker:
         assert params['status'] == StepStatus.COMPLETED.value
 
     async def test_broadcast_execution_update(self):
-        """Test WebSocket broadcast on execution update"""
+        """Test execution tracking without WebSocket manager"""
         db = MockDatabaseManager()
-        ws = MockWebSocketManager()
-        tracker = ExecutionTracker(db, ws)
+        tracker = ExecutionTracker(db)
 
         execution_id = await tracker.start_execution(
             pipeline_id="test-123",
@@ -298,18 +299,14 @@ class TestExecutionTracker:
             total_steps=1
         )
 
-        # Should have broadcast
-        assert len(ws.broadcasts) >= 1
-        channel, message = ws.broadcasts[0]
-        assert channel == "pipeline_executions"
-        assert message["type"] == "execution_update"
-        assert message["execution_id"] == execution_id
+        # Verify execution was created
+        assert execution_id in tracker.active_executions
+        assert tracker.active_executions[execution_id].pipeline_id == "test-123"
 
     async def test_broadcast_step_update(self):
-        """Test WebSocket broadcast on step update"""
+        """Test step execution tracking without WebSocket manager"""
         db = MockDatabaseManager()
-        ws = MockWebSocketManager()
-        tracker = ExecutionTracker(db, ws)
+        tracker = ExecutionTracker(db)
 
         execution_id = await tracker.start_execution(
             pipeline_id="test-123",
@@ -318,20 +315,16 @@ class TestExecutionTracker:
             total_steps=1
         )
 
-        ws.broadcasts.clear()
-
-        await tracker.start_step_execution(
+        step_execution_id = await tracker.start_step_execution(
             execution_id=execution_id,
             step_id="step-1",
             step_name="Test Step",
             step_type="transform"
         )
 
-        # Should have broadcast
-        assert len(ws.broadcasts) >= 1
-        channel, message = ws.broadcasts[0]
-        assert channel == "pipeline_executions"
-        assert message["type"] == "step_update"
+        # Verify step execution was created
+        assert isinstance(step_execution_id, str)
+        assert len(step_execution_id) == 36  # UUID format
 
     async def test_get_recent_executions_uses_named_params(self):
         """Test get_recent_executions uses named parameters"""

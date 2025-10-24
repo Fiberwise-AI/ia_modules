@@ -203,8 +203,9 @@ class ExecutionTracker:
                 end_time = datetime.fromisoformat(execution.completed_at.replace('Z', '+00:00'))
                 execution.execution_time_ms = int((end_time - start_time).total_seconds() * 1000)
 
-            # Remove from active executions if completed
-            self.active_executions.pop(execution_id, None)
+            # Remove from active executions only if completed or cancelled (keep failed for review)
+            if status in [ExecutionStatus.COMPLETED, ExecutionStatus.CANCELLED]:
+                self.active_executions.pop(execution_id, None)
 
         # Update in database
         await self._update_execution(execution)

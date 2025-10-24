@@ -4,12 +4,14 @@ Pydantic models for pipeline configurations and executions
 
 from typing import Dict, Any, Optional, List
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict, field_serializer
 import json
 
 
 class PipelineConfiguration(BaseModel):
     """Pipeline configuration model"""
+    model_config = ConfigDict(from_attributes=True)
+
     uuid: str
     name: str
     description: Optional[str] = None
@@ -18,23 +20,23 @@ class PipelineConfiguration(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    @validator('pipeline_json', pre=True)
+    @field_validator('pipeline_json', mode='before')
+    @classmethod
     def parse_pipeline_json(cls, v):
         if isinstance(v, str):
             return json.loads(v)
         return v
 
-    @validator('created_at', 'updated_at', pre=True)
+    @field_validator('created_at', 'updated_at', mode='before')
+    @classmethod
     def parse_datetime(cls, v):
         if isinstance(v, str):
             return datetime.fromisoformat(v.replace('Z', '+00:00'))
         return v
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda dt: dt.isoformat()
-        }
+    @field_serializer('created_at', 'updated_at')
+    def serialize_datetime(self, value: datetime) -> str:
+        return value.isoformat()
 
 
 class PipelineConfigurationCreate(BaseModel):
@@ -46,27 +48,30 @@ class PipelineConfigurationCreate(BaseModel):
 
 class PipelineConfigurationSummary(BaseModel):
     """Summary model for listing pipeline configurations"""
+    model_config = ConfigDict(from_attributes=True)
+
     uuid: str
     name: str
     description: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
-    @validator('created_at', 'updated_at', pre=True)
+    @field_validator('created_at', 'updated_at', mode='before')
+    @classmethod
     def parse_datetime(cls, v):
         if isinstance(v, str):
             return datetime.fromisoformat(v.replace('Z', '+00:00'))
         return v
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda dt: dt.isoformat()
-        }
+    @field_serializer('created_at', 'updated_at')
+    def serialize_datetime(self, value: datetime) -> str:
+        return value.isoformat()
 
 
 class PipelineExecution(BaseModel):
     """Pipeline execution model"""
+    model_config = ConfigDict(from_attributes=True)
+
     uuid: str
     configuration_uuid: Optional[str] = None
     execution_id: str
@@ -80,23 +85,23 @@ class PipelineExecution(BaseModel):
     completed_at: Optional[datetime] = None
     execution_time_ms: Optional[int] = None
 
-    @validator('input_data', 'output_data', pre=True)
+    @field_validator('input_data', 'output_data', mode='before')
+    @classmethod
     def parse_json_data(cls, v):
         if isinstance(v, str) and v:
             return json.loads(v)
         return v
 
-    @validator('started_at', 'completed_at', pre=True)
+    @field_validator('started_at', 'completed_at', mode='before')
+    @classmethod
     def parse_datetime(cls, v):
         if isinstance(v, str) and v:
             return datetime.fromisoformat(v.replace('Z', '+00:00'))
         return v
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda dt: dt.isoformat()
-        }
+    @field_serializer('started_at', 'completed_at')
+    def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
+        return value.isoformat() if value else None
 
 
 class PipelineExecutionCreate(BaseModel):
@@ -110,6 +115,8 @@ class PipelineExecutionCreate(BaseModel):
 
 class PipelineExecutionSummary(BaseModel):
     """Summary model for listing pipeline executions"""
+    model_config = ConfigDict(from_attributes=True)
+
     uuid: str
     configuration_uuid: Optional[str] = None
     execution_id: str
@@ -119,17 +126,16 @@ class PipelineExecutionSummary(BaseModel):
     completed_at: Optional[datetime] = None
     execution_time_ms: Optional[int] = None
 
-    @validator('started_at', 'completed_at', pre=True)
+    @field_validator('started_at', 'completed_at', mode='before')
+    @classmethod
     def parse_datetime(cls, v):
         if isinstance(v, str) and v:
             return datetime.fromisoformat(v.replace('Z', '+00:00'))
         return v
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda dt: dt.isoformat()
-        }
+    @field_serializer('started_at', 'completed_at')
+    def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
+        return value.isoformat() if value else None
 
 
 class PipelineExecutionUpdate(BaseModel):

@@ -88,8 +88,10 @@ class TestPipelineCheckpointBasic:
         assert 'pipeline_input' in checkpoint.state
         assert checkpoint.state['pipeline_input'] == {'input': 'data'}
         assert 'steps' in checkpoint.state
-        assert 'step1' in checkpoint.state['steps']
-        assert 'step2' in checkpoint.state['steps']
+        # Steps is now a list
+        step_names = [s['step_name'] for s in checkpoint.state['steps']]
+        assert 'step1' in step_names
+        assert 'step2' in step_names
 
 
 class TestPipelineResume:
@@ -125,10 +127,11 @@ class TestPipelineResume:
         # Resume from step1 checkpoint (should execute step2 and step3)
         result = await pipeline.resume('test-thread', step1_checkpoint.checkpoint_id)
 
-        # Verify all steps completed
-        assert 'step1' in result['steps']
-        assert 'step2' in result['steps']
-        assert 'step3' in result['steps']
+        # Verify all steps completed - steps is now a list
+        step_names = [s['step_name'] for s in result['steps']]
+        assert 'step1' in step_names
+        assert 'step2' in step_names
+        assert 'step3' in step_names
 
     @pytest.mark.asyncio
     async def test_resume_from_latest(self):
