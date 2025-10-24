@@ -54,7 +54,7 @@ jobs:
       env:
         REDIS_URL: redis://localhost:6379
       run: |
-        pytest ia_modules/tests/ -v --tb=short \
+        pytest tests/ -v --tb=short \
           --cov=ia_modules \
           --cov-report=xml \
           --cov-report=term \
@@ -140,7 +140,7 @@ jobs:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_metrics
         REDIS_URL: redis://localhost:6379
       run: |
-        pytest ia_modules/tests/integration/ -v --tb=short
+        pytest tests/integration/ -v --tb=short
 
   build:
     runs-on: ubuntu-latest
