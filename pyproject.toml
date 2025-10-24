@@ -104,7 +104,25 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["ia_modules"]
+source = [
+    "auth",
+    "agents",
+    "benchmarking",
+    "checkpoint",
+    "cli",
+    "dashboard",
+    "database",
+    "memory",
+    "pipeline",
+    "plugins",
+    "rag",
+    "reliability",
+    "scheduler",
+    "telemetry",
+    "tools",
+    "validation",
+    "web",
+]
 omit = [
     "*/tests/*",
     "*/test_*.py",
