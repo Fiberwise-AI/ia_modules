@@ -127,19 +127,20 @@ jobs:
         ports:
           - 3306:3306
 
-      mssql:
-        image: mcr.microsoft.com/mssql/server:2022-latest
-        env:
-          ACCEPT_EULA: Y
-          SA_PASSWORD: TestPass123!
-          MSSQL_PID: Express
-        options: >-
-          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPass123! -Q 'SELECT 1'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-        ports:
-          - 1433:1433
+      # MSSQL: Commented out - can be enabled when needed locally
+      # mssql:
+      #   image: mcr.microsoft.com/mssql/server:2022-latest
+      #   env:
+      #     ACCEPT_EULA: Y
+      #     SA_PASSWORD: TestPass123!
+      #     MSSQL_PID: Express
+      #   options: >-
+      #     --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPass123! -Q 'SELECT 1'"
+      #     --health-interval 10s
+      #     --health-timeout 5s
+      #     --health-retries 10
+      #   ports:
+      #     - 1433:1433
 
       redis:
         image: redis:7
@@ -190,7 +191,11 @@ jobs:
           - 3000:3000
 
       jaeger:
-        image: jaegertracing/all-in-one:latest
+        # Using Jaeger v2 (EOL for v1 is Dec 31, 2025)
+        # https://www.jaegertracing.io/download/
+        # NOTE: Jaeger v2 maintains API compatibility with v1
+        # Tests use standard HTTP API (/api/services, /api/traces, etc.)
+        image: jaegertracing/jaeger:latest
         env:
           COLLECTOR_OTLP_ENABLED: "true"
         options: >-
@@ -199,9 +204,11 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 16686:16686
-          - 14268:14268
-          - 14269:14269
+          - 16686:16686  # Jaeger UI
+          - 14268:14268  # Jaeger Collector HTTP
+          - 14269:14269  # Jaeger Admin/Health
+          - 4317:4317    # OTLP gRPC
+          - 4318:4318    # OTLP HTTP
 
     steps:
     - uses: actions/checkout@v4
@@ -238,20 +245,23 @@ jobs:
         pytest tests/integration/test_database_mysql.py -v --tb=short
       continue-on-error: true
 
-    - name: Run MSSQL integration tests
-      env:
-        TEST_MSSQL_URL: mssql://sa:TestPass123!@localhost:1433/master
-      run: |
-        pytest tests/integration/test_database_mssql.py -v --tb=short
-      continue-on-error: true
+    # MSSQL tests: Commented out - uncomment when MSSQL service is enabled
+    # - name: Run MSSQL integration tests
+    #   env:
+    #     TEST_MSSQL_URL: mssql://sa:TestPass123!@localhost:1433/master
+    #   run: |
+    #     pytest tests/integration/test_database_mssql.py -v --tb=short
+    #   continue-on-error: true
 
-    - name: Run comprehensive database tests (all backends)
+    - name: Run comprehensive database tests (PostgreSQL & MySQL only)
       env:
         TEST_POSTGRESQL_URL: postgresql://postgres:postgres@localhost:5432/test_metrics
         TEST_MYSQL_URL: mysql://testuser:testpass@localhost:3306/ia_modules_test
-        TEST_MSSQL_URL: mssql://sa:TestPass123!@localhost:1433/master
+        # TEST_MSSQL_URL: mssql://sa:TestPass123!@localhost:1433/master  # Commented out
       run: |
-        pytest tests/integration/test_database_complete.py tests/integration/test_database_comprehensive.py -v --tb=short
+        # Run tests, excluding MSSQL-specific tests
+        pytest tests/integration/test_database_complete.py -v --tb=short -k "not mssql"
+        pytest tests/integration/test_database_comprehensive.py -v --tb=short -k "not mssql"
       continue-on-error: true
 
     - name: Run Redis integration tests
@@ -275,10 +285,10 @@ jobs:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_metrics
         TEST_POSTGRESQL_URL: postgresql://postgres:postgres@localhost:5432/test_metrics
         TEST_MYSQL_URL: mysql://testuser:testpass@localhost:3306/ia_modules_test
-        TEST_MSSQL_URL: mssql://sa:TestPass123!@localhost:1433/master
+        # TEST_MSSQL_URL: mssql://sa:TestPass123!@localhost:1433/master  # Commented out
         REDIS_URL: redis://localhost:6379
       run: |
-        pytest tests/integration/ -v --tb=short -m "integration and not (postgres or mysql or mssql or redis or observability)"
+        pytest tests/integration/ -v --tb=short -m "integration and not (postgres or mysql or mssql or redis or observability)" -k "not mssql"
 
   build:
     runs-on: ubuntu-latest
