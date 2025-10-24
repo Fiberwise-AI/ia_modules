@@ -6,12 +6,14 @@
         {
             "name": "threshold",
             "schema": {"type": "number"},
-            "required": true
+            "required": true,
+            "description": "Quality threshold for routing decisions"
         },
         {
             "name": "test_data",
             "schema": {"type": "array"},
-            "required": true
+            "required": true,
+            "description": "Test data to process"
         }
     ],
     "steps": [

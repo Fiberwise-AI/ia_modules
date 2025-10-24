@@ -38,20 +38,22 @@ class SQLConversationMemory(ConversationMemory):
         metadata_json = json.dumps(metadata or {})
         function_call_json = json.dumps(function_call) if function_call else None
 
-        if self.db.db_type == DatabaseType.POSTGRESQL:
-            query = """
-                INSERT INTO conversation_messages
-                (message_id, thread_id, user_id, role, content, metadata, timestamp, function_call, function_name)
-                VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8::jsonb, $9)
-            """
-            params = (message_id, thread_id, user_id, role, content, metadata_json, timestamp, function_call_json, function_name)
-        else:
-            query = """
-                INSERT INTO conversation_messages
-                (message_id, thread_id, user_id, role, content, metadata, timestamp, function_call, function_name)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """
-            params = (message_id, thread_id, user_id, role, content, metadata_json, timestamp, function_call_json, function_name)
+        query = """
+            INSERT INTO conversation_messages
+            (message_id, thread_id, user_id, role, content, metadata, timestamp, function_call, function_name)
+            VALUES (:message_id, :thread_id, :user_id, :role, :content, :metadata, :timestamp, :function_call, :function_name)
+        """
+        params = {
+            'message_id': message_id,
+            'thread_id': thread_id,
+            'user_id': user_id,
+            'role': role,
+            'content': content,
+            'metadata': metadata_json,
+            'timestamp': timestamp,
+            'function_call': function_call_json,
+            'function_name': function_name
+        }
 
         await self.db.execute_async(query, params)
         return message_id
@@ -63,22 +65,17 @@ class SQLConversationMemory(ConversationMemory):
         offset: int = 0
     ) -> List[Message]:
         """Get messages for thread"""
-        if self.db.db_type == DatabaseType.POSTGRESQL:
-            query = """
-                SELECT * FROM conversation_messages
-                WHERE thread_id = $1
-                ORDER BY timestamp DESC
-                LIMIT $2 OFFSET $3
-            """
-            params = (thread_id, limit, offset)
-        else:
-            query = """
-                SELECT * FROM conversation_messages
-                WHERE thread_id = ?
-                ORDER BY timestamp DESC
-                LIMIT ? OFFSET ?
-            """
-            params = (thread_id, limit, offset)
+        query = """
+            SELECT * FROM conversation_messages
+            WHERE thread_id = :thread_id
+            ORDER BY timestamp DESC
+            LIMIT :limit OFFSET :offset
+        """
+        params = {
+            'thread_id': thread_id,
+            'limit': limit,
+            'offset': offset
+        }
 
         result = await self.db.fetch_all(query, params)
         return [self._row_to_message(row) for row in result.data]
@@ -90,22 +87,17 @@ class SQLConversationMemory(ConversationMemory):
         offset: int = 0
     ) -> List[Message]:
         """Get all messages for user"""
-        if self.db.db_type == DatabaseType.POSTGRESQL:
-            query = """
-                SELECT * FROM conversation_messages
-                WHERE user_id = $1
-                ORDER BY timestamp DESC
-                LIMIT $2 OFFSET $3
-            """
-            params = (user_id, limit, offset)
-        else:
-            query = """
-                SELECT * FROM conversation_messages
-                WHERE user_id = ?
-                ORDER BY timestamp DESC
-                LIMIT ? OFFSET ?
-            """
-            params = (user_id, limit, offset)
+        query = """
+            SELECT * FROM conversation_messages
+            WHERE user_id = :user_id
+            ORDER BY timestamp DESC
+            LIMIT :limit OFFSET :offset
+        """
+        params = {
+            'user_id': user_id,
+            'limit': limit,
+            'offset': offset
+        }
 
         result = await self.db.fetch_all(query, params)
         return [self._row_to_message(row) for row in result.data]
@@ -118,80 +110,54 @@ class SQLConversationMemory(ConversationMemory):
         limit: int = 10
     ) -> List[Message]:
         """Search messages by content"""
-        conditions = ["content LIKE ?"]
-        params = [f"%{query}%"]
+        conditions = []
+        params = {}
+
+        # Build WHERE clause with named parameters
+        conditions.append("content LIKE :search_query")
+        params['search_query'] = f"%{query}%"
 
         if thread_id:
-            conditions.append("thread_id = ?")
-            params.append(thread_id)
+            conditions.append("thread_id = :thread_id")
+            params['thread_id'] = thread_id
 
         if user_id:
-            conditions.append("user_id = ?")
-            params.append(user_id)
+            conditions.append("user_id = :user_id")
+            params['user_id'] = user_id
 
         where_clause = " AND ".join(conditions)
+        params['limit'] = limit
 
-        if self.db.db_type == DatabaseType.POSTGRESQL:
-            # Convert to PostgreSQL placeholders
-            pg_where = where_clause
-            for i in range(len(params)):
-                pg_where = pg_where.replace('?', f'${i+1}', 1)
+        sql_query = f"""
+            SELECT * FROM conversation_messages
+            WHERE {where_clause}
+            ORDER BY timestamp DESC
+            LIMIT :limit
+        """
 
-            sql_query = f"""
-                SELECT * FROM conversation_messages
-                WHERE {pg_where}
-                ORDER BY timestamp DESC
-                LIMIT ${len(params) + 1}
-            """
-            params.append(limit)
-        else:
-            sql_query = f"""
-                SELECT * FROM conversation_messages
-                WHERE {where_clause}
-                ORDER BY timestamp DESC
-                LIMIT ?
-            """
-            params.append(limit)
-
-        result = await self.db.fetch_all(sql_query, tuple(params))
+        result = await self.db.fetch_all(sql_query, params)
         return [self._row_to_message(row) for row in result.data]
 
     async def delete_thread(self, thread_id: str) -> int:
         """Delete all messages in thread"""
-        if self.db.db_type == DatabaseType.POSTGRESQL:
-            query = "DELETE FROM conversation_messages WHERE thread_id = $1"
-            params = (thread_id,)
-        else:
-            query = "DELETE FROM conversation_messages WHERE thread_id = ?"
-            params = (thread_id,)
+        query = "DELETE FROM conversation_messages WHERE thread_id = :thread_id"
+        params = {'thread_id': thread_id}
 
         result = await self.db.execute_async(query, params)
         return result.row_count
 
     async def get_thread_stats(self, thread_id: str) -> Dict[str, Any]:
         """Get thread statistics"""
-        if self.db.db_type == DatabaseType.POSTGRESQL:
-            query = """
-                SELECT
-                    COUNT(*) as count,
-                    MIN(timestamp) as first_msg,
-                    MAX(timestamp) as last_msg,
-                    COUNT(DISTINCT user_id) as participant_count
-                FROM conversation_messages
-                WHERE thread_id = $1
-            """
-            params = (thread_id,)
-        else:
-            query = """
-                SELECT
-                    COUNT(*) as count,
-                    MIN(timestamp) as first_msg,
-                    MAX(timestamp) as last_msg,
-                    COUNT(DISTINCT user_id) as participant_count
-                FROM conversation_messages
-                WHERE thread_id = ?
-            """
-            params = (thread_id,)
+        query = """
+            SELECT
+                COUNT(*) as count,
+                MIN(timestamp) as first_msg,
+                MAX(timestamp) as last_msg,
+                COUNT(DISTINCT user_id) as participant_count
+            FROM conversation_messages
+            WHERE thread_id = :thread_id
+        """
+        params = {'thread_id': thread_id}
 
         result = await self.db.fetch_one(query, params)
         row = result.get_first_row()

@@ -274,6 +274,19 @@ class DatabaseManager:
         if not params:
             return query, None
 
+        # Handle case where params is passed as tuple (legacy code)
+        if isinstance(params, (tuple, list)):
+            import traceback
+            logger.error(f"Parameters passed as {type(params).__name__}, expected dict")
+            logger.error(f"Query: {query[:200]}")
+            logger.error(f"Params: {params}")
+            logger.error(f"Stack trace:\n{''.join(traceback.format_stack())}")
+            # For backwards compatibility with positional params
+            if self.config.database_type == DatabaseType.SQLITE:
+                return query, tuple(params) if isinstance(params, list) else params
+            else:
+                raise TypeError(f"Parameters must be a dict for {self.config.database_type}, got {type(params).__name__}")
+
         if self.config.database_type == DatabaseType.POSTGRESQL:
             # PostgreSQL uses %(name)s format with dict
             new_query = query

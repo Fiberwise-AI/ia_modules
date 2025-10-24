@@ -6,6 +6,9 @@ import { Play, FileCode, Tag, Calendar, X } from 'lucide-react'
 
 // Hardcoded test data for pipelines that require input
 const DEFAULT_INPUTS = {
+  'Simple Three-Step Pipeline': {
+    topic: 'artificial intelligence',
+  },
   'Conditional Processing Pipeline': {
     threshold: 0.8,
     test_data: [
@@ -26,6 +29,14 @@ const DEFAULT_INPUTS = {
       { id: 6, value: 'test data 6' },
     ],
   },
+  'Iterative Content Generation Pipeline': {
+    topic: 'machine learning',
+    max_revisions: 3,
+  },
+  'Agent-Based Processing Pipeline': {
+    input_data: {},
+  },
+  'Human-in-the-Loop Test Pipeline': {},
 }
 
 export default function PipelinesPage() {

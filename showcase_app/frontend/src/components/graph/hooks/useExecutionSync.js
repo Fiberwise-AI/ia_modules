@@ -5,7 +5,7 @@ import { useEffect } from 'react'
  */
 export function useExecutionSync(execution, setNodes) {
   useEffect(() => {
-    if (!execution?.steps) return
+    if (!execution?.steps || !Array.isArray(execution.steps)) return
 
     setNodes((nodes) =>
       nodes.map((node) => {
@@ -32,6 +32,9 @@ export function useExecutionSync(execution, setNodes) {
  * Find step that matches node ID
  */
 function findMatchingStep(steps, nodeId) {
+  // Safety check - ensure steps is an array
+  if (!Array.isArray(steps)) return null
+  
   return steps.find((step) => {
     // Match by step_name containing node ID
     if (step.step_name && step.step_name.includes(nodeId)) return true

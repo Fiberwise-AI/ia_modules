@@ -11,7 +11,7 @@ import sys
 import os
 import uuid
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator, ConfigDict  # Changed from validator to field_validator
 
@@ -81,12 +81,25 @@ class PipelineConfig(BaseModel):
     name: str = Field(..., description="Pipeline name")
     description: Optional[str] = Field(None, description="Pipeline description")
     version: Optional[str] = Field(None, description="Pipeline version")
-    parameters: Dict[str, Any] = Field(default_factory=dict, description="Pipeline parameters")
+    parameters: Union[Dict[str, Any], List[Dict[str, Any]]] = Field(default_factory=list, description="Pipeline parameter schemas")
     steps: List[PipelineStep] = Field(..., description="Pipeline steps")
     flow: PipelineFlow = Field(..., description="Pipeline flow definition")
     input_schema: Optional[Dict[str, Any]] = Field(None, description="Input validation schema")
     output_schema: Optional[Dict[str, Any]] = Field(None, description="Output validation schema")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+
+    @field_validator('parameters', mode='before')
+    @classmethod
+    def normalize_parameters(cls, v):
+        """Normalize parameters - accept both list (schema format) and dict (value format)"""
+        if isinstance(v, list):
+            # Convert list of parameter schemas to empty dict
+            # Actual values come from input_data at runtime
+            return {}
+        if isinstance(v, dict):
+            # Dict format is already fine
+            return v
+        return {}
 
     @field_validator('steps')
     @classmethod
@@ -237,26 +250,24 @@ class GraphPipelineRunner:
 
     def _start_execution_logging(self, config: PipelineConfig) -> str:
         """Start execution logging and return execution ID"""
-        # Get database service and create pipeline execution record
+        # Generate execution ID
+        execution_id = str(uuid.uuid4())
+        
+        # Get execution tracker service if available
         if self.services and hasattr(self.services, 'get'):
-            db_service = self.services.get('database')
-            if db_service:
-                # Create pipeline execution record in database
-                execution_id = db_service.log_execution_start(
+            execution_tracker = self.services.get('execution_tracker')
+            if execution_tracker and hasattr(execution_tracker, 'start_execution'):
+                # Use execution tracker to log start
+                execution_tracker.start_execution(
+                    execution_id=execution_id,
                     pipeline_name=config.name,
                     pipeline_version=config.version,
-                    config=json.dumps(config.dict())
+                    config=config.dict()
                 )
-            else:
-                # Fallback if no database service
-                execution_id = str(uuid.uuid4())
-        else:
-            # Fallback if no services registry
-                execution_id = str(uuid.uuid4())
 
         # Set execution ID in central logger
         logger = self._get_central_logger()
-        if logger:
+        if logger and hasattr(logger, 'set_execution_id'):
             logger.set_execution_id(execution_id)
 
         # Log execution start
@@ -269,19 +280,23 @@ class GraphPipelineRunner:
         return execution_id
 
     def _log_execution_end_to_database(self, execution_id: str, success: bool, error: Optional[str] = None):
-        """Log pipeline execution end to database"""
+        """Log pipeline execution end to execution tracker"""
         if self.services and hasattr(self.services, 'get'):
-            db_service = self.services.get('database')
-            if db_service:
-                db_service.log_execution_end(execution_id, success, error)
+            execution_tracker = self.services.get('execution_tracker')
+            if execution_tracker and hasattr(execution_tracker, 'end_execution'):
+                execution_tracker.end_execution(
+                    execution_id=execution_id,
+                    success=success,
+                    error=error
+                )
 
     async def _write_central_logs_to_database(self):
-        """Write central logger logs to database"""
+        """Write central logger logs to database via execution tracker"""
         if self.services and hasattr(self.services, 'get'):
-            db_service = self.services.get('database')
+            execution_tracker = self.services.get('execution_tracker')
             central_logger = self.services.get('central_logger')
-            if db_service and central_logger and hasattr(central_logger, 'write_to_database'):
-                await central_logger.write_to_database(db_service)
+            if execution_tracker and central_logger and hasattr(central_logger, 'write_to_database'):
+                await central_logger.write_to_database(execution_tracker)
 
     def _validate_pipeline_config(self, config: PipelineConfig):
         """Validate pipeline configuration structure (already done by Pydantic)"""

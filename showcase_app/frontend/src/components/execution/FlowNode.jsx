@@ -38,7 +38,7 @@ export default function FlowNode({ step, index }) {
               <div className="text-sm font-medium opacity-75">Step {index + 1}</div>
               <h3 className="text-xl font-bold">{step.step_name}</h3>
             </div>
-            {step.duration_ms !== null && (
+            {step.duration_ms != null && (
               <div className="text-right">
                 <div className="text-2xl font-bold">{step.duration_ms.toFixed(0)}ms</div>
                 <div className="text-xs opacity-75">duration</div>

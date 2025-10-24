@@ -338,7 +338,7 @@ class Pipeline:
         # Initialize results tracking
         results = {
             "input": input_data,
-            "steps": {},
+            "steps": [],
             "output": None
         }
 
@@ -424,7 +424,12 @@ class Pipeline:
             step_result = await step.execute_with_error_handling(current_data)
 
             # Store result
-            results["steps"][step_name] = step_result
+            results["steps"].append({
+                "step_name": step_name,
+                "step_index": step_index,
+                "result": step_result,
+                "status": "completed"
+            })
             current_data = step_result
 
             # Save checkpoint after each step
@@ -496,7 +501,12 @@ class Pipeline:
                     step_result = await step.execute_with_error_handling(current_data)
 
                 # Store result for this step
-                results["steps"][step_name] = step_result
+                results["steps"].append({
+                    "step_name": step_name,
+                    "step_index": step_index,
+                    "result": step_result,
+                    "status": "completed"
+                })
 
                 # Update current data for next step
                 current_data = step_result

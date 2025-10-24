@@ -54,18 +54,18 @@ class PipelineStateManager:
         if self.db_manager:
             try:
                 await self.db_manager.execute_async("""
-                    INSERT OR REPLACE INTO pipeline_states
+                    INSERT INTO pipeline_states
                     (interaction_id, pipeline_name, step_name, data, created_at, expires_at, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    interaction_id,
-                    pipeline_name,
-                    step_name,
-                    json.dumps(data),
-                    state_record["created_at"],
-                    state_record["expires_at"],
-                    "pending"
-                ))
+                    VALUES (:interaction_id, :pipeline_name, :step_name, :data, :created_at, :expires_at, :status)
+                """, {
+                    'interaction_id': interaction_id,
+                    'pipeline_name': pipeline_name,
+                    'step_name': step_name,
+                    'data': json.dumps(data),
+                    'created_at': state_record["created_at"],
+                    'expires_at': state_record["expires_at"],
+                    'status': "pending"
+                })
             except Exception:
                 # Fallback to in-memory
                 self.in_memory_states[interaction_id] = state_record
@@ -99,8 +99,11 @@ class PipelineStateManager:
             try:
                 result = await self.db_manager.fetch_one("""
                     SELECT * FROM pipeline_states
-                    WHERE interaction_id = ? AND status = 'pending' AND expires_at > ?
-                """, (interaction_id, datetime.now()))
+                    WHERE interaction_id = :interaction_id AND status = 'pending' AND expires_at > :now
+                """, {
+                    'interaction_id': interaction_id,
+                    'now': datetime.now()
+                })
 
                 if result:
                     return {
@@ -128,9 +131,13 @@ class PipelineStateManager:
             try:
                 await self.db_manager.execute_async("""
                     UPDATE pipeline_states
-                    SET status = 'completed', completed_at = ?, human_input = ?
-                    WHERE interaction_id = ?
-                """, (datetime.now(), json.dumps(human_input), interaction_id))
+                    SET status = 'completed', completed_at = :completed_at, human_input = :human_input
+                    WHERE interaction_id = :interaction_id
+                """, {
+                    'completed_at': datetime.now(),
+                    'human_input': json.dumps(human_input),
+                    'interaction_id': interaction_id
+                })
             except Exception:
                 pass
 

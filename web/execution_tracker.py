@@ -99,9 +99,9 @@ class ExecutionTracker:
         """Load active executions from database"""
         try:
             active_statuses = [ExecutionStatus.PENDING.value, ExecutionStatus.RUNNING.value]
-            query = "SELECT * FROM pipeline_executions WHERE status IN (?, ?) ORDER BY started_at DESC"
+            query = "SELECT * FROM pipeline_executions WHERE status IN (:status1, :status2) ORDER BY started_at DESC"
 
-            rows = self.db.fetch_all(query, tuple(active_statuses))
+            rows = self.db.fetch_all(query, {'status1': active_statuses[0], 'status2': active_statuses[1]})
 
             for row in rows:
                 execution = ExecutionRecord(
@@ -135,6 +135,8 @@ class ExecutionTracker:
                             metadata: Optional[Dict[str, Any]] = None) -> str:
         """Start tracking a new pipeline execution"""
 
+        logger.info(f"START: start_execution called for pipeline {pipeline_name}")
+        
         execution_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc).isoformat()
 
@@ -149,8 +151,10 @@ class ExecutionTracker:
             metadata=metadata or {}
         )
 
-        # Save to database
-        await self._save_execution(execution)
+        logger.info(f"BEFORE INSERT: About to insert execution {execution_id}")
+        # Insert new execution to database
+        await self._insert_execution(execution)
+        logger.info(f"AFTER INSERT: Completed inserting execution {execution_id}")
 
         # Track in memory
         self.active_executions[execution_id] = execution
@@ -202,8 +206,8 @@ class ExecutionTracker:
             # Remove from active executions if completed
             self.active_executions.pop(execution_id, None)
 
-        # Save to database
-        await self._save_execution(execution)
+        # Update in database
+        await self._update_execution(execution)
 
         # Broadcast update
         await self._broadcast_execution_update(execution)
@@ -234,8 +238,8 @@ class ExecutionTracker:
             metadata=metadata or {}
         )
 
-        # Save to database
-        await self._save_step_execution(step_execution)
+        # Insert new step execution to database
+        await self._insert_step_execution(step_execution)
 
         # Broadcast update
         await self._broadcast_step_update(step_execution)
@@ -274,8 +278,8 @@ class ExecutionTracker:
             end_time = datetime.fromisoformat(step_execution.completed_at.replace('Z', '+00:00'))
             step_execution.execution_time_ms = int((end_time - start_time).total_seconds() * 1000)
 
-        # Save to database
-        await self._save_step_execution(step_execution)
+        # Update step execution in database
+        await self._update_step_execution(step_execution)
 
         # Update execution step counts
         await self._update_execution_step_counts(step_execution.execution_id)
@@ -293,8 +297,8 @@ class ExecutionTracker:
             return self.active_executions[execution_id]
 
         # Query database
-        query = "SELECT * FROM pipeline_executions WHERE execution_id = ?"
-        row = self.db.fetch_one(query, (execution_id,))
+        query = "SELECT * FROM pipeline_executions WHERE execution_id = :execution_id"
+        row = self.db.fetch_one(query, {'execution_id': execution_id})
 
         if not row:
             return None
@@ -321,11 +325,11 @@ class ExecutionTracker:
 
         query = """
             SELECT * FROM step_executions
-            WHERE execution_id = ?
+            WHERE execution_id = :execution_id
             ORDER BY started_at ASC
         """
 
-        rows = self.db.fetch_all(query, (execution_id,))
+        rows = self.db.fetch_all(query, {'execution_id': execution_id})
 
         steps = []
         for row in rows:
@@ -351,24 +355,27 @@ class ExecutionTracker:
 
     async def get_recent_executions(self, limit: int = 50, pipeline_id: Optional[str] = None) -> List[ExecutionRecord]:
         """Get recent pipeline executions"""
+        logger.info(f"GET_RECENT: Querying executions (limit={limit}, pipeline_id={pipeline_id})")
 
         if pipeline_id:
             query = """
                 SELECT * FROM pipeline_executions
-                WHERE pipeline_id = ?
+                WHERE pipeline_id = :pipeline_id
                 ORDER BY started_at DESC
-                LIMIT ?
+                LIMIT :limit
             """
-            params = (pipeline_id, limit)
+            params = {'pipeline_id': pipeline_id, 'limit': limit}
         else:
             query = """
                 SELECT * FROM pipeline_executions
                 ORDER BY started_at DESC
-                LIMIT ?
+                LIMIT :limit
             """
-            params = (limit,)
+            params = {'limit': limit}
 
+        logger.info(f"GET_RECENT: Executing query with params={params}")
         rows = self.db.fetch_all(query, params)
+        logger.info(f"GET_RECENT: Retrieved {len(rows)} rows from database")
 
         executions = []
         for row in rows:
@@ -390,7 +397,44 @@ class ExecutionTracker:
             )
             executions.append(execution)
 
+        logger.info(f"GET_RECENT: Returning {len(executions)} execution records")
         return executions
+
+    async def get_execution(self, execution_id: str) -> Optional[ExecutionRecord]:
+        """Get a single execution by ID"""
+        logger.info(f"GET_EXECUTION: Querying execution_id={execution_id}")
+        
+        query = """
+            SELECT * FROM pipeline_executions
+            WHERE execution_id = :execution_id
+        """
+        params = {'execution_id': execution_id}
+        
+        row = self.db.fetch_one(query, params)
+        logger.info(f"GET_EXECUTION: Found row={row is not None}")
+        
+        if not row:
+            return None
+        
+        execution = ExecutionRecord(
+            execution_id=row['execution_id'],
+            pipeline_id=row['pipeline_id'],
+            pipeline_name=row['pipeline_name'],
+            status=ExecutionStatus(row['status']),
+            started_at=row['started_at'],
+            completed_at=row['completed_at'],
+            total_steps=row.get('total_steps', 0),
+            completed_steps=row.get('completed_steps', 0),
+            failed_steps=row.get('failed_steps', 0),
+            input_data=json.loads(row['input_data']) if row.get('input_data') else None,
+            output_data=json.loads(row['output_data']) if row.get('output_data') else None,
+            error_message=row['error_message'],
+            execution_time_ms=row.get('execution_time_ms'),
+            metadata=json.loads(row['metadata_json']) if row.get('metadata_json') else None
+        )
+        
+        logger.info(f"GET_EXECUTION: Returning execution record")
+        return execution
 
     async def get_execution_statistics(self) -> Dict[str, Any]:
         """Get execution statistics"""
@@ -439,71 +483,141 @@ class ExecutionTracker:
         if websocket in self.websocket_connections:
             self.websocket_connections.remove(websocket)
 
-    async def _save_execution(self, execution: ExecutionRecord):
-        """Save execution record to database"""
+    async def _insert_execution(self, execution: ExecutionRecord):
+        """Insert new execution record to database"""
 
         query = """
-            INSERT OR REPLACE INTO pipeline_executions
+            INSERT INTO pipeline_executions
             (execution_id, pipeline_id, pipeline_name, status, started_at, completed_at,
              total_steps, completed_steps, failed_steps, input_data, output_data,
              error_message, execution_time_ms, metadata_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (:execution_id, :pipeline_id, :pipeline_name, :status, :started_at, :completed_at,
+                    :total_steps, :completed_steps, :failed_steps, :input_data, :output_data,
+                    :error_message, :execution_time_ms, :metadata_json)
         """
 
-        params = (
-            execution.execution_id,
-            execution.pipeline_id,
-            execution.pipeline_name,
-            execution.status.value,
-            execution.started_at,
-            execution.completed_at,
-            execution.total_steps,
-            execution.completed_steps,
-            execution.failed_steps,
-            json.dumps(execution.input_data) if execution.input_data else None,
-            json.dumps(execution.output_data) if execution.output_data else None,
-            execution.error_message,
-            execution.execution_time_ms,
-            json.dumps(execution.metadata) if execution.metadata else None
-        )
+        params = {
+            'execution_id': execution.execution_id,
+            'pipeline_id': execution.pipeline_id,
+            'pipeline_name': execution.pipeline_name,
+            'status': execution.status.value,
+            'started_at': execution.started_at,
+            'completed_at': execution.completed_at,
+            'total_steps': execution.total_steps,
+            'completed_steps': execution.completed_steps,
+            'failed_steps': execution.failed_steps,
+            'input_data': json.dumps(execution.input_data) if execution.input_data else None,
+            'output_data': json.dumps(execution.output_data) if execution.output_data else None,
+            'error_message': execution.error_message,
+            'execution_time_ms': execution.execution_time_ms,
+            'metadata_json': json.dumps(execution.metadata) if execution.metadata else None
+        }
 
-        self.db.execute(query, params)
+        logger.info(f"Inserting execution {execution.execution_id} to database")
+        result = self.db.execute(query, params)
+        logger.info(f"Insert result: success={result.success if hasattr(result, 'success') else 'N/A'}")
+        if hasattr(result, 'error') and result.error:
+            logger.error(f"Insert error: {result.error}")
 
-    async def _save_step_execution(self, step_execution: StepExecutionRecord):
-        """Save step execution record to database"""
+    async def _update_execution(self, execution: ExecutionRecord):
+        """Update existing execution record in database"""
 
         query = """
-            INSERT OR REPLACE INTO step_executions
+            UPDATE pipeline_executions SET
+                status = :status,
+                completed_at = :completed_at,
+                completed_steps = :completed_steps,
+                failed_steps = :failed_steps,
+                output_data = :output_data,
+                error_message = :error_message,
+                execution_time_ms = :execution_time_ms,
+                metadata_json = :metadata_json
+            WHERE execution_id = :execution_id
+        """
+
+        params = {
+            'execution_id': execution.execution_id,
+            'status': execution.status.value,
+            'completed_at': execution.completed_at,
+            'completed_steps': execution.completed_steps,
+            'failed_steps': execution.failed_steps,
+            'output_data': json.dumps(execution.output_data) if execution.output_data else None,
+            'error_message': execution.error_message,
+            'execution_time_ms': execution.execution_time_ms,
+            'metadata_json': json.dumps(execution.metadata) if execution.metadata else None
+        }
+
+        logger.info(f"Updating execution {execution.execution_id} in database")
+        result = self.db.execute(query, params)
+        logger.info(f"Update result: success={result.success if hasattr(result, 'success') else 'N/A'}")
+        if hasattr(result, 'error') and result.error:
+            logger.error(f"Update error: {result.error}")
+
+    async def _insert_step_execution(self, step_execution: StepExecutionRecord):
+        """Insert new step execution record to database"""
+
+        query = """
+            INSERT INTO step_executions
             (step_execution_id, execution_id, step_id, step_name, step_type, status,
              started_at, completed_at, input_data, output_data, error_message,
              execution_time_ms, retry_count, metadata_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (:step_execution_id, :execution_id, :step_id, :step_name, :step_type, :status,
+                    :started_at, :completed_at, :input_data, :output_data, :error_message,
+                    :execution_time_ms, :retry_count, :metadata_json)
         """
 
-        params = (
-            step_execution.step_execution_id,
-            step_execution.execution_id,
-            step_execution.step_id,
-            step_execution.step_name,
-            step_execution.step_type,
-            step_execution.status.value,
-            step_execution.started_at,
-            step_execution.completed_at,
-            json.dumps(step_execution.input_data) if step_execution.input_data else None,
-            json.dumps(step_execution.output_data) if step_execution.output_data else None,
-            step_execution.error_message,
-            step_execution.execution_time_ms,
-            step_execution.retry_count,
-            json.dumps(step_execution.metadata) if step_execution.metadata else None
-        )
+        params = {
+            'step_execution_id': step_execution.step_execution_id,
+            'execution_id': step_execution.execution_id,
+            'step_id': step_execution.step_id,
+            'step_name': step_execution.step_name,
+            'step_type': step_execution.step_type,
+            'status': step_execution.status.value,
+            'started_at': step_execution.started_at,
+            'completed_at': step_execution.completed_at,
+            'input_data': json.dumps(step_execution.input_data) if step_execution.input_data else None,
+            'output_data': json.dumps(step_execution.output_data) if step_execution.output_data else None,
+            'error_message': step_execution.error_message,
+            'execution_time_ms': step_execution.execution_time_ms,
+            'retry_count': step_execution.retry_count,
+            'metadata_json': json.dumps(step_execution.metadata) if step_execution.metadata else None
+        }
+
+        self.db.execute(query, params)
+
+    async def _update_step_execution(self, step_execution: StepExecutionRecord):
+        """Update existing step execution record in database"""
+
+        query = """
+            UPDATE step_executions SET
+                status = :status,
+                completed_at = :completed_at,
+                output_data = :output_data,
+                error_message = :error_message,
+                execution_time_ms = :execution_time_ms,
+                retry_count = :retry_count,
+                metadata_json = :metadata_json
+            WHERE step_execution_id = :step_execution_id
+        """
+
+        params = {
+            'step_execution_id': step_execution.step_execution_id,
+            'status': step_execution.status.value,
+            'completed_at': step_execution.completed_at,
+            'output_data': json.dumps(step_execution.output_data) if step_execution.output_data else None,
+            'error_message': step_execution.error_message,
+            'execution_time_ms': step_execution.execution_time_ms,
+            'retry_count': step_execution.retry_count,
+            'metadata_json': json.dumps(step_execution.metadata) if step_execution.metadata else None
+        }
 
         self.db.execute(query, params)
 
     async def _get_step_execution(self, step_execution_id: str) -> Optional[StepExecutionRecord]:
         """Get step execution from database"""
 
-        query = "SELECT * FROM step_executions WHERE step_execution_id = ?"
-        row = self.db.fetch_one(query, (step_execution_id,))
+        query = "SELECT * FROM step_executions WHERE step_execution_id = :step_execution_id"
+        row = self.db.fetch_one(query, {'step_execution_id': step_execution_id})
 
         if not row:
             return None
@@ -535,10 +649,10 @@ class ExecutionTracker:
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
                 SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed
             FROM step_executions
-            WHERE execution_id = ?
+            WHERE execution_id = :execution_id
         """
 
-        result = self.db.fetch_one(count_query, (execution_id,))
+        result = self.db.fetch_one(count_query, {'execution_id': execution_id})
 
         if result and execution_id in self.active_executions:
             execution = self.active_executions[execution_id]

@@ -87,12 +87,12 @@ class DatabaseInterface(ABC):
         pass
 
     @abstractmethod
-    async def fetch_all(self, query: str, parameters: Optional[Tuple] = None) -> QueryResult:
+    async def fetch_all(self, query: str, parameters: Optional[Dict] = None) -> QueryResult:
         """Fetch all results from a query"""
         pass
     
     @abstractmethod
-    async def fetch_one(self, query: str, parameters: Optional[Tuple] = None) -> QueryResult:
+    async def fetch_one(self, query: str, parameters: Optional[Dict] = None) -> QueryResult:
         """Fetch one result from a query"""
         pass
     

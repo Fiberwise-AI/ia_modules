@@ -156,10 +156,10 @@ class PipelineImportService:
         """Check if pipeline already exists by slug"""
         query = """
         SELECT id, content_hash FROM pipelines
-        WHERE slug = ? AND is_system = 0
+        WHERE slug = :slug AND is_system = 0
         """
 
-        result = await self.db_provider.fetch_one(query, (slug,))
+        result = await self.db_provider.fetch_one(query, {'slug': slug})
         if result and result.data:
             row = result.data[0] if isinstance(result.data, list) else result.data
             return dict(row)
@@ -179,12 +179,21 @@ class PipelineImportService:
         INSERT INTO pipelines (
             id, slug, name, description, version, pipeline_json,
             file_path, content_hash, is_system
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+        ) VALUES (:id, :slug, :name, :description, :version, :pipeline_json, :file_path, :content_hash, 0)
         """
 
         result = await self.db_provider.execute_async(
             query,
-            (pipeline_id, slug, name, description, version, pipeline_json, file_path, content_hash)
+            {
+                'id': pipeline_id,
+                'slug': slug,
+                'name': name,
+                'description': description,
+                'version': version,
+                'pipeline_json': pipeline_json,
+                'file_path': file_path,
+                'content_hash': content_hash
+            }
         )
 
         if not result.success:
@@ -201,14 +210,22 @@ class PipelineImportService:
 
         query = """
         UPDATE pipelines
-        SET name = ?, description = ?, version = ?, pipeline_json = ?,
-            file_path = ?, content_hash = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
+        SET name = :name, description = :description, version = :version, pipeline_json = :pipeline_json,
+            file_path = :file_path, content_hash = :content_hash, updated_at = CURRENT_TIMESTAMP
+        WHERE id = :id
         """
 
         result = await self.db_provider.execute_async(
             query,
-            (name, description, version, pipeline_json, file_path, content_hash, pipeline_id)
+            {
+                'name': name,
+                'description': description,
+                'version': version,
+                'pipeline_json': pipeline_json,
+                'file_path': file_path,
+                'content_hash': content_hash,
+                'id': pipeline_id
+            }
         )
 
         if not result.success:
@@ -220,10 +237,10 @@ class PipelineImportService:
         SELECT id, slug, name, description, version, pipeline_json,
                file_path, is_active, created_at, updated_at
         FROM pipelines
-        WHERE slug = ? AND is_active = 1
+        WHERE slug = :slug AND is_active = 1
         """
 
-        result = await self.db_provider.fetch_one(query, (slug,))
+        result = await self.db_provider.fetch_one(query, {'slug': slug})
         if result and result.data:
             row = result.data[0] if isinstance(result.data, list) else result.data
             pipeline_data = dict(row)

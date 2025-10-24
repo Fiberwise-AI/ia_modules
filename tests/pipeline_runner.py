@@ -51,8 +51,8 @@ class PipelineLoader:
             raise ValueError("Database manager required for database loading")
 
         result = self.db_manager.fetch_one(
-            "SELECT pipeline_config FROM pipelines WHERE slug = ?",
-            (slug,)
+            "SELECT pipeline_config FROM pipelines WHERE slug = :slug",
+            {'slug': slug}
         )
 
         if not result:

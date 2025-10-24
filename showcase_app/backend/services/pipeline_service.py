@@ -340,12 +340,10 @@ class PipelineService:
                     steps=len(execution.get("steps", [])),
                     retries=0,
                     success=execution["status"] == "completed",
-                    required_human=False,
-                    tokens=total_tokens,
-                    cost=estimated_cost
+                    required_human=False
                 )
 
-            # Also record to old metrics_service for backward compatibility
+            # Also record to old metrics_service for backward compatibility (includes cost tracking)
             if self.metrics_service:
                 await self.metrics_service.record_workflow(
                     workflow_id=job_id,
@@ -423,7 +421,48 @@ class PipelineService:
 
     async def get_execution(self, job_id: str) -> Optional[Dict[str, Any]]:
         """Get execution by ID"""
-        return self.executions.get(job_id)
+        # First check in-memory cache
+        if job_id in self.executions:
+            return self.executions[job_id]
+        
+        # If not in memory, query database
+        if self.tracker:
+            record = await self.tracker.get_execution(job_id)
+            if record:
+                # Load step executions
+                step_records = await self.tracker.get_execution_steps(job_id)
+                steps = []
+                for step_record in step_records:
+                    steps.append({
+                        "step_id": step_record.step_id,
+                        "step_name": step_record.step_name,
+                        "step_type": step_record.step_type,
+                        "status": step_record.status.value,
+                        "started_at": step_record.started_at.isoformat() if step_record.started_at else None,
+                        "completed_at": step_record.completed_at.isoformat() if step_record.completed_at else None,
+                        "duration_ms": step_record.execution_time_ms,
+                        "input_data": step_record.input_data,
+                        "output_data": step_record.output_data,
+                        "error": step_record.error_message,
+                        "retry_count": step_record.retry_count
+                    })
+                
+                return {
+                    "job_id": record.execution_id,
+                    "pipeline_id": record.pipeline_id,
+                    "pipeline_name": record.pipeline_name,
+                    "status": record.status.value,
+                    "started_at": record.started_at,
+                    "completed_at": record.completed_at,
+                    "input_data": record.input_data,
+                    "output_data": record.output_data,
+                    "error": record.error_message,
+                    "progress": 1.0 if record.status == ExecutionStatus.COMPLETED else 0.5,
+                    "steps": steps,
+                    "current_step": steps[-1]["step_name"] if steps else None
+                }
+        
+        return None
 
     async def list_executions(self) -> List[Dict[str, Any]]:
         """List all executions"""

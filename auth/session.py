@@ -29,9 +29,13 @@ class SessionManager:
             
             query = """
             INSERT INTO user_sessions (user_id, session_token, expires_at)
-            VALUES (?, ?, ?)
+            VALUES (:user_id, :session_token, :expires_at)
             """
-            result = await self.db_provider.execute_async(query, (user_id, session_token, expires_at.isoformat()))
+            result = await self.db_provider.execute_async(query, {
+                'user_id': user_id,
+                'session_token': session_token,
+                'expires_at': expires_at.isoformat()
+            })
             
             return session_token if result.success else None
         except Exception as e:
@@ -46,9 +50,9 @@ class SessionManager:
         try:
             query = """
             SELECT user_id FROM user_sessions
-            WHERE session_token = ? AND expires_at > datetime('now')
+            WHERE session_token = :session_token AND expires_at > datetime('now')
             """
-            result = await self.db_provider.fetch_one(query, (session_token,))
+            result = await self.db_provider.fetch_one(query, {'session_token': session_token})
             
             return result.data[0]['user_id'] if result.success and result.data else None
         except Exception as e:
@@ -61,7 +65,10 @@ class SessionManager:
             return False
         
         try:
-            result = await self.db_provider.execute_async("DELETE FROM user_sessions WHERE session_token = ?", (session_token,))
+            result = await self.db_provider.execute_async(
+                "DELETE FROM user_sessions WHERE session_token = :session_token",
+                {'session_token': session_token}
+            )
             return result.success
         except Exception as e:
             logger.error(f"Error deleting session: {e}")
@@ -73,7 +80,10 @@ class SessionManager:
             return False
         
         try:
-            result = await self.db_provider.execute_async("DELETE FROM user_sessions WHERE user_id = ?", (user_id,))
+            result = await self.db_provider.execute_async(
+                "DELETE FROM user_sessions WHERE user_id = :user_id",
+                {'user_id': user_id}
+            )
             return result.success
         except Exception as e:
             logger.error(f"Error deleting user sessions: {e}")
@@ -97,8 +107,8 @@ class SessionManager:
             return None
         
         try:
-            query = "SELECT * FROM users WHERE email = ?"
-            result = await self.db_provider.fetch_one(query, (email,))
+            query = "SELECT * FROM users WHERE email = :email"
+            result = await self.db_provider.fetch_one(query, {'email': email})
             
             return result.data[0] if result.success and result.data else None
         except Exception as e:
@@ -119,13 +129,23 @@ class SessionManager:
 
             query = """
             INSERT INTO users (uuid, email, password_hash, first_name, last_name, role, active)
-            VALUES (?, ?, ?, ?, ?, ?, 1)
+            VALUES (:uuid, :email, :password_hash, :first_name, :last_name, :role, 1)
             """
-            result = await self.db_provider.execute_async(query, (user_uuid, email, password_hash, first_name, last_name, role))
+            result = await self.db_provider.execute_async(query, {
+                'uuid': user_uuid,
+                'email': email,
+                'password_hash': password_hash,
+                'first_name': first_name,
+                'last_name': last_name,
+                'role': role
+            })
             
             if result.success:
                 # Get the created user ID
-                user_result = await self.db_provider.fetch_one("SELECT id FROM users WHERE email = ?", (email,))
+                user_result = await self.db_provider.fetch_one(
+                    "SELECT id FROM users WHERE email = :email",
+                    {'email': email}
+                )
                 return user_result.data[0]['id'] if user_result.success and user_result.data else None
             
             return None

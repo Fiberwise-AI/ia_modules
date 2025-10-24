@@ -2,9 +2,14 @@
     "name": "Agent-Based Processing Pipeline",
     "description": "Pipeline that uses agent-based processing steps",
     "version": "1.0.0",
-    "parameters": {
-        "input_data": {}
-    },
+    "parameters": [
+        {
+            "name": "input_data",
+            "schema": {"type": "object"},
+            "required": false,
+            "description": "Input data for the agent pipeline"
+        }
+    ],
     "steps": [
         {
             "id": "step1",

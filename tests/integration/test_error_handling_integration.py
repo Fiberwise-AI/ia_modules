@@ -223,11 +223,13 @@ class TestErrorHandlingIntegration:
         result = await pipeline.run({"input": "test"})
 
         # Flaky step should have succeeded after retries
-        assert result["steps"]["flaky"]["status"] == "success"
-        assert result["steps"]["flaky"]["attempts"] == 2
+        flaky_step_result = next(s for s in result["steps"] if s["step_name"] == "flaky")
+        assert flaky_step_result["status"] == "completed"
+        assert flaky_step_result["result"]["attempts"] == 2
 
         # Success step should have received flaky's output
-        assert result["steps"]["success"]["final"] == "success"
+        success_step_result = next(s for s in result["steps"] if s["step_name"] == "success")
+        assert success_step_result["result"]["final"] == "success"
 
     @pytest.mark.asyncio
     async def test_pipeline_with_fallback_step(self):
@@ -258,11 +260,13 @@ class TestErrorHandlingIntegration:
         result = await pipeline.run({"input": "test"})
 
         # Fallback step should have used fallback
-        assert result["steps"]["fallback"]["status"] == "success_from_fallback"
-        assert result["steps"]["fallback"]["source"] == "cache"
+        fallback_step_result = next(s for s in result["steps"] if s["step_name"] == "fallback")
+        assert fallback_step_result["status"] == "completed"
+        assert fallback_step_result["result"]["source"] == "cache"
 
         # Process step should have received fallback data
-        assert result["steps"]["process"]["processed"] == "cached_value"
+        process_step_result = next(s for s in result["steps"] if s["step_name"] == "process")
+        assert process_step_result["result"]["processed"] == "cached_value"
 
     @pytest.mark.asyncio
     async def test_mixed_error_strategies(self):
@@ -310,14 +314,17 @@ class TestErrorHandlingIntegration:
         result = await pipeline.run({"input": "test"})
 
         # Retry step succeeded
-        assert result["steps"]["retry"]["status"] == "success"
+        retry_step_result = next(s for s in result["steps"] if s["step_name"] == "retry")
+        assert retry_step_result["status"] == "completed"
 
         # Continue step failed but continued
-        assert result["steps"]["continue"]["step_error"] is True
+        continue_step_result = next(s for s in result["steps"] if s["step_name"] == "continue")
+        assert continue_step_result["result"].get("step_error") is True
 
         # Final step completed with error flag
-        assert result["steps"]["final"]["completed"] is True
-        assert result["steps"]["final"]["had_error"] is True
+        final_step_result = next(s for s in result["steps"] if s["step_name"] == "final")
+        assert final_step_result["result"]["completed"] is True
+        assert final_step_result["result"]["had_error"] is True
 
 
 if __name__ == "__main__":

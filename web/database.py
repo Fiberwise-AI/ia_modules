@@ -90,16 +90,16 @@ class PipelineDatabase:
 
         query = """
         INSERT INTO pipelines (id, name, description, version, pipeline_data, updated_at)
-        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        VALUES (:id, :name, :description, :version, :pipeline_data, CURRENT_TIMESTAMP)
         """
 
-        self.db.execute(query, (
-            pipeline_id,
-            pipeline.name,
-            pipeline.description,
-            pipeline.version,
-            pipeline_data
-        ))
+        self.db.execute(query, {
+            'id': pipeline_id,
+            'name': pipeline.name,
+            'description': pipeline.description,
+            'version': pipeline.version,
+            'pipeline_data': pipeline_data
+        })
 
         logger.info(f"Pipeline saved: {pipeline.name} ({pipeline_id})")
         return pipeline_id
@@ -120,8 +120,8 @@ class PipelineDatabase:
 
     def get_pipeline(self, pipeline_id: str) -> Optional[PipelineModel]:
         """Get a specific pipeline"""
-        query = "SELECT pipeline_data FROM pipelines WHERE id = ?"
-        row = self.db.fetch_one(query, (pipeline_id,))
+        query = "SELECT pipeline_data FROM pipelines WHERE id = :pipeline_id"
+        row = self.db.fetch_one(query, {'pipeline_id': pipeline_id})
 
         if not row:
             return None
@@ -135,8 +135,8 @@ class PipelineDatabase:
 
     def delete_pipeline(self, pipeline_id: str) -> bool:
         """Delete a pipeline"""
-        query = "DELETE FROM pipelines WHERE id = ?"
-        cursor = self.db.execute(query, (pipeline_id,))
+        query = "DELETE FROM pipelines WHERE id = :pipeline_id"
+        cursor = self.db.execute(query, {'pipeline_id': pipeline_id})
         success = cursor.rowcount > 0
 
         if success:
@@ -153,20 +153,20 @@ class PipelineDatabase:
         query = """
         INSERT INTO pipeline_executions
         (id, execution_id, pipeline_name, status, started_at, input_data, current_step)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (:id, :execution_id, :pipeline_name, :status, :started_at, :input_data, :current_step)
         """
 
         execution_id = str(uuid.uuid4())
 
-        self.db.execute(query, (
-            execution_id,
-            execution.execution_id,
-            execution.pipeline_name,
-            execution.status.value,
-            execution.started_at.isoformat(),
-            input_data,
-            execution.current_step
-        ))
+        self.db.execute(query, {
+            'id': execution_id,
+            'execution_id': execution.execution_id,
+            'pipeline_name': execution.pipeline_name,
+            'status': execution.status.value,
+            'started_at': execution.started_at.isoformat(),
+            'input_data': input_data,
+            'current_step': execution.current_step
+        })
 
         logger.info(f"Execution created: {execution.execution_id}")
 
@@ -185,18 +185,19 @@ class PipelineDatabase:
 
         query = """
         UPDATE pipeline_executions
-        SET status = ?, current_step = ?, completed_at = ?, output_data = ?, error_message = ?
-        WHERE execution_id = ?
+        SET status = :status, current_step = :current_step, completed_at = :completed_at, 
+            output_data = :output_data, error_message = :error_message
+        WHERE execution_id = :execution_id
         """
 
-        self.db.execute(query, (
-            status.value,
-            current_step,
-            completed_at_str,
-            output_data_str,
-            error_message,
-            execution_id
-        ))
+        self.db.execute(query, {
+            'status': status.value,
+            'current_step': current_step,
+            'completed_at': completed_at_str,
+            'output_data': output_data_str,
+            'error_message': error_message,
+            'execution_id': execution_id
+        })
 
         logger.info(f"Execution {execution_id} status updated to {status.value}")
 
@@ -207,10 +208,10 @@ class PipelineDatabase:
                duration_seconds, input_data, output_data, current_step, error_message
         FROM pipeline_executions
         ORDER BY started_at DESC
-        LIMIT ?
+        LIMIT :limit
         """
 
-        rows = self.db.fetch_all(query, (limit,))
+        rows = self.db.fetch_all(query, {'limit': limit})
         executions = []
 
         for row in rows:
@@ -243,10 +244,10 @@ class PipelineDatabase:
         SELECT execution_id, pipeline_name, status, started_at, completed_at,
                duration_seconds, input_data, output_data, current_step, error_message
         FROM pipeline_executions
-        WHERE execution_id = ?
+        WHERE execution_id = :execution_id
         """
 
-        row = self.db.fetch_one(query, (execution_id,))
+        row = self.db.fetch_one(query, {'execution_id': execution_id})
 
         if not row:
             return None
@@ -275,21 +276,25 @@ class PipelineDatabase:
         """Add a log entry for an execution"""
         query = """
         INSERT INTO execution_logs (execution_id, level, message)
-        VALUES (?, ?, ?)
+        VALUES (:execution_id, :level, :message)
         """
 
-        self.db.execute(query, (execution_id, log_level, message))
+        self.db.execute(query, {
+            'execution_id': execution_id,
+            'level': log_level,
+            'message': message
+        })
 
     def get_execution_logs(self, execution_id: str) -> List[Dict[str, Any]]:
         """Get execution logs"""
         query = """
         SELECT timestamp, level, message
         FROM execution_logs
-        WHERE execution_id = ?
+        WHERE execution_id = :execution_id
         ORDER BY timestamp ASC
         """
 
-        rows = self.db.fetch_all(query, (execution_id,))
+        rows = self.db.fetch_all(query, {'execution_id': execution_id})
 
         return [
             {
@@ -307,16 +312,16 @@ class PipelineDatabase:
 
         query = """
         INSERT INTO pipeline_templates (id, name, description, category, pipeline_data)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (:id, :name, :description, :category, :pipeline_data)
         """
 
-        self.db.execute(query, (
-            template_id,
-            pipeline.name,
-            pipeline.description,
-            category,
-            pipeline_data
-        ))
+        self.db.execute(query, {
+            'id': template_id,
+            'name': pipeline.name,
+            'description': pipeline.description,
+            'category': category,
+            'pipeline_data': pipeline_data
+        })
 
         logger.info(f"Template saved: {pipeline.name} ({template_id})")
         return template_id
@@ -324,8 +329,8 @@ class PipelineDatabase:
     def get_templates(self, category: Optional[str] = None) -> List[Dict[str, str]]:
         """List pipeline templates"""
         if category:
-            query = "SELECT id, name, description, category FROM pipeline_templates WHERE category = ? ORDER BY name"
-            rows = self.db.fetch_all(query, (category,))
+            query = "SELECT id, name, description, category FROM pipeline_templates WHERE category = :category ORDER BY name"
+            rows = self.db.fetch_all(query, {'category': category})
         else:
             query = "SELECT id, name, description, category FROM pipeline_templates ORDER BY category, name"
             rows = self.db.fetch_all(query)
@@ -342,8 +347,8 @@ class PipelineDatabase:
 
     def get_template(self, template_id: str) -> Optional[PipelineModel]:
         """Get a specific template"""
-        query = "SELECT pipeline_data FROM pipeline_templates WHERE id = ?"
-        row = self.db.fetch_one(query, (template_id,))
+        query = "SELECT pipeline_data FROM pipeline_templates WHERE id = :template_id"
+        row = self.db.fetch_one(query, {'template_id': template_id})
 
         if not row:
             return None

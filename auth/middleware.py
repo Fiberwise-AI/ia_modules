@@ -85,8 +85,8 @@ async def get_current_user(request: Request) -> Optional[CurrentUser]:
             return None
         
         # Get user details
-        query = "SELECT * FROM users WHERE id = ? AND active = 1"
-        result = await _db_provider.fetch_one(query, (user_id,))
+        query = "SELECT * FROM users WHERE id = :user_id AND active = 1"
+        result = await _db_provider.fetch_one(query, {'user_id': user_id})
         
         if not result.success or not result.data:
             return None
@@ -114,8 +114,8 @@ async def login_user(email: str, password: str, remember_me: bool = False) -> tu
     
     try:
         # Get user by email
-        query = "SELECT * FROM users WHERE email = ? AND active = 1"
-        result = await _db_provider.fetch_one(query, (email,))
+        query = "SELECT * FROM users WHERE email = :email AND active = 1"
+        result = await _db_provider.fetch_one(query, {'email': email})
         
         if not result.success or not result.data:
             return None, None

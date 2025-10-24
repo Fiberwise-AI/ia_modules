@@ -37,7 +37,7 @@ export default function StepDetailCard({ step }) {
             <h4 className="text-lg font-semibold text-gray-900">
               {step.step_name}
             </h4>
-            {step.duration_ms !== null && (
+            {step.duration_ms != null && (
               <span className="text-sm text-gray-600">{step.duration_ms.toFixed(0)}ms</span>
             )}
           </div>

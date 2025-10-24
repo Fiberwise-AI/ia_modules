@@ -2,10 +2,20 @@
   "name": "Iterative Content Generation Pipeline",
   "description": "Example pipeline with loops - generates and iteratively refines content",
   "version": "1.0",
-  "parameters": {
-    "topic": "artificial intelligence",
-    "max_revisions": 3
-  },
+  "parameters": [
+    {
+      "name": "topic",
+      "schema": {"type": "string"},
+      "required": true,
+      "description": "The topic to generate content about"
+    },
+    {
+      "name": "max_revisions",
+      "schema": {"type": "integer"},
+      "required": true,
+      "description": "Maximum number of revision iterations"
+    }
+  ],
   "steps": [
     {
       "id": "draft_content",
