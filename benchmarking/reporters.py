@@ -7,7 +7,7 @@ Generate reports in various formats (console, JSON, HTML).
 import json
 from typing import List, Dict, Any, Optional
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class ConsoleReporter:

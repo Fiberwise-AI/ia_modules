@@ -64,11 +64,12 @@ class MigrationRunner:
                 PRIMARY KEY (version, migration_type)
             )
             """
-            result = await self.database.execute_async(create_sql)
-            if not result.success:
-                logger.error(f"Failed to create migrations table: {getattr(result, 'error_message', result.error)}")
+            try:
+                await self.database.execute_async(create_sql)
+                return True
+            except Exception as exec_error:
+                logger.error(f"Failed to create migrations table: {exec_error}")
                 return False
-            return True
         except Exception as e:
             logger.error(f"Failed to initialize migration table: {e}")
             logger.exception(e)

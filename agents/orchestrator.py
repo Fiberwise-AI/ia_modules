@@ -75,6 +75,11 @@ class AgentOrchestrator:
         self.agents: Dict[str, BaseAgent] = {}
         self.graph: Dict[str, List[Edge]] = {}
         self.logger = logging.getLogger(f"Orchestrator.{state_manager.thread_id}")
+        
+        # Execution hooks for monitoring/tracking
+        self.on_agent_start: List[Callable] = []
+        self.on_agent_complete: List[Callable] = []
+        self.on_agent_error: List[Callable] = []
 
     def add_agent(self, agent_id: str, agent: BaseAgent) -> None:
         """
@@ -89,6 +94,34 @@ class AgentOrchestrator:
             self.graph[agent_id] = []
 
         self.logger.debug(f"Added agent: {agent_id} ({agent.role.name})")
+
+    def add_hook(self, event: str, callback: Callable) -> None:
+        """
+        Add execution hook for monitoring agent lifecycle.
+
+        Args:
+            event: Hook event type ('agent_start', 'agent_complete', 'agent_error')
+            callback: Async callback function to invoke
+                     - agent_start: callback(agent_id: str, input_data: Dict)
+                     - agent_complete: callback(agent_id: str, output_data: Dict, duration: float)
+                     - agent_error: callback(agent_id: str, error: Exception)
+
+        Example:
+            >>> async def log_start(agent_id: str, input_data: Dict):
+            ...     print(f"Starting {agent_id} with {input_data}")
+            >>>
+            >>> orchestrator.add_hook("agent_start", log_start)
+        """
+        if event == "agent_start":
+            self.on_agent_start.append(callback)
+        elif event == "agent_complete":
+            self.on_agent_complete.append(callback)
+        elif event == "agent_error":
+            self.on_agent_error.append(callback)
+        else:
+            raise ValueError(f"Unknown hook event: {event}. Valid: agent_start, agent_complete, agent_error")
+        
+        self.logger.debug(f"Added {event} hook")
 
     def add_edge(self, from_agent: str, to_agent: str,
                  condition: Optional[Callable] = None,
@@ -221,12 +254,40 @@ class AgentOrchestrator:
 
             # Execute agent
             agent = self.agents[current_agent]
+            
+            # Invoke agent_start hooks
+            for hook in self.on_agent_start:
+                try:
+                    await hook(current_agent, input_data)
+                except Exception as e:
+                    self.logger.warning(f"Hook failed on agent_start: {e}")
+            
             try:
+                import time
+                start_time = time.time()
+                
                 result = await agent.execute(input_data)
+                
+                duration = time.time() - start_time
                 self.logger.debug(f"{current_agent} returned: {result}")
+                
+                # Invoke agent_complete hooks
+                for hook in self.on_agent_complete:
+                    try:
+                        await hook(current_agent, result, duration)
+                    except Exception as e:
+                        self.logger.warning(f"Hook failed on agent_complete: {e}")
 
             except Exception as e:
                 self.logger.error(f"Agent {current_agent} failed: {e}")
+                
+                # Invoke agent_error hooks
+                for hook in self.on_agent_error:
+                    try:
+                        await hook(current_agent, e)
+                    except Exception as hook_error:
+                        self.logger.warning(f"Hook failed on agent_error: {hook_error}")
+                
                 await self.state.set("error", str(e))
                 await self.state.set("failed_agent", current_agent)
                 raise

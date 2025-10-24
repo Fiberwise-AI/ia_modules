@@ -12,6 +12,15 @@ import pytest
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+# Load .env file if available (for LLM API keys and other test config)
+try:
+    from dotenv import load_dotenv
+    env_file = Path(__file__).parent / ".env"
+    if env_file.exists():
+        load_dotenv(env_file)
+except ImportError:
+    pass  # python-dotenv not installed, use system environment variables
+
 from ia_modules.database import DatabaseManager, ConnectionConfig, DatabaseType
 
 # This file can be used to define pytest fixtures that are shared across all tests

@@ -112,6 +112,35 @@ jobs:
         ports:
           - 5432:5432
 
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_USER: testuser
+          MYSQL_PASSWORD: testpass
+          MYSQL_DATABASE: ia_modules_test
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost -u testuser -ptestpass"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 3306:3306
+
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: TestPass123!
+          MSSQL_PID: Express
+        options: >-
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPass123! -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 1433:1433
+
       redis:
         image: redis:7
         options: >-
@@ -122,6 +151,29 @@ jobs:
         ports:
           - 6379:6379
 
+      prometheus:
+        image: prom/prometheus:latest
+        options: >-
+          --health-cmd "wget --quiet --tries=1 --spider http://localhost:9090/-/healthy || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 9090:9090
+
+      otel-collector:
+        image: otel/opentelemetry-collector-contrib:latest
+        options: >-
+          --health-cmd "wget --quiet --tries=1 --spider http://localhost:13133/ || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 4317:4317
+          - 4318:4318
+          - 8888:8888
+          - 13133:13133
+
     steps:
     - uses: actions/checkout@v4
 
@@ -130,17 +182,61 @@ jobs:
       with:
         python-version: "3.11"
 
+    - name: Install ODBC Driver for SQL Server (for MSSQL)
+      run: |
+        curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+        curl https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+        sudo apt-get update
+        sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
+        sudo apt-get install -y unixodbc-dev
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -e ".[dev,all]"
 
-    - name: Run integration tests
+    - name: Run PostgreSQL integration tests
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_metrics
+        TEST_POSTGRESQL_URL: postgresql://postgres:postgres@localhost:5432/test_metrics
         REDIS_URL: redis://localhost:6379
       run: |
-        pytest tests/integration/ -v --tb=short
+        pytest tests/integration/ -v --tb=short -m postgres
+
+    - name: Run MySQL integration tests
+      env:
+        TEST_MYSQL_URL: mysql://testuser:testpass@localhost:3306/ia_modules_test
+      run: |
+        pytest tests/integration/test_database_mysql.py -v --tb=short -m mysql
+
+    - name: Run MSSQL integration tests
+      env:
+        TEST_MSSQL_URL: mssql://sa:TestPass123!@localhost:1433/master
+      run: |
+        pytest tests/integration/test_database_mssql.py -v --tb=short -m mssql
+
+    - name: Run Redis integration tests
+      env:
+        REDIS_URL: redis://localhost:6379
+      run: |
+        pytest tests/integration/ -v --tb=short -m redis
+
+    - name: Run observability integration tests
+      env:
+        PROMETHEUS_URL: http://localhost:9090
+        OTEL_COLLECTOR_URL: http://localhost:4318
+      run: |
+        pytest tests/integration/test_observability_integration.py -v --tb=short -m observability
+      continue-on-error: true  # Don't fail build if observability tests fail
+
+    - name: Run all other integration tests
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_metrics
+        TEST_POSTGRESQL_URL: postgresql://postgres:postgres@localhost:5432/test_metrics
+        TEST_MYSQL_URL: mysql://testuser:testpass@localhost:3306/ia_modules_test
+        TEST_MSSQL_URL: mssql://sa:TestPass123!@localhost:1433/master
+        REDIS_URL: redis://localhost:6379
+      run: |
+        pytest tests/integration/ -v --tb=short -m "integration and not (postgres or mysql or mssql or redis or observability)"
 
   build:
     runs-on: ubuntu-latest

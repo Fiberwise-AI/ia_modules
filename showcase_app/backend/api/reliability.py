@@ -1,16 +1,25 @@
 """Reliability metrics API endpoints"""
 
-from fastapi import APIRouter, HTTPException, Depends
-from typing import Optional
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Depends, Request
+from typing import Optional, List
+from models import ReplayExecutionResponse, ReplayHistoryItem
 
 router = APIRouter()
 
 
-def get_reliability_service():
+def get_reliability_service(request: Request):
     """Dependency to get reliability service"""
-    from main import get_reliability_service
-    return get_reliability_service()
+    return request.app.state.services.reliability_service
+
+
+def get_replay_service(request: Request):
+    """Dependency to get replay service"""
+    return request.app.state.services.replay_service
+
+
+def get_decision_trail_service(request: Request):
+    """Dependency to get decision trail service"""
+    return request.app.state.services.decision_trail_service
 
 
 @router.get("/metrics")
@@ -115,5 +124,175 @@ async def get_trend_analysis(
             window_size=window_size
         )
         return trends
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Event Replay Endpoints
+
+@router.post("/replay/{job_id}", response_model=ReplayExecutionResponse)
+async def replay_execution(
+    job_id: str,
+    use_cached: bool = False,
+    service=Depends(get_replay_service)
+):
+    """
+    Replay a pipeline execution and compare results
+    
+    Returns comparison between original and replay
+    """
+    try:
+        result = await service.replay_execution(job_id, use_cached)
+        return ReplayExecutionResponse(**result)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/replay/{job_id}/history")
+async def get_replay_history(
+    job_id: str,
+    service=Depends(get_replay_service)
+):
+    """
+    Get history of replays for an execution
+    
+    Returns list of previous replay attempts
+    """
+    try:
+        history = await service.get_replay_history(job_id)
+        history_responses = [ReplayHistoryItem(**item) for item in history]
+        return {
+            "job_id": job_id,
+            "history": history_responses,
+            "count": len(history_responses)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Decision Trail Endpoints
+
+@router.get("/decision-trail/{job_id}")
+async def get_decision_trail(
+    job_id: str,
+    service=Depends(get_decision_trail_service)
+):
+    """
+    Get complete decision trail for an execution
+    
+    Returns decision nodes, edges, and statistics
+    """
+    try:
+        trail = await service.get_decision_trail(job_id)
+        return trail
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/decision-trail/{job_id}/node/{node_id}")
+async def get_decision_node(
+    job_id: str,
+    node_id: str,
+    service=Depends(get_decision_trail_service)
+):
+    """
+    Get detailed information about a specific decision node
+    
+    Returns node details with evidence and rationale
+    """
+    try:
+        node = await service.get_decision_node(job_id, node_id)
+        return node
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/decision-trail/{job_id}/path")
+async def get_execution_path(
+    job_id: str,
+    service=Depends(get_decision_trail_service)
+):
+    """
+    Get the execution path taken through decision points
+    
+    Returns ordered list of decisions and outcomes
+    """
+    try:
+        path = await service.get_execution_path(job_id)
+        return {
+            "job_id": job_id,
+            "path": path,
+            "step_count": len(path)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/decision-trail/{job_id}/evidence/{node_id}")
+async def get_decision_evidence(
+    job_id: str,
+    node_id: str,
+    service=Depends(get_decision_trail_service)
+):
+    """
+    Get evidence collected for a specific decision
+    
+    Returns list of evidence items with sources and weights
+    """
+    try:
+        evidence = await service.get_decision_evidence(job_id, node_id)
+        return {
+            "job_id": job_id,
+            "node_id": node_id,
+            "evidence": evidence,
+            "count": len(evidence)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/decision-trail/{job_id}/alternatives")
+async def get_alternative_paths(
+    job_id: str,
+    service=Depends(get_decision_trail_service)
+):
+    """
+    Get alternative decision paths that were not taken
+    
+    Returns list of alternative paths with probabilities
+    """
+    try:
+        alternatives = await service.get_alternative_paths(job_id)
+        return {
+            "job_id": job_id,
+            "alternatives": alternatives,
+            "count": len(alternatives)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/decision-trail/{job_id}/export")
+async def export_decision_trail(
+    job_id: str,
+    format: str = "json",
+    service=Depends(get_decision_trail_service)
+):
+    """
+    Export decision trail in specified format
+    
+    Formats: json, graphviz, mermaid
+    """
+    try:
+        exported = await service.export_trail(job_id, format)
+        return exported
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

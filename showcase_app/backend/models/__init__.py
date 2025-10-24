@@ -123,3 +123,173 @@ class WebSocketMessage(BaseModel):
     type: str  # "step_update", "execution_complete", "metrics_update", etc.
     data: Dict[str, Any]
     timestamp: datetime
+
+
+# Telemetry Models
+
+class SpanAttributes(BaseModel):
+    """Span attributes"""
+    job_id: Optional[str] = None
+    step_name: Optional[str] = None
+    extra: Dict[str, Any] = Field(default_factory=dict)
+
+
+class SpanResponse(BaseModel):
+    """Telemetry span response"""
+    span_id: str
+    parent_id: Optional[str]
+    name: str
+    start_time: Optional[str]
+    end_time: Optional[str]
+    duration_ms: Optional[float]
+    status: str = "ok"
+    attributes: Dict[str, Any] = Field(default_factory=dict)
+
+
+class SpanTimelineResponse(BaseModel):
+    """Span timeline response"""
+    span_id: str
+    parent_id: Optional[str]
+    name: str
+    start_time: Optional[str]
+    end_time: Optional[str]
+    duration_ms: float = 0
+    status: str = "ok"
+    depth: int = 0
+    attributes: Dict[str, Any] = Field(default_factory=dict)
+
+
+class TelemetryMetrics(BaseModel):
+    """Aggregated telemetry metrics"""
+    total_spans: int
+    total_duration_ms: float
+    step_count: int
+    error_count: int
+    avg_step_duration_ms: float = 0
+
+
+# Checkpoint Models
+
+class CheckpointResponse(BaseModel):
+    """Checkpoint response"""
+    id: str
+    job_id: str
+    step_name: str
+    created_at: Optional[str]
+    state_size: int = 0
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class CheckpointStateResponse(BaseModel):
+    """Checkpoint state response"""
+    checkpoint_id: str
+    state: Dict[str, Any]
+
+
+class CheckpointResumeResponse(BaseModel):
+    """Checkpoint resume response"""
+    original_job_id: str
+    new_job_id: str
+    resumed_from_checkpoint: str
+    resumed_at_step: str
+
+
+# Memory Models
+
+class MemoryMessage(BaseModel):
+    """Memory message"""
+    role: str = "user"
+    content: str
+    timestamp: Optional[str]
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class MemoryStats(BaseModel):
+    """Memory statistics"""
+    message_count: int
+    total_tokens: int
+    first_message: Optional[str]
+    last_message: Optional[str]
+    avg_message_length: int = 0
+
+
+class MemorySearchRequest(BaseModel):
+    """Memory search request"""
+    query: str = Field(..., min_length=1)
+    session_id: Optional[str] = None
+    limit: int = Field(10, ge=1, le=100)
+
+
+# Replay Models
+
+class ReplayExecutionResponse(BaseModel):
+    """Replay execution response"""
+    original_job_id: str
+    replay_job_id: str
+    original: Dict[str, Any]
+    replay: Dict[str, Any]
+    comparison: Dict[str, Any]
+    replayed_at: str
+
+
+class ReplayComparison(BaseModel):
+    """Replay comparison"""
+    identical: bool
+    difference_count: int
+    differences: List[Dict[str, Any]]
+    output_match: bool
+    status_match: bool
+
+
+class ReplayHistoryItem(BaseModel):
+    """Replay history item"""
+    replay_id: Optional[str]
+    original_job_id: str
+    replay_job_id: str
+    success: bool
+    differences: List[Dict[str, Any]] = Field(default_factory=list)
+    replayed_at: Optional[str]
+
+
+# Step Detail Models
+
+class StepDetailResponse(BaseModel):
+    """Detailed step information"""
+    step_name: str
+    status: str
+    started_at: Optional[str]
+    completed_at: Optional[str]
+    duration_ms: Optional[float]
+    input_data: Dict[str, Any] = Field(default_factory=dict)
+    output_data: Dict[str, Any] = Field(default_factory=dict)
+    error: Optional[str]
+    retry_count: int = 0
+    tokens: Optional[int]
+    cost: Optional[float]
+    logs: List[Dict[str, Any]] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+# Pipeline Graph Models
+
+class GraphNode(BaseModel):
+    """Pipeline graph node"""
+    id: str
+    type: str = "step"
+    label: str
+    config: Dict[str, Any] = Field(default_factory=dict)
+    position: Dict[str, float] = Field(default_factory=dict)
+
+
+class GraphEdge(BaseModel):
+    """Pipeline graph edge"""
+    source: str
+    target: str
+    condition: Optional[Dict[str, Any]]
+    label: Optional[str]
+
+
+class PipelineGraphResponse(BaseModel):
+    """Pipeline graph structure"""
+    nodes: List[GraphNode]
+    edges: List[GraphEdge]

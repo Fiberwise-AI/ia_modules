@@ -1,88 +1,75 @@
 """Checkpoint management API endpoints"""
 
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Dict, Any, Optional
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Depends, Request
+from typing import List
+from models import CheckpointResponse, CheckpointStateResponse, CheckpointResumeResponse
 
 router = APIRouter()
 
 
-class ResumeRequest(BaseModel):
-    checkpoint_id: str
-    input_data: Optional[Dict[str, Any]] = None
+def get_checkpoint_service(request: Request):
+    """Dependency to get checkpoint service"""
+    return request.app.state.services.checkpoint_service
 
 
-def get_pipeline_service():
-    """Dependency to get pipeline service"""
-    from main import get_pipeline_service
-    return get_pipeline_service()
-
-
-@router.get("/{pipeline_id}")
+@router.get("/{job_id}")
 async def list_checkpoints(
-    pipeline_id: str,
-    thread_id: Optional[str] = None,
-    service=Depends(get_pipeline_service)
+    job_id: str,
+    service=Depends(get_checkpoint_service)
 ):
-    """List checkpoints for a pipeline"""
+    """List all checkpoints for a specific execution"""
     try:
-        checkpoints = await service.list_checkpoints(
-            pipeline_id=pipeline_id,
-            thread_id=thread_id
-        )
-        return {"checkpoints": checkpoints}
+        checkpoints = await service.list_checkpoints(job_id)
+        checkpoint_responses = [CheckpointResponse(**cp) for cp in checkpoints]
+        return {"job_id": job_id, "checkpoints": checkpoint_responses, "count": len(checkpoint_responses)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/checkpoint/{checkpoint_id}")
+@router.get("/checkpoint/{checkpoint_id}", response_model=CheckpointResponse)
 async def get_checkpoint(
     checkpoint_id: str,
-    service=Depends(get_pipeline_service)
+    service=Depends(get_checkpoint_service)
 ):
     """Get checkpoint details"""
     try:
         checkpoint = await service.get_checkpoint(checkpoint_id)
         if not checkpoint:
             raise HTTPException(status_code=404, detail="Checkpoint not found")
-        return checkpoint
+        return CheckpointResponse(**checkpoint)
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/resume")
+@router.get("/checkpoint/{checkpoint_id}/state", response_model=CheckpointStateResponse)
+async def get_checkpoint_state(
+    checkpoint_id: str,
+    service=Depends(get_checkpoint_service)
+):
+    """Get checkpoint state data"""
+    try:
+        state = await service.get_checkpoint_state(checkpoint_id)
+        if state is None:
+            raise HTTPException(status_code=404, detail="Checkpoint not found")
+        return CheckpointStateResponse(checkpoint_id=checkpoint_id, state=state)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/checkpoint/{checkpoint_id}/resume", response_model=CheckpointResumeResponse)
 async def resume_from_checkpoint(
-    request: ResumeRequest,
-    service=Depends(get_pipeline_service)
+    checkpoint_id: str,
+    service=Depends(get_checkpoint_service)
 ):
     """Resume pipeline execution from a checkpoint"""
     try:
-        job_id = await service.resume_from_checkpoint(
-            checkpoint_id=request.checkpoint_id,
-            input_data=request.input_data
-        )
-        execution = await service.get_execution(job_id)
-        return execution
+        result = await service.resume_from_checkpoint(checkpoint_id)
+        return CheckpointResumeResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.delete("/{checkpoint_id}")
-async def delete_checkpoint(
-    checkpoint_id: str,
-    service=Depends(get_pipeline_service)
-):
-    """Delete a checkpoint"""
-    try:
-        success = await service.delete_checkpoint(checkpoint_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="Checkpoint not found")
-        return {"message": "Checkpoint deleted successfully"}
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

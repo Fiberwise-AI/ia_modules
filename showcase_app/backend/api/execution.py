@@ -1,15 +1,10 @@
 """Pipeline execution API endpoints"""
 
 from fastapi import APIRouter, HTTPException, Depends, Request
-from typing import List, Dict, Any
-from pydantic import BaseModel
+from typing import List
+from models import ExecutionRequest, ExecutionResponse, StepDetailResponse
 
 router = APIRouter()
-
-
-class ExecutionRequest(BaseModel):
-    input_data: Dict[str, Any] = {}
-    checkpoint_enabled: bool = True
 
 
 def get_pipeline_service(request: Request):
@@ -84,3 +79,37 @@ async def cancel_execution(job_id: str, service=Depends(get_pipeline_service)):
         raise HTTPException(status_code=404, detail="Execution not found or cannot be cancelled")
 
     return {"message": "Execution cancelled successfully"}
+
+
+@router.get("/{job_id}/step/{step_name}", response_model=StepDetailResponse)
+async def get_step_details(job_id: str, step_name: str, service=Depends(get_pipeline_service)):
+    """Get detailed information for a specific step"""
+    execution = await service.get_execution(job_id)
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+    
+    # Find the step in execution
+    step = None
+    for s in execution.get("steps", []):
+        if s.get("step_name") == step_name:
+            step = s
+            break
+    
+    if not step:
+        raise HTTPException(status_code=404, detail="Step not found")
+    
+    return StepDetailResponse(
+        step_name=step.get("step_name"),
+        status=step.get("status"),
+        started_at=step.get("started_at"),
+        completed_at=step.get("completed_at"),
+        duration_ms=step.get("duration_ms"),
+        input_data=step.get("input_data", {}),
+        output_data=step.get("output_data", {}),
+        error=step.get("error"),
+        retry_count=step.get("retry_count", 0),
+        tokens=step.get("tokens"),
+        cost=step.get("cost"),
+        logs=step.get("logs", []),
+        metadata=step.get("metadata", {})
+    )

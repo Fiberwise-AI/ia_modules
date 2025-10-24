@@ -7,12 +7,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from ia_modules.pipeline.runner import create_pipeline_from_json
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
 from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.pipeline.execution_tracker import ExecutionTracker, ExecutionStatus
 from ia_modules.telemetry.integration import get_telemetry
 from ia_modules.telemetry.tracing import SimpleTracer
 from ia_modules.checkpoint import SQLCheckpointer
 from ia_modules.reliability.metrics import ReliabilityMetrics
 from ia_modules.reliability.sql_metric_storage import SQLMetricStorage
-from ia_modules.web.execution_tracker import ExecutionTracker, ExecutionStatus
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 import asyncio
@@ -282,8 +282,19 @@ class PipelineService:
         execution = self.executions[job_id]
         start_time = datetime.now(timezone.utc)
 
+        # Get WebSocket manager for real-time updates
+        from api.websocket import get_ws_manager
+        ws_manager = get_ws_manager()
+
         try:
             execution["status"] = "running"
+            
+            # Notify WebSocket: Execution started
+            await ws_manager.broadcast_execution(job_id, {
+                "type": "execution_started",
+                "job_id": job_id,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
 
             # Add pipeline directory to path for imports
             pipeline_config = pipeline["config"]
@@ -297,14 +308,62 @@ class PipelineService:
 
             logger.info(f"Running pipeline {pipeline_name} with input_data: {input_data}")
 
+            # Create step execution callback for WebSocket notifications
+            async def step_callback(step_name: str, event: str, data: dict = None):
+                """Callback to notify WebSocket of step events"""
+                step_data = {
+                    "type": f"step_{event}",
+                    "job_id": job_id,
+                    "step_name": step_name,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+                if data:
+                    step_data.update(data)
+                
+                await ws_manager.broadcast_execution(job_id, step_data)
+                
+                # Update execution steps list
+                if event == "started":
+                    execution["steps"].append({
+                        "step_name": step_name,
+                        "status": "running",
+                        "started_at": step_data["timestamp"],
+                        "input_data": data.get("input") if data else None
+                    })
+                elif event in ("completed", "failed"):
+                    # Find and update the step
+                    for step in execution["steps"]:
+                        if step["step_name"] == step_name:
+                            step["status"] = "completed" if event == "completed" else "failed"
+                            step["completed_at"] = step_data["timestamp"]
+                            if data:
+                                step["output_data"] = data.get("output")
+                                step["error"] = data.get("error")
+                                step["duration_ms"] = data.get("duration_ms")
+                            break
+
             # Use GraphPipelineRunner for graph-based execution with inputs/outputs routing
             graph_runner = GraphPipelineRunner(self.services)
+            
+            # Add callback if runner supports it (monkey patch for now)
+            if hasattr(graph_runner, 'set_step_callback'):
+                graph_runner.set_step_callback(step_callback)
+            
             result = await graph_runner.run_pipeline_from_json(pipeline_config, input_data, use_enhanced_features=False)
 
             execution["output_data"] = result.get("output", result) if isinstance(result, dict) else result
             execution["steps"] = result.get("steps", [])
             execution["status"] = "completed"
             execution["progress"] = 1.0
+
+            # Notify WebSocket: Execution completed
+            await ws_manager.broadcast_execution(job_id, {
+                "type": "execution_completed",
+                "job_id": job_id,
+                "status": "completed",
+                "output_data": execution["output_data"],
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
 
             # Extract token usage from result or telemetry
             total_tokens = result.get("total_tokens") if isinstance(result, dict) else None
@@ -317,6 +376,16 @@ class PipelineService:
             logger.error(f"Pipeline execution failed: {e}", exc_info=True)
             execution["status"] = "failed"
             execution["error"] = str(e)
+            
+            # Notify WebSocket: Execution failed
+            await ws_manager.broadcast_execution(job_id, {
+                "type": "execution_failed",
+                "job_id": job_id,
+                "status": "failed",
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+            
             total_tokens = None
             estimated_cost = None
 

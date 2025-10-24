@@ -1,11 +1,14 @@
 import React, { useState } from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
-import { Home, BarChart3, Play, FileCode, Github } from 'lucide-react'
+import { Home, BarChart3, Play, FileCode, Github, Edit, Sparkles, Network } from 'lucide-react'
 import HomePage from './pages/HomePage'
 import PipelinesPage from './pages/PipelinesPage'
 import MetricsPage from './pages/MetricsPage'
 import ExecutionsPage from './pages/ExecutionsPage'
 import ExecutionDetailPage from './pages/ExecutionDetailPage'
+import PipelineEditorPage from './pages/PipelineEditorPage'
+import PatternsPage from './pages/PatternsPage'
+import MultiAgentDashboard from './components/MultiAgent/MultiAgentDashboard'
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -32,7 +35,10 @@ function App() {
           <nav className="flex-1 p-4 space-y-2">
             <NavLink to="/" icon={<Home size={20} />} text="Home" sidebarOpen={sidebarOpen} />
             <NavLink to="/pipelines" icon={<FileCode size={20} />} text="Pipelines" sidebarOpen={sidebarOpen} />
+            <NavLink to="/editor" icon={<Edit size={20} />} text="Editor" sidebarOpen={sidebarOpen} />
             <NavLink to="/executions" icon={<Play size={20} />} text="Executions" sidebarOpen={sidebarOpen} />
+            <NavLink to="/patterns" icon={<Sparkles size={20} />} text="Patterns" sidebarOpen={sidebarOpen} />
+            <NavLink to="/multi-agent" icon={<Network size={20} />} text="Multi-Agent" sidebarOpen={sidebarOpen} />
             <NavLink to="/metrics" icon={<BarChart3 size={20} />} text="Metrics" sidebarOpen={sidebarOpen} />
           </nav>
 
@@ -70,8 +76,11 @@ function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/pipelines" element={<PipelinesPage />} />
+              <Route path="/editor" element={<PipelineEditorPage />} />
               <Route path="/executions" element={<ExecutionsPage />} />
               <Route path="/executions/:jobId" element={<ExecutionDetailPage />} />
+              <Route path="/patterns" element={<PatternsPage />} />
+              <Route path="/multi-agent" element={<MultiAgentDashboard />} />
               <Route path="/metrics" element={<MetricsPage />} />
             </Routes>
           </main>

@@ -134,6 +134,48 @@ class DatabaseManager:
                 logger.info(f"✓ Connected to PostgreSQL database")
                 return True
 
+            elif self.config.database_type == DatabaseType.MYSQL:
+                import pymysql
+                import pymysql.cursors
+                self._connection = pymysql.connect(
+                    host=self.config.host or self.database_url.split('@')[1].split(':')[0],
+                    user=self.config.username or self.database_url.split('://')[1].split(':')[0],
+                    password=self.config.password or self.database_url.split(':')[2].split('@')[0],
+                    database=self.config.database_name or self.database_url.split('/')[-1],
+                    cursorclass=pymysql.cursors.DictCursor,
+                    autocommit=False
+                )
+                logger.info(f"✓ Connected to MySQL database")
+                return True
+
+            elif self.config.database_type == DatabaseType.MSSQL:
+                import pyodbc
+                # Parse connection string or build from components
+                if 'Driver' in self.database_url or 'DRIVER' in self.database_url:
+                    # Full connection string provided
+                    self._connection = pyodbc.connect(self.database_url)
+                else:
+                    # Build connection string from URL
+                    # Format: mssql://user:pass@host:port/database
+                    parts = self.database_url.replace('mssql://', '').split('@')
+                    user_pass = parts[0].split(':')
+                    host_db = parts[1].split('/')
+                    host_port = host_db[0].split(':')
+
+                    conn_str = (
+                        f"DRIVER={{ODBC Driver 18 for SQL Server}};"
+                        f"SERVER={host_port[0]},{host_port[1] if len(host_port) > 1 else '1433'};"
+                        f"DATABASE={host_db[1] if len(host_db) > 1 else 'master'};"
+                        f"UID={user_pass[0]};"
+                        f"PWD={user_pass[1]};"
+                        f"TrustServerCertificate=yes"
+                    )
+                    self._connection = pyodbc.connect(conn_str)
+
+                self._connection.autocommit = False
+                logger.info(f"✓ Connected to MSSQL database")
+                return True
+
             else:
                 logger.error(f"Database type {self.config.database_type} not implemented yet")
                 return False
@@ -267,6 +309,8 @@ class DatabaseManager:
         Convert named parameters (:param) to database-specific format.
 
         PostgreSQL: :param → %(param)s with dict params
+        MySQL: :param → %s with tuple params (positional)
+        MSSQL: :param → ? with tuple params (positional)
         SQLite: :param → ? with tuple params (positional)
 
         Returns: (converted_query, converted_params)
@@ -282,7 +326,7 @@ class DatabaseManager:
             logger.error(f"Params: {params}")
             logger.error(f"Stack trace:\n{''.join(traceback.format_stack())}")
             # For backwards compatibility with positional params
-            if self.config.database_type == DatabaseType.SQLITE:
+            if self.config.database_type in [DatabaseType.SQLITE, DatabaseType.MYSQL, DatabaseType.MSSQL]:
                 return query, tuple(params) if isinstance(params, list) else params
             else:
                 raise TypeError(f"Parameters must be a dict for {self.config.database_type}, got {type(params).__name__}")
@@ -294,8 +338,17 @@ class DatabaseManager:
                 new_query = new_query.replace(f":{key}", f"%({key})s")
             return new_query, params
 
-        elif self.config.database_type == DatabaseType.SQLITE:
-            # SQLite uses ? with positional tuple
+        elif self.config.database_type == DatabaseType.MYSQL:
+            # MySQL uses %s with positional tuple
+            new_query = query
+            param_list = []
+            for key, value in params.items():
+                new_query = new_query.replace(f":{key}", "%s", 1)
+                param_list.append(value)
+            return new_query, tuple(param_list)
+
+        elif self.config.database_type in [DatabaseType.SQLITE, DatabaseType.MSSQL]:
+            # SQLite and MSSQL use ? with positional tuple
             new_query = query
             param_list = []
             for key, value in params.items():
@@ -345,26 +398,34 @@ class DatabaseManager:
 
         return cursor
 
-    def execute(self, query: str, params: Optional[Dict] = None) -> QueryResult:
+    def execute(self, query: str, params: Optional[Dict] = None):
         """
         Execute a query with named parameters.
+
+        For SELECT queries, returns List[Dict] with results.
+        For INSERT/UPDATE/DELETE, returns List[Dict] (empty) for success.
 
         Args:
             query: SQL query with :param_name placeholders
             params: Dict like {"param_name": "value"}
 
         Returns:
-            QueryResult with success status
+            List[Dict]: Query results (empty list for non-SELECT queries)
         """
         try:
             cursor = self._execute_raw(query, params)
-            self._connection.commit()
 
-            return QueryResult(
-                success=True,
-                data=[],
-                error=None
-            )
+            # Check if this is a SELECT query
+            query_upper = query.strip().upper()
+            if query_upper.startswith('SELECT') or query_upper.startswith('SHOW') or query_upper.startswith('DESCRIBE'):
+                # Fetch results for SELECT queries
+                rows = cursor.fetchall()
+                return [dict(row) for row in rows] if rows else []
+            else:
+                # For INSERT/UPDATE/DELETE, just commit
+                self._connection.commit()
+                return []
+
         except Exception as e:
             # Rollback on error to clean up transaction state
             if self._connection:
@@ -372,11 +433,8 @@ class DatabaseManager:
                     self._connection.rollback()
                 except Exception:
                     pass  # Ignore rollback errors
-            return QueryResult(
-                success=False,
-                data=[],
-                error=str(e)
-            )
+            logger.error(f"Query execution failed: {e}")
+            raise
 
     def fetch_one(self, query: str, params: Optional[Dict] = None) -> Optional[Dict]:
         """

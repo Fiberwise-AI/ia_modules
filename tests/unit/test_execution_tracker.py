@@ -1,12 +1,12 @@
 """
-Tests for web.execution_tracker module - Pipeline execution tracking and monitoring
+Tests for pipeline.execution_tracker module - Pipeline execution tracking and monitoring
 """
 
 import pytest
 import asyncio
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, AsyncMock, patch
-from ia_modules.web.execution_tracker import (
+from ia_modules.pipeline.execution_tracker import (
     ExecutionTracker,
     ExecutionStatus,
     StepStatus,

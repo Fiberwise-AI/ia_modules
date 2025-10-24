@@ -4,6 +4,7 @@ Performance Profilers
 Memory and CPU profiling integration for detailed performance analysis.
 """
 
+import os
 import time
 import asyncio
 import tracemalloc

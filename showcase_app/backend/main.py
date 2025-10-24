@@ -27,12 +27,21 @@ from api.checkpoints import router as checkpoints_router
 from api.reliability import router as reliability_router
 from api.scheduler import router as scheduler_router
 from api.benchmarking import router as benchmarking_router
+from api.telemetry import router as telemetry_router
+from api.memory import router as memory_router
+from api.patterns import router as patterns_router
+from api.multi_agent import router as multi_agent_router
 from services.container import ServiceContainer
 from services.metrics_service import MetricsService
 from services.pipeline_service import PipelineService
 from services.reliability_service import ReliabilityService
 from services.scheduler_service import SchedulerService
 from services.benchmark_service import BenchmarkService
+from services.telemetry_service import TelemetryService
+from services.checkpoint_service import CheckpointService
+from services.memory_service import MemoryService
+from services.replay_service import ReplayService
+from services.decision_trail_service import DecisionTrailService
 
 # Configure logging
 logging.basicConfig(
@@ -65,6 +74,35 @@ async def lifespan(app: FastAPI):
     services.pipeline_service = PipelineService(services.metrics_service, services.db_manager)
     services.reliability_service = ReliabilityService(services.db_manager)
     services.benchmark_service = BenchmarkService(services.pipeline_service, services.db_manager)
+    
+    # Initialize telemetry service with tracer from pipeline_service
+    services.telemetry_service = TelemetryService(
+        telemetry=services.pipeline_service.telemetry,
+        tracer=services.pipeline_service.tracer
+    )
+    
+    # Initialize checkpoint service with checkpointer from pipeline_service
+    services.checkpoint_service = CheckpointService(
+        checkpointer=services.pipeline_service.checkpointer,
+        pipeline_service=services.pipeline_service
+    )
+    
+    # Initialize memory service with memory backend from pipeline_service
+    services.memory_service = MemoryService(
+        memory_backend=services.pipeline_service.memory_backend
+    )
+    
+    # Initialize replay service
+    services.replay_service = ReplayService(
+        reliability_metrics=services.reliability_service,
+        pipeline_service=services.pipeline_service
+    )
+    
+    # Initialize decision trail service
+    services.decision_trail_service = DecisionTrailService(
+        decision_trail_builder=services.pipeline_service.decision_trail_builder,
+        reliability_metrics=services.reliability_service
+    )
 
     logger.info("✓ Services initialized successfully")
 
@@ -156,6 +194,10 @@ app.include_router(checkpoints_router, prefix="/api/checkpoints", tags=["Checkpo
 app.include_router(reliability_router, prefix="/api/reliability", tags=["Reliability"])
 app.include_router(scheduler_router, prefix="/api/scheduler", tags=["Scheduler"])
 app.include_router(benchmarking_router, prefix="/api/benchmarking", tags=["Benchmarking"])
+app.include_router(telemetry_router, prefix="/api/telemetry", tags=["Telemetry"])
+app.include_router(memory_router, prefix="/api/memory", tags=["Memory"])
+app.include_router(patterns_router, tags=["Patterns"])
+app.include_router(multi_agent_router, tags=["Multi-Agent"])
 app.include_router(websocket_router, prefix="/ws", tags=["WebSocket"])
 
 
@@ -198,6 +240,21 @@ def get_scheduler_service() -> SchedulerService:
 def get_benchmark_service() -> BenchmarkService:
     """Get benchmark service instance"""
     return app.state.services.benchmark_service
+
+
+def get_memory_service() -> MemoryService:
+    """Get memory service instance"""
+    return app.state.services.memory_service
+
+
+def get_replay_service() -> ReplayService:
+    """Get replay service instance"""
+    return app.state.services.replay_service
+
+
+def get_decision_trail_service() -> DecisionTrailService:
+    """Get decision trail service instance"""
+    return app.state.services.decision_trail_service
 
 
 if __name__ == "__main__":
