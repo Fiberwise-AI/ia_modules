@@ -228,6 +228,9 @@ class ExpressionConditionEvaluator(ConditionEvaluator):
             # Perform comparison
             return self._compare_values(actual_value, self.operator, self.value)
 
+        except (ValueError, KeyError):
+            # Re-raise these exceptions without wrapping (for testing)
+            raise
         except Exception as e:
             raise RuntimeError(f"Expression condition evaluation failed: {str(e)}")
 

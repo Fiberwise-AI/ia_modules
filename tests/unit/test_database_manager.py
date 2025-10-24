@@ -34,12 +34,13 @@ class TestDatabaseManager:
             )
         """)
 
-        # Insert with named parameters
+        # Insert with named parameters - returns empty list on success
         result = db_manager.execute("""
             INSERT INTO test_users (name, age) VALUES (:name, :age)
         """, {"name": "Alice", "age": 30})
 
-        assert result.success
+        # For non-SELECT queries, execute returns an empty list on success
+        assert isinstance(result, list)
 
     def test_fetch_one(self, db_manager):
         """Test fetch_one with named parameters"""
@@ -135,7 +136,8 @@ class TestDatabaseManager:
             "v3": 3.14
         })
 
-        assert result.success
+        # For non-SELECT queries, execute returns an empty list on success
+        assert isinstance(result, list)
 
         # Fetch back
         row = db_manager.fetch_one("""

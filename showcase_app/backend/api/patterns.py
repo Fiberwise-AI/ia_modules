@@ -13,10 +13,89 @@ text generation into intelligent, autonomous behavior.
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional
+import os
 from ..services.pattern_service import PatternService
+from ..services.llm_monitoring_service import LLMMonitoringService
 
 router = APIRouter(prefix="/api/patterns", tags=["patterns"])
 pattern_service = PatternService()
+monitoring_service = LLMMonitoringService()
+
+
+# ==================== LLM STATUS ENDPOINT ====================
+
+@router.get("/llm/status")
+async def get_llm_status():
+    """
+    Get LLM configuration status
+    
+    Returns which providers are configured and available
+    """
+    providers = []
+    
+    # Check OpenAI
+    if os.getenv("OPENAI_API_KEY"):
+        providers.append({
+            "name": "openai",
+            "status": "configured",
+            "model": os.getenv("OPENAI_MODEL", "gpt-4-turbo-preview")
+        })
+    else:
+        providers.append({
+            "name": "openai",
+            "status": "not_configured",
+            "setup_guide": "Set OPENAI_API_KEY in .env file"
+        })
+    
+    # Check Anthropic
+    if os.getenv("ANTHROPIC_API_KEY"):
+        providers.append({
+            "name": "anthropic",
+            "status": "configured",
+            "model": os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
+        })
+    else:
+        providers.append({
+            "name": "anthropic",
+            "status": "not_configured",
+            "setup_guide": "Set ANTHROPIC_API_KEY in .env file"
+        })
+    
+    # Check Gemini
+    if os.getenv("GEMINI_API_KEY"):
+        providers.append({
+            "name": "gemini",
+            "status": "configured",
+            "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        })
+    else:
+        providers.append({
+            "name": "gemini",
+            "status": "not_configured",
+            "setup_guide": "Set GEMINI_API_KEY in .env file"
+        })
+    
+    configured_count = sum(1 for p in providers if p["status"] == "configured")
+    default_provider = os.getenv("DEFAULT_LLM_PROVIDER", "openai")
+    
+    return {
+        "configured": configured_count > 0,
+        "configured_count": configured_count,
+        "total_providers": len(providers),
+        "default_provider": default_provider,
+        "providers": providers,
+        "message": "At least one LLM provider must be configured" if configured_count == 0 else f"{configured_count} provider(s) ready"
+    }
+
+
+@router.get("/llm/stats")
+async def get_llm_stats():
+    """
+    Get LLM usage statistics
+    
+    Returns token usage, costs, and rate limit status
+    """
+    return monitoring_service.get_stats()
 
 
 # ==================== REQUEST MODELS ====================

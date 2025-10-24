@@ -54,6 +54,16 @@ Build reliable, observable, and verifiable AI agent systems with graph-based pip
 - ✅ **644/650 Tests Passing**: 99.1% test coverage across 13 reliability modules
 - ✅ **Python 3.13 Compatible**: All datetime deprecations fixed
 
+**Showcase App with Multi-Agent Orchestration**
+
+- ✅ **Interactive Web UI**: Full-featured React dashboard showcasing framework capabilities
+- ✅ **5 Agentic Patterns**: Reflection, Planning, Tool Use, RAG, Metacognition (live demos)
+- ✅ **Multi-Agent Workflows**: 12 pre-built templates (Customer Service, Code Review, Research, etc.)
+- ✅ **Real-Time Monitoring**: WebSocket support for live workflow execution tracking
+- ✅ **Visual Pipeline Builder**: Create and edit workflows with interactive graph visualization
+- ✅ **LLM Integration**: OpenAI, Anthropic, Google Gemini support with clear configuration
+- ✅ **Persistence & Export**: Save/load workflows, export/import for collaboration
+
 See [MIGRATION.md](MIGRATION.md) for upgrade guide (100% backward compatible).
 
 ## Overview
@@ -65,6 +75,9 @@ IA Modules provides a comprehensive framework for building production-ready AI a
 - Multi-step workflows with complex dependencies
 - Production systems needing observability and compliance
 - Teams building on LangChain/LangGraph seeking better reliability
+
+**Try the Interactive Showcase:**
+The fastest way to explore IA Modules is through our interactive web application. See all features in action with live demos, visual workflow builders, and real-time execution monitoring. See [Quick Start](#quick-start) below.
 
 ## Core Features
 
@@ -83,47 +96,109 @@ IA Modules provides a comprehensive framework for building production-ready AI a
 - **Auto-Evidence**: Automated compliance evidence collection
 
 ### 🤖 **AI Agent Features**
-- **Multi-Agent Orchestration**: Coordinate multiple AI agents
-- **LLM Integration**: Google Gemini, OpenAI, Anthropic support
+- **5 Agentic Patterns**: Reflection, Planning, Tool Use, RAG, Metacognition
+- **Multi-Agent Orchestration**: Coordinate multiple AI agents (12 workflow templates)
+- **LLM Integration**: OpenAI, Anthropic, Google Gemini with unified interface
+- **Real-Time Execution**: WebSocket support for live workflow monitoring
+- **Visual Workflow Builder**: Interactive graph-based pipeline creation
 - **Grounding & Validation**: Schema validation and fact verification
-- **Memory Management**: Conversation history and context
+- **Memory Management**: Conversation history and context tracking
 - **Citation Tracking**: Track sources for agent outputs
 
 ### 🛠️ **Developer Tools**
+- **Interactive Showcase App**: Full-featured web UI demonstrating all capabilities
 - **CLI Tool**: Validate, run, visualize pipelines from command line
 - **Benchmarking**: Compare pipeline performance and accuracy
 - **Plugin System**: Extend with custom steps and storage backends
 - **Type Safety**: Pydantic-based schema validation
+- **Hot Reload**: Development server with automatic code reloading
 
 ## Quick Start
 
-### Option 1: Try the Showcase App (Recommended)
+### Option 1: Try the Showcase App (Recommended) ⭐
 
-The fastest way to see IA Modules in action:
+The fastest way to see IA Modules in action with a full interactive demo:
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/Fiberwise-AI/ia_modules.git
 cd ia_modules
 
-# Install everything (framework + showcase app)
-./install.sh     # Linux/Mac
-# or
-install.bat      # Windows
+# Option A: Docker (Easiest)
+cd showcase_app
+docker-compose up
 
-# Start the showcase app
-./start.sh       # Linux/Mac
-# or
-start.bat        # Windows
+# Option B: Local Development
+# Terminal 1 - Backend
+cd showcase_app/backend
+pip install -r requirements.txt
+python main.py
+
+# Terminal 2 - Frontend  
+cd showcase_app/frontend
+npm install
+npm run dev
 ```
 
-Open http://localhost:3000 and explore:
-- 🚀 Example pipelines you can run
-- 📊 Real-time reliability metrics
-- 🎯 SLO compliance monitoring
-- 💻 Interactive execution monitoring
+Open **http://localhost:3000** and explore:
+
+#### 🚀 **What You'll See:**
+
+1. **Agentic Patterns Page** (`/patterns`)
+   - Interactive demos of 5 core patterns
+   - Real-time execution with step-by-step visualization
+   - Live code examples you can modify and run
+
+2. **Multi-Agent Dashboard** (`/multi-agent`)
+   - 12 pre-built workflow templates
+   - Visual workflow builder with drag-and-drop
+   - Real-time execution monitoring via WebSocket
+   - Agent communication logs and performance metrics
+
+3. **Pipeline Editor** (`/editor`)
+   - Monaco code editor with JSON schema validation
+   - Pipeline visualization with React Flow
+   - Test execution with live output
+
+4. **Metrics & Monitoring** (`/metrics`)
+   - Real-time reliability metrics (SR, CR, PC, HIR)
+   - SLO compliance monitoring
+   - Execution history and logs
+
+#### � **Enable Real LLM Integration:**
+
+The showcase app works without API keys (demonstration mode), but for **real AI-powered workflows**:
+
+```bash
+# Copy environment template
+cd showcase_app
+cp .env.example .env
+
+# Add your API key (choose one)
+# OpenAI (recommended)
+OPENAI_API_KEY=sk-your-key-here
+OPENAI_MODEL=gpt-4o
+
+# OR Anthropic
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+
+# OR Google Gemini
+GEMINI_API_KEY=your-key-here
+GEMINI_MODEL=gemini-2.0-flash-exp
+
+# Enable real LLM
+ENABLE_REAL_LLM=true
+DEFAULT_LLM_PROVIDER=openai
+```
+
+See [showcase_app/LLM_SETUP.md](showcase_app/LLM_SETUP.md) for detailed configuration guide.
+
+---
 
 ### Option 2: Package Installation
+
+For integrating IA Modules into your own project:
 
 ```bash
 # Basic installation
@@ -138,6 +213,8 @@ pip install ia_modules[redis]
 # Everything (recommended for production)
 pip install ia_modules[all]
 ```
+
+---
 
 ### Your First Pipeline with Reliability Metrics
 
@@ -183,16 +260,24 @@ asyncio.run(main())
 
 ## Documentation
 
-### 📚 **Essential Guides**
-- **[Getting Started](docs/GETTING_STARTED.md)** ⭐ Start here! 5-minute quickstart
+### 📚 **Getting Started**
+- **[Showcase App Guide](showcase_app/README.md)** ⭐ Interactive demos and tutorials
+- **[LLM Setup Guide](showcase_app/LLM_SETUP.md)** - Configure OpenAI/Anthropic/Gemini
+- **[Getting Started](docs/GETTING_STARTED.md)** - 5-minute framework quickstart
 - **[Features Overview](docs/FEATURES.md)** - Complete feature matrix
 - **[Migration Guide](MIGRATION.md)** - Upgrade from v0.0.2 (100% compatible)
-- **[API Reference](docs/API_REFERENCE.md)** - Detailed API documentation
+
+### 🎨 **Showcase App Documentation**
+- **[Multi-Agent Workflows](showcase_app/MULTI_AGENT_QUICKSTART.md)** - 12 workflow templates
+- **[Agentic Patterns](showcase_app/PATTERN_DOCUMENTATION.md)** - 5 core patterns explained
+- **[API Reference](showcase_app/MULTI_AGENT_API.md)** - REST endpoints and WebSocket
+- **[Plan & Roadmap](showcase_app/Plan.md)** - Current progress (85% complete)
 
 ### 🔧 **Production Deployment**
 - **[Reliability Usage Guide](docs/RELIABILITY_USAGE_GUIDE.md)** - EARF compliance and monitoring
 - **[CLI Documentation](docs/CLI_TOOL_DOCUMENTATION.md)** - Command-line tools
 - **[Plugin System](docs/PLUGIN_SYSTEM_DOCUMENTATION.md)** - Extending IA Modules
+- **[API Reference](docs/API_REFERENCE.md)** - Detailed API documentation
 
 ### 🏗️ **Architecture & Development**
 - **[Pipeline Architecture](docs/PIPELINE_ARCHITECTURE.md)** - Core system design
@@ -489,11 +574,20 @@ The framework includes comprehensive support for Large Language Model integratio
 
 ### Supported Providers
 
-| Provider | Environment Variable | Models | Features |
+| Provider | Environment Variable | Models | Best For |
 |----------|---------------------|---------|----------|
-| **Google Gemini** | `GEMINI_API_KEY` | gemini-2.5-flash, gemini-2.5-pro | Fast, cost-effective |
-| **OpenAI** | `OPENAI_API_KEY` | gpt-3.5-turbo, gpt-4o | Wide compatibility |
-| **Anthropic** | `ANTHROPIC_API_KEY` | claude-3-haiku, claude-3-sonnet | Advanced reasoning |
+| **OpenAI** | `OPENAI_API_KEY` | gpt-3.5-turbo, gpt-4o | Overall best quality, well-tested |
+| **Anthropic** | `ANTHROPIC_API_KEY` | claude-3-haiku, claude-3-5-sonnet-20241022 | Complex reasoning, long context |
+| **Google Gemini** | `GEMINI_API_KEY` | gemini-2.0-flash-exp, gemini-2.5-pro | Fast, cost-effective |
+
+### Configuration
+
+See [showcase_app/LLM_SETUP.md](showcase_app/LLM_SETUP.md) for complete setup guide including:
+- API key configuration
+- Model selection
+- Cost management (daily limits, per-request caps)
+- Rate limiting
+- Testing and validation
 
 ### LLM-Powered Steps
 
@@ -523,11 +617,18 @@ class AIAnalysisStep(Step):
 
 ```bash
 # Set API key
-export GEMINI_API_KEY="your_api_key_here"
+export OPENAI_API_KEY="sk-your-key-here"
 
 # Run AI-powered pipeline
 python tests/pipeline_runner_with_llm.py pipelines/ai_analysis.json --input '{"text": "Your content here"}'
 ```
+
+**Try it in the Showcase App:**
+1. Navigate to `/patterns` page
+2. Select any agentic pattern (Reflection, Planning, etc.)
+3. Configure your inputs
+4. Click "Run Pattern" to see real LLM execution
+5. View step-by-step visualization and outputs
 
 ## Human-in-the-Loop (HITL)
 
@@ -618,9 +719,13 @@ The core table is `pipelines`, which stores the JSON definition and metadata for
 
 | Feature | IA Modules | LangChain | LangGraph |
 |---------|------------|-----------|-----------|
+| **Interactive Showcase** | ✅ Full web UI | ❌ | ❌ |
 | **Reliability Metrics** | ✅ SR, CR, PC, HIR, MA, TCL, WCT | ❌ | ❌ |
 | **EARF Compliance** | ✅ Full compliance | ❌ | ❌ |
 | **SQL Storage** | ✅ PostgreSQL, MySQL, SQLite | ❌ | Partial |
+| **Multi-Agent Workflows** | ✅ 12 templates | Partial | Partial |
+| **Visual Workflow Builder** | ✅ Interactive UI | ❌ | ❌ |
+| **Real-Time Monitoring** | ✅ WebSocket | ❌ | ❌ |
 | **Cyclic Graphs** | ✅ With loop detection | ❌ | ✅ |
 | **Checkpointing** | ✅ Full state snapshots | ❌ | ✅ |
 | **SLO Monitoring** | ✅ Real-time | ❌ | ❌ |
@@ -674,18 +779,20 @@ if not compliance.sr_compliant:
 See [ROADMAP.md](ROADMAP.md) for complete roadmap.
 
 ### v0.0.4 (Next Release)
+- ✅ Interactive Showcase App (COMPLETED)
+- ✅ Multi-Agent Orchestration (COMPLETED)
+- ✅ 5 Agentic Patterns (COMPLETED)
+- 🔄 LLM Cost Tracking & Monitoring (IN PROGRESS)
 - Distributed execution across multiple machines
 - Streaming pipeline outputs
 - Advanced caching strategies
-- Workflow templates
-- Web dashboard
 
 ### v0.1.0
-- Kubernetes deployment
+- Kubernetes deployment templates
 - GraphQL API
 - Advanced retry strategies
-- Cost optimization
-- Multi-tenancy
+- Multi-tenancy support
+- Workflow marketplace
 
 ## Contributing
 
@@ -705,10 +812,13 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Support
 
-- **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/ia_modules/issues)
-- **Examples**: [tests/pipelines/](tests/pipelines/)
+- **Documentation**: [docs/](docs/) and [showcase_app/](showcase_app/)
+- **Issues**: [GitHub Issues](https://github.com/Fiberwise-AI/ia_modules/issues)
+- **Examples**: [tests/pipelines/](tests/pipelines/) and [showcase_app/](showcase_app/)
+- **Live Demo**: Run `showcase_app` locally to explore all features
 
 ---
 
 **Built with ❤️ for production AI systems**
+
+*Experience it live: Start the [Showcase App](#quick-start) in 2 minutes!*

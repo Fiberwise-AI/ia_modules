@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List
-from models import PipelineCreate, PipelineUpdate, PipelineResponse, PipelineGraphResponse, GraphNode, GraphEdge
+from ..models import PipelineCreate, PipelineUpdate, PipelineResponse, PipelineGraphResponse, GraphNode, GraphEdge
 
 router = APIRouter()
 

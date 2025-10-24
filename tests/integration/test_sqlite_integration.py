@@ -464,7 +464,8 @@ class TestSQLiteTransactions:
             {"val": "async_data"}
         )
 
-        assert result.success
+        # execute_async returns list (same as execute)
+        assert isinstance(result, list)
 
         # Verify data committed
         row = db.fetch_one("SELECT * FROM test_async")
@@ -500,10 +501,13 @@ class TestSQLiteConstraints:
 
         db.execute("INSERT INTO test_pk (id, name) VALUES (:id, :name)", {"id": 1, "name": "first"})
 
-        # Try to insert duplicate primary key
-        result = db.execute("INSERT INTO test_pk (id, name) VALUES (:id, :name)", {"id": 1, "name": "second"})
-
-        assert result.success is False
+        # Try to insert duplicate primary key - should raise exception
+        try:
+            result = db.execute("INSERT INTO test_pk (id, name) VALUES (:id, :name)", {"id": 1, "name": "second"})
+            assert False, "Expected IntegrityError for duplicate primary key"
+        except Exception as e:
+            # Constraint violation is expected
+            assert "UNIQUE constraint failed" in str(e) or "PRIMARY KEY" in str(e)
 
         # Only first row should exist
         rows = db.fetch_all("SELECT * FROM test_pk")
@@ -518,10 +522,13 @@ class TestSQLiteConstraints:
 
         db.execute("INSERT INTO test_unique (email) VALUES (:email)", {"email": "test@example.com"})
 
-        # Try to insert duplicate email
-        result = db.execute("INSERT INTO test_unique (email) VALUES (:email)", {"email": "test@example.com"})
-
-        assert result.success is False
+        # Try to insert duplicate email - should raise exception
+        try:
+            result = db.execute("INSERT INTO test_unique (email) VALUES (:email)", {"email": "test@example.com"})
+            assert False, "Expected IntegrityError for duplicate email"
+        except Exception as e:
+            # Constraint violation is expected
+            assert "UNIQUE constraint failed" in str(e)
 
     def test_not_null_constraint(self, sqlite_file_db):
         """Test NOT NULL constraint"""
@@ -529,10 +536,13 @@ class TestSQLiteConstraints:
 
         db.execute("CREATE TABLE test_notnull (id INTEGER PRIMARY KEY, name TEXT NOT NULL)")
 
-        # Try to insert NULL
-        result = db.execute("INSERT INTO test_notnull (name) VALUES (:name)", {"name": None})
-
-        assert result.success is False
+        # Try to insert NULL - should raise exception
+        try:
+            result = db.execute("INSERT INTO test_notnull (name) VALUES (:name)", {"name": None})
+            assert False, "Expected IntegrityError for NULL in NOT NULL column"
+        except Exception as e:
+            # Constraint violation is expected
+            assert "NOT NULL constraint failed" in str(e)
 
     def test_foreign_key_constraint(self, sqlite_file_db):
         """Test FOREIGN KEY constraint (if enabled)"""
@@ -555,11 +565,15 @@ class TestSQLiteConstraints:
 
         # Insert child with valid foreign key
         result = db.execute("INSERT INTO child (parent_id) VALUES (:pid)", {"pid": 1})
-        assert result.success is True
+        assert isinstance(result, list)  # execute() returns list on success
 
-        # Try to insert child with invalid foreign key
-        result = db.execute("INSERT INTO child (parent_id) VALUES (:pid)", {"pid": 999})
-        assert result.success is False
+        # Try to insert child with invalid foreign key - should raise exception
+        try:
+            result = db.execute("INSERT INTO child (parent_id) VALUES (:pid)", {"pid": 999})
+            assert False, "Expected IntegrityError for invalid foreign key"
+        except Exception as e:
+            # Constraint violation is expected
+            assert "FOREIGN KEY constraint failed" in str(e)
 
 
 class TestSQLitePerformance:

@@ -182,17 +182,19 @@ class TestErrorBasedInjection:
         ]
 
         for payload in error_payloads:
-            result = db.execute(
-                "SELECT * FROM users WHERE username = :username",
-                {"username": payload}
-            )
-
-            # Either succeeds with no results or fails safely
-            if not result.success:
+            try:
+                result = db.execute(
+                    "SELECT * FROM users WHERE username = :username",
+                    {"username": payload}
+                )
+                # Query succeeded with parameter binding (good!)
+                assert isinstance(result, list)
+            except Exception as e:
                 # Error message should not contain sensitive info
-                error_msg = str(result.error_message).lower()
+                error_msg = str(e).lower()
                 # It's OK to mention table doesn't exist or syntax error
-                # But shouldn't leak actual data
+                # But shouldn't leak actual data from users table
+                assert "password" not in error_msg
 
 
 class TestEncodingAttacks:
@@ -484,7 +486,7 @@ class TestMassAssignment:
         )
 
         # Database allows it (this is correct - app should filter)
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify the malicious role was stored
         user = db.fetch_one("SELECT * FROM users WHERE username = :u", {"u": "hacker"})
@@ -532,13 +534,14 @@ class TestDatabaseFingerprinting:
         ]
 
         for query in fingerprint_queries:
-            result = db.execute(query)
-
-            # Query might succeed or fail
-            # But shouldn't leak detailed version info in error messages
-            if not result.success:
-                error_msg = str(result.error_message).lower()
-                # Errors are OK, but should be generic
+            try:
+                result = db.execute(query)
+                # Query succeeded - that's fine, we're testing error messages
+                assert isinstance(result, list)
+            except Exception as e:
+                # Error messages should be generic
+                error_msg = str(e).lower()
+                # Errors are OK, but shouldn't leak detailed internal info
 
 
 class TestRateLimitingBypass:

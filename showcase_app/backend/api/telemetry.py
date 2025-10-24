@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List
-from models import SpanResponse, SpanTimelineResponse, TelemetryMetrics
+from ..models import SpanResponse, SpanTimelineResponse, TelemetryMetrics
 
 router = APIRouter()
 

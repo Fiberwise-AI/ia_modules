@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List
-from models import CheckpointResponse, CheckpointStateResponse, CheckpointResumeResponse
+from ..models import CheckpointResponse, CheckpointStateResponse, CheckpointResumeResponse
 
 router = APIRouter()
 

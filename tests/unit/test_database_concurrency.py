@@ -114,7 +114,7 @@ class TestConcurrentWrites:
         # Sequential writes
         for i in range(100):
             result = db.execute("INSERT INTO test (value) VALUES (:val)", {"val": i})
-            assert result.success
+            assert isinstance(result, list)  # execute() returns list
 
         # Verify count
         row = db.fetch_one("SELECT COUNT(*) as count FROM test")
@@ -142,9 +142,13 @@ class TestConcurrentWrites:
             def write_value(value):
                 db = DatabaseManager(config)
                 db.connect()
-                result = db.execute("INSERT INTO test (value) VALUES (:val)", {"val": value})
-                db.disconnect()
-                return result.success
+                try:
+                    result = db.execute("INSERT INTO test (value) VALUES (:val)", {"val": value})
+                    db.disconnect()
+                    return True
+                except Exception:
+                    db.disconnect()
+                    return False
 
             with ThreadPoolExecutor(max_workers=5) as executor:
                 futures = [executor.submit(write_value, i) for i in range(50)]
@@ -224,8 +228,11 @@ class TestAsyncConcurrency:
 
         # Concurrent async writes
         async def async_write(value):
-            result = await db.execute_async("INSERT INTO test (value) VALUES (:val)", {"val": value})
-            return result.success
+            try:
+                result = await db.execute_async("INSERT INTO test (value) VALUES (:val)", {"val": value})
+                return True
+            except Exception:
+                return False
 
         tasks = [async_write(i) for i in range(50)]
         results = await asyncio.gather(*tasks)
@@ -289,12 +296,13 @@ class TestThreadSafety:
                 db.connect()
 
                 for i in range(10):
-                    result = db.execute(
-                        "INSERT INTO test (thread_id, value) VALUES (:tid, :val)",
-                        {"tid": thread_id, "val": i}
-                    )
-                    if not result.success:
-                        print(f"Thread {thread_id} insert {i} failed: {result.error_message}")
+                    try:
+                        result = db.execute(
+                            "INSERT INTO test (thread_id, value) VALUES (:tid, :val)",
+                            {"tid": thread_id, "val": i}
+                        )
+                    except Exception as e:
+                        print(f"Thread {thread_id} insert {i} failed: {e}")
 
                 db.disconnect()
                 return thread_id
@@ -332,11 +340,14 @@ class TestThreadSafety:
         def worker(thread_id):
             results = []
             for i in range(10):
-                result = db.execute(
-                    "INSERT INTO test (thread_id) VALUES (:tid)",
-                    {"tid": thread_id}
-                )
-                results.append(result.success)
+                try:
+                    result = db.execute(
+                        "INSERT INTO test (thread_id) VALUES (:tid)",
+                        {"tid": thread_id}
+                    )
+                    results.append(True)  # Success if no exception
+                except Exception:
+                    results.append(False)
                 time.sleep(0.001)  # Small delay to encourage interleaving
             return all(results)
 
@@ -386,9 +397,13 @@ class TestLocking:
             def writer(value):
                 db = DatabaseManager(config)
                 db.connect()
-                result = db.execute("INSERT INTO test (value) VALUES (:val)", {"val": value})
-                db.disconnect()
-                return result.success
+                try:
+                    result = db.execute("INSERT INTO test (value) VALUES (:val)", {"val": value})
+                    db.disconnect()
+                    return True
+                except Exception:
+                    db.disconnect()
+                    return False
 
             with ThreadPoolExecutor(max_workers=2) as executor:
                 future1 = executor.submit(writer, 1)
@@ -440,7 +455,7 @@ class TestConnectionLifecycle:
         # Reuse same connection for multiple operations
         for i in range(100):
             result = db.execute("INSERT INTO test (value) VALUES (:val)", {"val": i})
-            assert result.success
+            assert isinstance(result, list)  # execute() returns list
 
         row = db.fetch_one("SELECT COUNT(*) as count FROM test")
         assert row["count"] == 100
@@ -516,9 +531,13 @@ class TestRaceConditions:
                 if existing is None:
                     time.sleep(0.01)  # Simulate processing time
                     # Try to insert
-                    result = db.execute("INSERT INTO test (username) VALUES (:u)", {"u": username})
-                    db.disconnect()
-                    return result.success
+                    try:
+                        result = db.execute("INSERT INTO test (username) VALUES (:u)", {"u": username})
+                        db.disconnect()
+                        return True
+                    except Exception:
+                        db.disconnect()
+                        return False
                 else:
                     db.disconnect()
                     return False
@@ -554,8 +573,11 @@ class TestRaceConditions:
         # Try to insert same email multiple times
         results = []
         for i in range(5):
-            result = db.execute("INSERT INTO test (email) VALUES (:email)", {"email": "same@example.com"})
-            results.append(result.success)
+            try:
+                result = db.execute("INSERT INTO test (email) VALUES (:email)", {"email": "same@example.com"})
+                results.append(True)  # Success if no exception
+            except Exception:
+                results.append(False)
 
         # Only first should succeed
         assert results[0] is True

@@ -111,7 +111,7 @@ class TestPostgreSQLParameterBinding:
             {"name": "Alice", "age": 30}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify data exists by querying directly
         row = db.fetch_one(f"SELECT * FROM test_params_{test_id} WHERE name = :name", {"name": "Alice"})
@@ -141,9 +141,8 @@ class TestPostgreSQLParameterBinding:
             {"text": special_text, "json": special_json}
         )
 
-        if not result.success:
-            print(f"INSERT failed: {result.error}")
-        assert result.success
+        # execute() returns list on success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify actual data in database
         row = db.fetch_one(f"SELECT * FROM test_special_{test_id}")
@@ -167,7 +166,7 @@ class TestPostgreSQLParameterBinding:
             {"req": "required_value", "opt": None}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify NULL was actually stored
         row = db.fetch_one(f"SELECT * FROM test_nulls_{test_id}")
@@ -192,7 +191,7 @@ class TestPostgreSQLParameterBinding:
                 f"INSERT INTO test_multi_{test_id} (name, value) VALUES (:name, :value)",
                 {"name": f"item_{i}", "value": i * 10}
             )
-            assert result.success
+            assert isinstance(result, list)  # execute() returns list
 
         # Verify all rows exist
         rows = db.fetch_all(f"SELECT * FROM test_multi_{test_id} ORDER BY value")
@@ -228,7 +227,7 @@ class TestPostgreSQLDataTypes:
             {"uuid": test_uuid, "name": "Test User"}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify UUID was stored correctly
         row = db.fetch_one(f"SELECT * FROM test_uuid_{test_id} WHERE user_id = :uuid", {"uuid": test_uuid})
@@ -256,7 +255,7 @@ class TestPostgreSQLDataTypes:
             {"data": json_data}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify JSONB data and query with JSONB operators
         row = db.fetch_one(f"SELECT data->>'name' as name FROM test_jsonb_{test_id}")
@@ -280,7 +279,7 @@ class TestPostgreSQLDataTypes:
             {"active": True, "deleted": False}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify boolean values (should be actual bool, not 0/1)
         row = db.fetch_one(f"SELECT * FROM test_bool_{test_id}")
@@ -301,7 +300,7 @@ class TestPostgreSQLDataTypes:
 
         # Insert row (timestamps should auto-populate)
         result = db.execute(f"INSERT INTO test_timestamp_{test_id} DEFAULT VALUES")
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify timestamps exist and are recent
         row = db.fetch_one(f"SELECT * FROM test_timestamp_{test_id}")
@@ -339,7 +338,7 @@ class TestPostgreSQLTransactions:
             {"value": 100}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify data committed
         row = db.fetch_one(f"SELECT * FROM test_txn_{test_id} WHERE value = :value", {"value": 100})
@@ -363,13 +362,16 @@ class TestPostgreSQLTransactions:
             {"value": "unique"}
         )
 
-        # Try to insert duplicate (should fail)
-        result = db.execute(
-            f"INSERT INTO test_rollback_{test_id} (unique_value) VALUES (:value)",
-            {"value": "unique"}
-        )
-
-        assert result.success is False
+        # Try to insert duplicate (should raise exception)
+        try:
+            result = db.execute(
+                f"INSERT INTO test_rollback_{test_id} (unique_value) VALUES (:value)",
+                {"value": "unique"}
+            )
+            assert False, "Expected UniqueViolation exception"
+        except Exception as e:
+            # Expect constraint violation
+            assert "unique" in str(e).lower() or "duplicate" in str(e).lower()
 
         # Verify only one row exists
         rows = db.fetch_all(f"SELECT * FROM test_rollback_{test_id}")
@@ -520,7 +522,7 @@ class TestPostgreSQLDataVerification:
             {"new_value": 20, "name": "test"}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify update persisted
         row = db.fetch_one(f"SELECT * FROM test_update_{test_id} WHERE name = :name", {"name": "test"})
@@ -551,7 +553,7 @@ class TestPostgreSQLDataVerification:
             {"name": "to_delete"}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify only one remains
         rows = db.fetch_all(f"SELECT * FROM test_delete_{test_id}")

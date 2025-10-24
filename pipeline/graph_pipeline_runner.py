@@ -509,7 +509,14 @@ class GraphPipelineRunner:
                 raise ValueError(f"Real agent class not found: {step_class_name}")
 
         # Create pipeline with real agents
-        pipeline = Pipeline(steps, services=self.services, structure=config.dict())
+        # Pipeline expects: (name, steps, flow, services, ...)
+        pipeline_structure = config.model_dump() if hasattr(config, 'model_dump') else config.dict()
+        pipeline = Pipeline(
+            name=config.name,
+            steps=steps,
+            flow=pipeline_structure.get('flow', {}),
+            services=self.services
+        )
 
         # Execute pipeline
         self._log_to_central_service("INFO", f"Executing pipeline with {len(steps)} real agents")

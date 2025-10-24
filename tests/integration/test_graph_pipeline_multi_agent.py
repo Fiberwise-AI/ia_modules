@@ -419,10 +419,12 @@ class TestGraphPipelineMultiAgent:
         )
 
         # Verify both agents executed
-        assert "plan" in result
-        assert "code" in result
-        assert result["planner_complete"] is True
-        assert result["coder_complete"] is True
+        # Result structure: {'input': {...}, 'steps': [...], 'output': {...}}
+        output = result.get("output", result)  # Support both old and new structure
+        assert "plan" in output
+        assert "code" in output
+        assert output["planner_complete"] is True
+        assert output["coder_complete"] is True
 
     async def test_complex_multi_agent_workflow(self):
         """Test complex multi-agent workflow with branching and feedback."""

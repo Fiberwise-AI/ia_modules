@@ -143,7 +143,7 @@ class TestSQLInjectionPrevention:
             {"password": malicious_password, "username": "regular_user"}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify regular_user is still NOT admin
         user = secure_db.fetch_one("SELECT * FROM users WHERE username = :u", {"u": "regular_user"})
@@ -160,7 +160,7 @@ class TestSQLInjectionPrevention:
             {"username": malicious_username, "password": "test"}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify only one user was inserted (with the malicious string as username)
         all_users = secure_db.fetch_all("SELECT * FROM users")
@@ -271,7 +271,7 @@ class TestMaliciousInput:
         )
 
         # Should handle gracefully (either succeed or fail safely)
-        assert result.success is True or result.success is False
+        assert isinstance(result, list)  # execute() returns list is True or result.success is False
         # Should not crash
 
     def test_special_characters(self, secure_db):
@@ -311,7 +311,7 @@ class TestMaliciousInput:
             {"data": binary_data}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify data stored correctly without executing as SQL
         row = secure_db.fetch_one("SELECT * FROM test_binary")
@@ -361,31 +361,33 @@ class TestDataLeakagePrevention:
     def test_error_messages_dont_leak_schema(self, secure_db):
         """Test that error messages don't reveal table structure"""
         # Attempt to cause error that might reveal schema
-        result = secure_db.execute(
-            "INSERT INTO nonexistent_table (col) VALUES (:val)",
-            {"val": "test"}
-        )
-
-        assert result.success is False
-
-        # Error message should not contain sensitive info about actual tables
-        error_msg = str(result.error_message).lower()
-        assert "users" not in error_msg or "no such table" in error_msg
-        # Basic error is OK, detailed schema leak is not
+        try:
+            result = secure_db.execute(
+                "INSERT INTO nonexistent_table (col) VALUES (:val)",
+                {"val": "test"}
+            )
+            assert False, "Expected exception for nonexistent table"
+        except Exception as e:
+            # Error message should not contain sensitive info about actual tables
+            error_msg = str(e).lower()
+            assert "users" not in error_msg or "no such table" in error_msg
+            # Basic error is OK, detailed schema leak is not
 
     def test_parameter_errors_dont_leak_values(self, secure_db):
         """Test that parameter errors don't leak sensitive values"""
         # This would fail in some implementations
         sensitive_password = "super_secret_password_12345"
 
-        result = secure_db.execute(
-            "SELECT * FROM users WHERE password_hash = :password",
-            {"password": sensitive_password}
-        )
-
-        # If there's an error, it shouldn't contain the password
-        if not result.success:
-            error_msg = str(result.error_message)
+        try:
+            result = secure_db.execute(
+                "SELECT * FROM users WHERE password_hash = :password",
+                {"password": sensitive_password}
+            )
+            # Query succeeds (no error), so no leak possible
+            assert isinstance(result, list)
+        except Exception as e:
+            # If there's an error, it shouldn't contain the password
+            error_msg = str(e)
             assert sensitive_password not in error_msg
 
 
@@ -413,7 +415,7 @@ class TestParameterSanitization:
             {"username": username_with_quotes, "password": "test"}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # Verify it was inserted correctly
         user = secure_db.fetch_one(
@@ -434,7 +436,7 @@ class TestParameterSanitization:
             {"username": username_with_backslash, "password": "test"}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         user = secure_db.fetch_one(
             "SELECT * FROM users WHERE username = :username",
@@ -456,7 +458,7 @@ class TestPrivilegeEscalation:
             {"admin": 1, "username": "regular_user"}
         )
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         # This test verifies the UPDATE works, but application logic
         # should prevent regular_user from calling this in the first place
@@ -487,19 +489,30 @@ class TestConcurrentAccessSecurity:
     def test_race_condition_on_insert(self, secure_db):
         """Test that race conditions don't bypass constraints"""
         # Attempt to insert duplicate usernames (should fail due to UNIQUE)
-        result1 = secure_db.execute(
-            "INSERT INTO users (username, password_hash) VALUES (:username, :password)",
-            {"username": "duplicate", "password": "pass1"}
-        )
+        result1_success = False
+        result2_success = False
 
-        result2 = secure_db.execute(
-            "INSERT INTO users (username, password_hash) VALUES (:username, :password)",
-            {"username": "duplicate", "password": "pass2"}
-        )
+        try:
+            result1 = secure_db.execute(
+                "INSERT INTO users (username, password_hash) VALUES (:username, :password)",
+                {"username": "duplicate", "password": "pass1"}
+            )
+            result1_success = True
+        except Exception:
+            pass
+
+        try:
+            result2 = secure_db.execute(
+                "INSERT INTO users (username, password_hash) VALUES (:username, :password)",
+                {"username": "duplicate", "password": "pass2"}
+            )
+            result2_success = True
+        except Exception:
+            pass
 
         # One should succeed, one should fail
-        assert (result1.success and not result2.success) or \
-               (not result1.success and result2.success)
+        assert (result1_success and not result2_success) or \
+               (not result1_success and result2_success)
 
         # Verify only one user with that username exists
         users = secure_db.fetch_all(

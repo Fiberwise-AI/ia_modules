@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Optional, List
-from models import ReplayExecutionResponse, ReplayHistoryItem
+from ..models import ReplayExecutionResponse, ReplayHistoryItem
 
 router = APIRouter()
 

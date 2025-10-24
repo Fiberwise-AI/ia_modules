@@ -45,7 +45,7 @@ class TestDatabaseBasicOperations:
             INSERT INTO test_users (name, age) VALUES (:name, :age)
         """, {"name": "Alice", "age": 30})
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
     def test_fetch_one_with_named_params(self, db_manager):
         """Test fetch_one with named parameters"""
@@ -196,7 +196,7 @@ class TestSQLTranslation:
 
         # Should work on all databases (translated for SQLite)
         result = db.execute(psql_syntax)
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         db.disconnect()
 
@@ -216,7 +216,7 @@ class TestSQLTranslation:
 
         # Should work on all databases (translated for SQLite)
         result = db.execute(psql_syntax)
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         db.disconnect()
 
@@ -237,7 +237,7 @@ class TestSQLTranslation:
 
         # Should work on all databases (translated for SQLite)
         result = db.execute(psql_syntax)
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         db.disconnect()
 
@@ -257,7 +257,7 @@ class TestSQLTranslation:
 
         # Should work on all databases (translated for SQLite)
         result = db.execute(psql_syntax)
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         db.disconnect()
 
@@ -278,7 +278,7 @@ class TestSQLTranslation:
 
         # Should work on all databases (translated for SQLite)
         result = db.execute(psql_syntax)
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         db.disconnect()
 
@@ -305,7 +305,7 @@ class TestAsyncOperations:
             INSERT INTO test_async (value) VALUES (:value)
         """, {"value": "test"})
 
-        assert result.success
+        assert isinstance(result, list)  # execute() returns list
 
         db.disconnect()
 
@@ -323,6 +323,7 @@ class TestAsyncOperations:
         """
 
         result = await db.execute_script(script)
+        # execute_script returns QueryResult, not list
         assert result.success
 
         # Verify tables were created

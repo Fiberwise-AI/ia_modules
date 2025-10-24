@@ -88,9 +88,13 @@ class TestConnectionPooling:
             def worker(worker_id):
                 db = DatabaseManager(config)
                 db.connect()
-                result = db.execute("INSERT INTO test (value) VALUES (:val)", {"val": worker_id})
-                db.disconnect()
-                return result.success
+                try:
+                    result = db.execute("INSERT INTO test (value) VALUES (:val)", {"val": worker_id})
+                    db.disconnect()
+                    return True
+                except Exception:
+                    db.disconnect()
+                    return False
 
             start = time.time()
             with ThreadPoolExecutor(max_workers=20) as executor:
@@ -486,11 +490,17 @@ class TestDatabaseLocking:
                 db = DatabaseManager(config)
                 db.connect()
                 start = time.time()
-                result = db.execute("INSERT INTO test (value) VALUES (:val)", {"val": value})
-                elapsed = time.time() - start
-                db.disconnect()
-                results["times"].append(elapsed)
-                return result.success
+                try:
+                    result = db.execute("INSERT INTO test (value) VALUES (:val)", {"val": value})
+                    elapsed = time.time() - start
+                    db.disconnect()
+                    results["times"].append(elapsed)
+                    return True
+                except Exception:
+                    elapsed = time.time() - start
+                    db.disconnect()
+                    results["times"].append(elapsed)
+                    return False
 
             # Start two writers concurrently
             threads = [

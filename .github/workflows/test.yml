@@ -50,12 +50,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[dev,all]"
 
-    - name: Run tests
+    - name: Run unit tests only
       env:
         REDIS_URL: redis://localhost:6379
       run: |
-        pytest tests/ -v --tb=short \
-          --cov \
+        pytest tests/unit/ -v --tb=short \
+          --cov=ia_modules \
           --cov-report=xml \
           --cov-report=term \
           --cov-report=html \

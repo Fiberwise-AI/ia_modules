@@ -16,6 +16,14 @@ A modern web application demonstrating the capabilities of IA Modules framework 
 - **SLO Monitoring** - Visual SLO compliance indicators
 - **Event Replay** - Debug failed executions
 
+### 🤖 LLM Integration & Monitoring
+- **Multi-Provider Support** - OpenAI, Anthropic, Google Gemini
+- **Agentic Design Patterns** - Reflection, Planning, Tool Use, RAG, Metacognition
+- **Token Tracking** - Real-time token usage monitoring
+- **Cost Calculation** - Automatic USD cost tracking per request
+- **Rate Limiting** - Requests/minute and tokens/minute limits
+- **Usage Statistics** - Comprehensive analytics dashboard via API
+
 ### 🎯 Demo Features
 - **Data Processing Pipeline** - Multi-step data transformation
 - **AI Agent Workflow** - LLM-powered content generation

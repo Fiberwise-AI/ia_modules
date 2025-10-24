@@ -23,7 +23,9 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 import json
 import os
+import time
 from ia_modules.pipeline.llm_provider_service import LLMProviderService, LLMProvider
+from .llm_monitoring_service import LLMMonitoringService
 
 
 class PatternService:
@@ -32,6 +34,7 @@ class PatternService:
     def __init__(self):
         self.pattern_history: Dict[str, List[Dict]] = {}
         self.llm_service = None
+        self.monitoring_service = LLMMonitoringService()
         
         # Initialize LLM provider service
         try:
@@ -69,6 +72,78 @@ class PatternService:
         except Exception as e:
             print(f"⚠ Failed to initialize LLM provider service: {e}")
             self.llm_service = None
+    
+    async def _monitored_llm_call(
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int = 1000,
+        **kwargs
+    ) -> Any:
+        """
+        Wrapper for LLM calls with rate limiting and usage tracking
+        
+        Args:
+            prompt: The prompt to send
+            temperature: Temperature parameter
+            max_tokens: Max tokens to generate
+            **kwargs: Additional parameters
+            
+        Returns:
+            LLMResponse with usage data
+            
+        Raises:
+            HTTPException: If rate limited or cost limit exceeded
+        """
+        from fastapi import HTTPException
+        
+        if self.llm_service is None:
+            raise RuntimeError("LLM service not configured. Please set API keys in .env file.")
+        
+        # Check rate limits
+        rate_check = self.monitoring_service.check_rate_limits(max_tokens)
+        if not rate_check["allowed"]:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Rate limit exceeded: {rate_check['reason']}",
+                headers={"Retry-After": str(int(rate_check["retry_after"]))}
+            )
+        
+        # Make LLM call and track time
+        start_time = time.time()
+        response = await self.llm_service.generate_completion(
+            prompt=prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            **kwargs
+        )
+        duration = time.time() - start_time
+        
+        # Extract token counts from response
+        usage = response.usage
+        input_tokens = usage.get("prompt_tokens", 0) or usage.get("input_tokens", 0) or usage.get("prompt_token_count", 0)
+        output_tokens = usage.get("completion_tokens", 0) or usage.get("output_tokens", 0) or usage.get("candidates_token_count", 0)
+        
+        # Track usage and calculate cost
+        usage_stats = self.monitoring_service.track_usage(
+            provider=response.provider.value,
+            model=response.model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            duration_seconds=duration
+        )
+        
+        # Check if we exceeded cost limits (warn but don't block)
+        if usage_stats.get("over_request_limit"):
+            print(f"⚠ Warning: Request cost ${usage_stats['cost_usd']:.4f} exceeded limit ${self.monitoring_service.max_cost_per_request}")
+        
+        if usage_stats.get("over_daily_limit"):
+            print(f"⚠ Warning: Daily spending ${usage_stats['daily_total_cost']:.2f} exceeded limit ${self.monitoring_service.daily_spending_limit}")
+        
+        # Attach usage stats to response
+        response.usage_stats = usage_stats
+        
+        return response
     
     # ==================== REFLECTION PATTERN ====================
     
@@ -144,7 +219,7 @@ CRITERIA:
 
 Provide a detailed critique addressing each criterion. Be specific about what works and what doesn't."""
         
-        response = await self.llm_service.generate_completion(
+        response = await self._monitored_llm_call(
             prompt=prompt,
             temperature=0.3,
             max_tokens=500
@@ -177,7 +252,7 @@ CRITERIA TO MEET:
 
 Provide the improved version directly, without explanations."""
         
-        response = await self.llm_service.generate_completion(
+        response = await self._monitored_llm_call(
             prompt=prompt,
             temperature=0.7,
             max_tokens=1000
@@ -772,7 +847,7 @@ The refined query should be more specific, use better keywords, or focus on a pa
 
 Return only the refined query text, no explanation."""
         
-        response = await self.llm_service.generate_completion(
+        response = await self._monitored_llm_call(
             prompt=prompt,
             temperature=0.5,
             max_tokens=100

@@ -37,6 +37,38 @@ class TemplateParameterResolver:
 
         return resolve_value(config)
 
+    @staticmethod
+    def resolve_string_template(template: str, context: Dict[str, Any]) -> str:
+        """Resolve template placeholders in a string using context
+
+        Supports both {{ variable }} and {variable} syntax.
+        Can access nested values using dot notation: {{ context.field }}
+        """
+        import re
+
+        def replace_param(match):
+            param_path = match.group(1).strip()
+
+            # Navigate through nested dict using dot notation
+            parts = param_path.split('.')
+            value = context
+
+            for part in parts:
+                if isinstance(value, dict):
+                    value = value.get(part)
+                    if value is None:
+                        return match.group(0)  # Return original if not found
+                else:
+                    return match.group(0)  # Return original if can't navigate
+
+            return str(value) if value is not None else match.group(0)
+
+        # Replace both {{ }} and { } patterns
+        result = re.sub(r'\{\{\s*([^}]+)\s*\}\}', replace_param, template)
+        result = re.sub(r'\{\s*([^}]+)\s*\}', replace_param, result)
+
+        return result
+
 
 class InputResolver:
     """Resolves step input templates"""
