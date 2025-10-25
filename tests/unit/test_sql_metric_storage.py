@@ -49,7 +49,7 @@ class TestSQLMetricStorage:
         await storage.record_step({
             "agent": "planner",
             "success": True,
-            "timestamp": datetime.now(timezone.utc)
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
 
         steps = await storage.get_steps()
@@ -66,7 +66,7 @@ class TestSQLMetricStorage:
             "steps": 5,
             "retries": 1,
             "success": True,
-            "timestamp": datetime.now(timezone.utc)
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
 
         workflows = await storage.get_workflows()
@@ -93,8 +93,8 @@ class TestSQLMetricStorage:
         old_time = datetime.now(timezone.utc) - timedelta(hours=2)
         new_time = datetime.now(timezone.utc)
 
-        await storage.record_step({"agent": "agent1", "success": True, "timestamp": old_time})
-        await storage.record_step({"agent": "agent2", "success": True, "timestamp": new_time})
+        await storage.record_step({"agent": "agent1", "success": True, "timestamp": old_time.isoformat()})
+        await storage.record_step({"agent": "agent2", "success": True, "timestamp": new_time.isoformat()})
 
         since = datetime.now(timezone.utc) - timedelta(hours=1)
         recent_steps = await storage.get_steps(since=since)
@@ -203,9 +203,9 @@ class TestSQLMetricStorage:
         time2 = time1 + timedelta(seconds=1)
         time3 = time2 + timedelta(seconds=1)
 
-        await storage.record_step({"agent": "agent1", "success": True, "timestamp": time1})
-        await storage.record_step({"agent": "agent2", "success": True, "timestamp": time3})
-        await storage.record_step({"agent": "agent3", "success": True, "timestamp": time2})
+        await storage.record_step({"agent": "agent1", "success": True, "timestamp": time1.isoformat()})
+        await storage.record_step({"agent": "agent2", "success": True, "timestamp": time3.isoformat()})
+        await storage.record_step({"agent": "agent3", "success": True, "timestamp": time2.isoformat()})
 
         steps = await storage.get_steps()
 

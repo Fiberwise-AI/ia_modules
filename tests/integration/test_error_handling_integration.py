@@ -214,7 +214,7 @@ class TestErrorHandlingIntegration:
             flow={
                 "start_at": "flaky",
                 "paths": [
-                    {"from_step": "flaky", "to_step": "success"}
+                    {"from": "flaky", "to": "success"}
                 ]
             },
             services=ServiceRegistry()
@@ -251,7 +251,7 @@ class TestErrorHandlingIntegration:
             flow={
                 "start_at": "fallback",
                 "paths": [
-                    {"from_step": "fallback", "to_step": "process"}
+                    {"from": "fallback", "to": "process"}
                 ]
             },
             services=ServiceRegistry()
@@ -304,8 +304,8 @@ class TestErrorHandlingIntegration:
             flow={
                 "start_at": "retry",
                 "paths": [
-                    {"from_step": "retry", "to_step": "continue"},
-                    {"from_step": "continue", "to_step": "final"}
+                    {"from": "retry", "to": "continue"},
+                    {"from": "continue", "to": "final"}
                 ]
             },
             services=ServiceRegistry()

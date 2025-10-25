@@ -35,8 +35,12 @@ class ConnectionConfig:
         """Create configuration from database URL"""
         if database_url.startswith('sqlite'):
             return cls(database_type=DatabaseType.SQLITE, database_url=database_url)
-        elif database_url.startswith('postgresql'):
+        elif database_url.startswith('postgresql') or database_url.startswith('postgres'):
             return cls(database_type=DatabaseType.POSTGRESQL, database_url=database_url)
+        elif database_url.startswith('mysql'):
+            return cls(database_type=DatabaseType.MYSQL, database_url=database_url)
+        elif database_url.startswith('mssql'):
+            return cls(database_type=DatabaseType.MSSQL, database_url=database_url)
         elif database_url.startswith('duckdb'):
             return cls(database_type=DatabaseType.DUCKDB, database_url=database_url)
         else:

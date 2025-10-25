@@ -12,7 +12,7 @@ from unittest.mock import patch
 # Add the parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from tests.pipeline_runner import run_with_new_schema, create_pipeline_from_json
+from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
 from ia_modules.pipeline.services import ServiceRegistry
 
 
@@ -32,8 +32,8 @@ class TestE2EPipelines:
         input_data = {"topic": "sequential_test"}
 
         # Create and run the pipeline
-        pipeline = create_pipeline_from_json(pipeline_config)
-        result = await run_with_new_schema(pipeline, pipeline_config, input_data, None)
+        runner = GraphPipelineRunner()
+        result = await runner.run_pipeline_from_json(pipeline_config, input_data)
 
         # Verify sequential processing
         assert result is not None
@@ -74,8 +74,8 @@ class TestE2EPipelines:
         }
 
         # Create and run the pipeline
-        pipeline = create_pipeline_from_json(pipeline_config)
-        result = await run_with_new_schema(pipeline, pipeline_config, input_data, None)
+        runner = GraphPipelineRunner()
+        result = await runner.run_pipeline_from_json(pipeline_config, input_data)
 
         # Verify parallel processing structure
         assert result is not None
@@ -125,8 +125,8 @@ class TestE2EPipelines:
             ]
         }
 
-        pipeline = create_pipeline_from_json(pipeline_config)
-        result = await run_with_new_schema(pipeline, pipeline_config, high_quality_input, None)
+        runner = GraphPipelineRunner()
+        result = await runner.run_pipeline_from_json(pipeline_config, high_quality_input)
 
         # Verify conditional branching
         assert result is not None
@@ -151,8 +151,8 @@ class TestE2EPipelines:
             "text": "This is a great product! I love it."
         }
 
-        pipeline = create_pipeline_from_json(pipeline_config)
-        result = await run_with_new_schema(pipeline, pipeline_config, input_data, None)
+        runner = GraphPipelineRunner()
+        result = await runner.run_pipeline_from_json(pipeline_config, input_data)
 
         # Verify agent processing
         assert result is not None
@@ -202,8 +202,8 @@ class TestE2EPipelines:
             ]
         }
 
-        pipeline = create_pipeline_from_json(pipeline_config)
-        result = await run_with_new_schema(pipeline, pipeline_config, large_input, None)
+        runner = GraphPipelineRunner()
+        result = await runner.run_pipeline_from_json(pipeline_config, large_input)
 
         # Verify large data handling
         assert result is not None
@@ -239,8 +239,8 @@ class TestE2EPipelines:
 
         # This would need to be integrated with the actual logging system
         # For now, just verify the pipeline runs successfully
-        pipeline = create_pipeline_from_json(pipeline_config)
-        result = await run_with_new_schema(pipeline, pipeline_config, input_data, None)
+        runner = GraphPipelineRunner()
+        result = await runner.run_pipeline_from_json(pipeline_config, input_data)
 
         assert result is not None
         assert isinstance(result, dict)

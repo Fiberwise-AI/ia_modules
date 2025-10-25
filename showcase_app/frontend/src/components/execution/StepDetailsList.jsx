@@ -16,12 +16,20 @@ export default function StepDetailsList({ steps }) {
           {steps && steps.length > 0 ? (
             <div className="space-y-4">
               {steps.map((step, index) => (
-                <div
-                  key={index}
-                  onClick={() => setSelectedStep(step)}
-                  className="cursor-pointer transform transition-transform hover:scale-[1.01]"
-                >
+                <div key={index} className="relative">
                   <StepDetailCard step={step} />
+                  <div className="absolute top-4 right-4">
+                    <button
+                      onClick={() => setSelectedStep(step)}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      View Details
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

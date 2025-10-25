@@ -27,7 +27,7 @@ class CheckpointService:
         List all checkpoints for a specific execution
         
         Args:
-            job_id: Execution job ID
+            job_id: Execution job ID (used as pipeline_id in checkpointer)
             
         Returns:
             List of checkpoint dictionaries
@@ -44,10 +44,10 @@ class CheckpointService:
             formatted = []
             for cp in checkpoints:
                 formatted.append({
-                    "id": cp.get("id") or cp.get("checkpoint_id"),
+                    "id": cp.get("checkpoint_id") or cp.get("id"),
                     "job_id": job_id,
                     "step_name": cp.get("step_name"),
-                    "created_at": cp.get("created_at"),
+                    "created_at": cp.get("created_at") or cp.get("timestamp"),
                     "state_size": len(str(cp.get("state", {}))) if cp.get("state") else 0,
                     "metadata": cp.get("metadata", {})
                 })
@@ -157,74 +157,55 @@ class CheckpointService:
 
     async def _get_checkpoints_from_storage(self, job_id: str) -> List[Dict]:
         """Get checkpoints from storage backend"""
-        # This is a placeholder - actual implementation depends on checkpointer interface
-        try:
-            if hasattr(self.checkpointer, 'list_checkpoints'):
-                return await self.checkpointer.list_checkpoints(job_id)
-            elif hasattr(self.checkpointer, 'get_checkpoints'):
-                return await self.checkpointer.get_checkpoints(job_id)
-            else:
-                # Fallback: try to get from database directly
-                if hasattr(self.checkpointer, 'db_manager'):
-                    query = """
-                        SELECT checkpoint_id as id, job_id, step_name, 
-                               state, created_at, metadata
-                        FROM checkpoints
-                        WHERE job_id = :job_id
-                        ORDER BY created_at DESC
-                    """
-                    result = await self.checkpointer.db_manager.execute(
-                        query,
-                        {"job_id": job_id}
-                    )
-                    return [dict(row) for row in result]
-                
-                return []
-        except Exception as e:
-            logger.error(f"Error accessing checkpoint storage: {e}")
-            return []
+        if hasattr(self.checkpointer, 'list_checkpoints'):
+            checkpoints = await self.checkpointer.list_checkpoints(
+                pipeline_id=job_id,
+                thread_id="default"
+            )
+            return [self._checkpoint_to_dict(cp) for cp in checkpoints]
+        
+        return []
 
     async def _load_checkpoint_from_storage(self, checkpoint_id: str) -> Optional[Dict]:
         """Load checkpoint from storage backend"""
-        try:
-            if hasattr(self.checkpointer, 'load_checkpoint'):
-                cp = await self.checkpointer.load_checkpoint(checkpoint_id)
-                if cp:
-                    return self._checkpoint_to_dict(cp)
-            elif hasattr(self.checkpointer, 'get_checkpoint'):
-                cp = await self.checkpointer.get_checkpoint(checkpoint_id)
-                if cp:
-                    return self._checkpoint_to_dict(cp)
-            elif hasattr(self.checkpointer, 'db_manager'):
-                query = """
-                    SELECT checkpoint_id as id, job_id, step_name,
-                           state, created_at, metadata
-                    FROM checkpoints
-                    WHERE checkpoint_id = :checkpoint_id
-                """
-                result = await self.checkpointer.db_manager.execute(
-                    query,
-                    {"checkpoint_id": checkpoint_id}
-                )
-                rows = list(result)
-                if rows:
-                    return dict(rows[0])
-            
-            return None
-        except Exception as e:
-            logger.error(f"Error loading checkpoint: {e}")
-            return None
+        if hasattr(self.checkpointer, 'load_checkpoint'):
+            cp = await self.checkpointer.load_checkpoint(checkpoint_id)
+            if cp:
+                return self._checkpoint_to_dict(cp)
+        
+        return None
 
     def _checkpoint_to_dict(self, checkpoint) -> Dict:
         """Convert checkpoint object to dictionary"""
         if isinstance(checkpoint, dict):
             return checkpoint
 
+        # Checkpoint objects have to_dict() method
+        if hasattr(checkpoint, 'to_dict'):
+            cp_dict = checkpoint.to_dict()
+            # Normalize field names for API
+            return {
+                "id": cp_dict.get("checkpoint_id"),
+                "checkpoint_id": cp_dict.get("checkpoint_id"),
+                "job_id": cp_dict.get("pipeline_id"),  # Map pipeline_id to job_id
+                "pipeline_id": cp_dict.get("pipeline_id"),
+                "step_name": cp_dict.get("step_name"),
+                "step_id": cp_dict.get("step_id"),
+                "step_index": cp_dict.get("step_index"),
+                "state": cp_dict.get("state", {}),
+                "created_at": cp_dict.get("timestamp"),  # Map timestamp to created_at
+                "timestamp": cp_dict.get("timestamp"),
+                "metadata": cp_dict.get("metadata", {}),
+                "status": cp_dict.get("status"),
+                "thread_id": cp_dict.get("thread_id")
+            }
+
+        # Fallback to attribute access
         return {
-            "id": getattr(checkpoint, "id", None) or getattr(checkpoint, "checkpoint_id", None),
-            "job_id": getattr(checkpoint, "job_id", None),
+            "id": getattr(checkpoint, "checkpoint_id", None),
+            "job_id": getattr(checkpoint, "pipeline_id", None),
             "step_name": getattr(checkpoint, "step_name", None),
             "state": getattr(checkpoint, "state", {}),
-            "created_at": getattr(checkpoint, "created_at", None),
+            "created_at": getattr(checkpoint, "timestamp", None),
             "metadata": getattr(checkpoint, "metadata", {})
         }

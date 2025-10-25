@@ -53,7 +53,12 @@ export default function ConversationHistory({ sessionId }) {
     }
   };
 
-  const displayMessages = searchMutation.data?.results || messages || [];
+  // Ensure displayMessages is always an array
+  const displayMessages = Array.isArray(searchMutation.data?.results) 
+    ? searchMutation.data.results 
+    : Array.isArray(messages) 
+    ? messages 
+    : [];
 
   if (!sessionId) {
     return (

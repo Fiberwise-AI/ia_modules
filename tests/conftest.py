@@ -97,11 +97,16 @@ async def db_manager(request):
     # Clean up any test tables from previous runs
     test_tables = [
         'test_users', 'test_products', 'test_data', 'test_table', 'test_items', 'test_async',
-        'test_booleans', 'test_json', 'test_varchar', 'test_uuid', 'test_timestamps'
+        'test_booleans', 'test_json', 'test_varchar', 'test_uuid', 'test_timestamps',
+        'test_existence', 'test_script', 'test_script1', 'test_script2'
     ]
     for table in test_tables:
         try:
-            db.execute(f'DROP TABLE IF EXISTS {table} CASCADE')
+            # CASCADE only works in PostgreSQL
+            if config.database_type == DatabaseType.POSTGRESQL:
+                db.execute(f'DROP TABLE IF EXISTS {table} CASCADE')
+            else:
+                db.execute(f'DROP TABLE IF EXISTS {table}')
         except:
             pass
 

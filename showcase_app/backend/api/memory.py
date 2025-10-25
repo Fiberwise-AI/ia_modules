@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from typing import List
-from ..models import MemoryMessage, MemoryStats, MemorySearchRequest
+from models import MemoryMessage, MemoryStats, MemorySearchRequest
 
 router = APIRouter()
 

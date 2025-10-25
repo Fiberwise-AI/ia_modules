@@ -8,7 +8,7 @@ import re
 
 from pathlib import Path
 from typing import Optional, Any, Dict, List
-from .interfaces import ConnectionConfig, DatabaseType
+from .interfaces import ConnectionConfig, DatabaseType, QueryResult
 
 try:
     import psycopg2
@@ -21,16 +21,6 @@ logger = logging.getLogger(__name__)
 
 
 # DatabaseInterfaceAdapter DELETED - DatabaseManager now handles everything directly
-
-
-class QueryResult:
-    """Simple query result class for migration compatibility"""
-    
-    def __init__(self, success: bool, data: Optional[Any] = None, error: Optional[str] = None):
-        self.success = success
-        self.data = data
-        self.error = error
-        self.error_message = error  # Alias for compatibility
 
 
 class DatabaseManager:
@@ -137,11 +127,17 @@ class DatabaseManager:
             elif self.config.database_type == DatabaseType.MYSQL:
                 import pymysql
                 import pymysql.cursors
+                from urllib.parse import urlparse
+
+                # Parse the database URL
+                parsed = urlparse(self.database_url)
+
                 self._connection = pymysql.connect(
-                    host=self.config.host or self.database_url.split('@')[1].split(':')[0],
-                    user=self.config.username or self.database_url.split('://')[1].split(':')[0],
-                    password=self.config.password or self.database_url.split(':')[2].split('@')[0],
-                    database=self.config.database_name or self.database_url.split('/')[-1],
+                    host=self.config.host or parsed.hostname or 'localhost',
+                    port=self.config.port or parsed.port or 3306,
+                    user=self.config.username or parsed.username,
+                    password=self.config.password or parsed.password,
+                    database=self.config.database_name or parsed.path.lstrip('/'),
                     cursorclass=pymysql.cursors.DictCursor,
                     autocommit=False
                 )
@@ -150,25 +146,35 @@ class DatabaseManager:
 
             elif self.config.database_type == DatabaseType.MSSQL:
                 import pyodbc
+                from urllib.parse import urlparse
+
                 # Parse connection string or build from components
                 if 'Driver' in self.database_url or 'DRIVER' in self.database_url:
                     # Full connection string provided
                     self._connection = pyodbc.connect(self.database_url)
                 else:
-                    # Build connection string from URL
-                    # Format: mssql://user:pass@host:port/database
-                    parts = self.database_url.replace('mssql://', '').split('@')
-                    user_pass = parts[0].split(':')
-                    host_db = parts[1].split('/')
-                    host_port = host_db[0].split(':')
+                    # Parse the database URL
+                    parsed = urlparse(self.database_url)
+
+                    # Detect available driver (prefer 17 over 18, as 18 has TLS issues)
+                    available_drivers = pyodbc.drivers()
+                    driver = None
+                    for preferred in ['ODBC Driver 17 for SQL Server', 'ODBC Driver 18 for SQL Server', 'SQL Server']:
+                        if preferred in available_drivers:
+                            driver = preferred
+                            break
+
+                    if not driver:
+                        raise RuntimeError("No MSSQL ODBC driver found. Install ODBC Driver 17 or 18 for SQL Server")
 
                     conn_str = (
-                        f"DRIVER={{ODBC Driver 18 for SQL Server}};"
-                        f"SERVER={host_port[0]},{host_port[1] if len(host_port) > 1 else '1433'};"
-                        f"DATABASE={host_db[1] if len(host_db) > 1 else 'master'};"
-                        f"UID={user_pass[0]};"
-                        f"PWD={user_pass[1]};"
-                        f"TrustServerCertificate=yes"
+                        f"DRIVER={{{driver}}};"
+                        f"SERVER={self.config.host or parsed.hostname or 'localhost'},{self.config.port or parsed.port or 1433};"
+                        f"DATABASE={self.config.database_name or parsed.path.lstrip('/') or 'master'};"
+                        f"UID={self.config.username or parsed.username};"
+                        f"PWD={self.config.password or parsed.password};"
+                        f"TrustServerCertificate=yes;"
+                        f"Encrypt=yes"
                     )
                     self._connection = pyodbc.connect(conn_str)
 
@@ -285,19 +291,181 @@ class DatabaseManager:
 
             return result
 
-        # MySQL translation (future)
+        # MySQL translation
         if self.config.database_type == DatabaseType.MYSQL:
-
             result = sql
+
             # AUTO_INCREMENT instead of SERIAL
-            result = result.replace('SERIAL PRIMARY KEY', 'INTEGER PRIMARY KEY AUTO_INCREMENT')
-            result = re.sub(r'\bSERIAL\b', 'INTEGER AUTO_INCREMENT', result)
+            result = result.replace('SERIAL PRIMARY KEY', 'INT PRIMARY KEY AUTO_INCREMENT')
+            result = re.sub(r'\bSERIAL\b', 'INT AUTO_INCREMENT', result)
+
+            # Note: Do NOT add AUTO_INCREMENT to INTEGER PRIMARY KEY
+            # In PostgreSQL canonical syntax, INTEGER PRIMARY KEY does NOT auto-increment
+            # Only SERIAL PRIMARY KEY auto-increments
+
             # TINYINT(1) instead of BOOLEAN
             result = re.sub(r'\bBOOLEAN\b', 'TINYINT(1)', result)
+
+            # Boolean literals TRUE/FALSE → 1/0
+            result = re.sub(r'\bTRUE\b', '1', result)
+            result = re.sub(r'\bFALSE\b', '0', result)
+
             # JSON instead of JSONB
-            result = result.replace('JSONB', 'JSON')
+            result = re.sub(r'\bJSONB\b', 'JSON', result)
+
+            # UUID → CHAR(36) (MySQL stores UUIDs as strings)
+            result = re.sub(r'\bUUID\b', 'CHAR(36)', result)
+
+            # MySQL doesn't support DEFAULT with functions except for TIMESTAMP columns
+            # Remove DEFAULT gen_random_uuid() - apps must provide UUIDs
+            result = re.sub(r'\s+DEFAULT\s+gen_random_uuid\(\)', '', result, flags=re.IGNORECASE)
+
+            # MySQL doesn't support DEFAULT on JSON/TEXT columns
+            # Remove DEFAULT for JSON columns (common pattern: DEFAULT '{}'::jsonb or DEFAULT '{}')
+            result = re.sub(r'\s+DEFAULT\s+\'[^\']*\'::jsonb', '', result, flags=re.IGNORECASE)
+            result = re.sub(r'(\bJSON\b[^,\)]*)\s+DEFAULT\s+\'[^\']*\'', r'\1', result, flags=re.IGNORECASE)
+
+            # TIMESTAMP handling (MySQL has different default behavior)
+            # Keep TIMESTAMP as-is, it works in MySQL
+
+            # Functions (for queries, not for defaults)
+            result = re.sub(r'gen_random_uuid\(\)', 'UUID()', result)
+            # NOW() works in MySQL, keep it
+
+            # PostgreSQL type casting (::type) → remove for MySQL
+            result = re.sub(r"'([^']*)'::jsonb", r"'\1'", result)
+            result = re.sub(r'::jsonb\b', '', result)
+            result = re.sub(r'::json\b', '', result)
+            result = re.sub(r'::varchar\b', '', result)
+            result = re.sub(r'::text\b', '', result)
+            result = re.sub(r'::uuid\b', '', result)
+
+            # MySQL doesn't support CREATE INDEX IF NOT EXISTS
+            # Remove IF NOT EXISTS from index creation
+            result = re.sub(r'CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+', 'CREATE INDEX ', result, flags=re.IGNORECASE)
+
+            return result
+
+        # MSSQL translation
+        if self.config.database_type == DatabaseType.MSSQL:
+            result = sql
+
+            # IDENTITY instead of SERIAL
+            result = result.replace('SERIAL PRIMARY KEY', 'INT PRIMARY KEY IDENTITY(1,1)')
+            result = re.sub(r'\bSERIAL\b', 'INT IDENTITY(1,1)', result)
+
+            # Note: Do NOT add IDENTITY to INTEGER PRIMARY KEY
+            # In PostgreSQL canonical syntax, INTEGER PRIMARY KEY does NOT auto-increment
+            # Only SERIAL PRIMARY KEY auto-increments
+
+            # BIT instead of BOOLEAN
+            result = re.sub(r'\bBOOLEAN\b', 'BIT', result)
+
+            # Boolean literals TRUE/FALSE → 1/0
+            result = re.sub(r'\bTRUE\b', '1', result)
+            result = re.sub(r'\bFALSE\b', '0', result)
+
+            # NVARCHAR(MAX) instead of JSONB/JSON
+            result = re.sub(r'\bJSONB\b', 'NVARCHAR(MAX)', result)
+            result = re.sub(r'\bJSON\b', 'NVARCHAR(MAX)', result)
+
+            # UNIQUEIDENTIFIER instead of UUID
+            result = re.sub(r'\bUUID\b', 'UNIQUEIDENTIFIER', result)
+
+            # VARCHAR → NVARCHAR for better Unicode support
+            result = re.sub(r'\bVARCHAR\s*\((\d+)\)', r'NVARCHAR(\1)', result)
+            result = re.sub(r'\bVARCHAR\b', 'NVARCHAR(MAX)', result)
+            result = re.sub(r'\bTEXT\b', 'NVARCHAR(MAX)', result)
+
+            # TIMESTAMP → DATETIME2
+            result = re.sub(r'\bTIMESTAMP\b', 'DATETIME2', result)
+
             # Functions
-            result = result.replace('gen_random_uuid()', 'UUID()')
+            result = re.sub(r'\bNOW\(\)', 'GETDATE()', result)
+            result = re.sub(r'gen_random_uuid\(\)', 'NEWID()', result)
+            result = re.sub(r'\bCURRENT_TIMESTAMP\b', 'GETDATE()', result)
+
+            # PostgreSQL type casting (::type) → CAST syntax
+            result = re.sub(r"'([^']*)'::jsonb", r"'\1'", result)
+            result = re.sub(r'::jsonb\b', '', result)
+            result = re.sub(r'::json\b', '', result)
+            result = re.sub(r'::varchar\b', '', result)
+            result = re.sub(r'::text\b', '', result)
+            result = re.sub(r'::uuid\b', '', result)
+
+            # MSSQL doesn't support ON DELETE SET NULL for self-referencing FKs with CASCADE
+            # Change to NO ACTION to avoid conflicts
+            result = re.sub(r'ON\s+DELETE\s+SET\s+NULL', 'ON DELETE NO ACTION', result, flags=re.IGNORECASE)
+            result = re.sub(r'ON\s+DELETE\s+CASCADE', 'ON DELETE NO ACTION', result, flags=re.IGNORECASE)
+
+            # CREATE TABLE IF NOT EXISTS → MSSQL conditional syntax
+            # MSSQL doesn't support IF NOT EXISTS in CREATE TABLE
+            # Use a line-by-line approach to wrap each CREATE TABLE statement
+            lines = result.split('\n')
+            processed_lines = []
+            i = 0
+            while i < len(lines):
+                line = lines[i]
+                # Check if this line starts a CREATE TABLE IF NOT EXISTS
+                if re.match(r'^\s*CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+(\w+)', line, re.IGNORECASE):
+                    table_name_match = re.search(r'CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+(\w+)', line, re.IGNORECASE)
+                    table_name = table_name_match.group(1)
+
+                    # Remove IF NOT EXISTS from this line
+                    line = re.sub(r'IF\s+NOT\s+EXISTS\s+', '', line, flags=re.IGNORECASE)
+
+                    # Add the IF NOT EXISTS wrapper
+                    processed_lines.append(f"IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[{table_name}]') AND type = 'U')")
+                    processed_lines.append("BEGIN")
+                    processed_lines.append("    " + line.strip())
+
+                    # Collect all lines until we find the closing );
+                    i += 1
+                    paren_count = line.count('(') - line.count(')')
+                    while i < len(lines):
+                        current_line = lines[i]
+                        paren_count += current_line.count('(') - current_line.count(')')
+                        processed_lines.append("    " + current_line.strip())
+
+                        # Check if we've reached the end of the CREATE TABLE statement
+                        if paren_count <= 0 and (');' in current_line or current_line.strip().endswith(')')):
+                            # Remove semicolon if present
+                            if processed_lines[-1].rstrip().endswith(');'):
+                                processed_lines[-1] = processed_lines[-1].rstrip()[:-1]  # Remove the semicolon
+                            elif processed_lines[-1].rstrip().endswith(';'):
+                                processed_lines[-1] = processed_lines[-1].rstrip()[:-1]  # Remove the semicolon
+                            processed_lines.append("END")
+                            break
+                        i += 1
+                else:
+                    processed_lines.append(line)
+                i += 1
+
+            result = '\n'.join(processed_lines)
+
+            # Also handle CREATE INDEX IF NOT EXISTS (MSSQL doesn't support it either)
+            result = re.sub(r'CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+', 'CREATE INDEX ', result, flags=re.IGNORECASE)
+
+            # LIMIT/OFFSET → OFFSET/FETCH NEXT
+            # MSSQL uses: OFFSET x ROWS FETCH NEXT y ROWS ONLY
+            # PostgreSQL uses: LIMIT y OFFSET x
+
+            # Handle LIMIT with OFFSET
+            result = re.sub(
+                r'\bLIMIT\s+(\d+)\s+OFFSET\s+(\d+)',
+                r'OFFSET \2 ROWS FETCH NEXT \1 ROWS ONLY',
+                result,
+                flags=re.IGNORECASE
+            )
+
+            # Handle just LIMIT (no OFFSET)
+            result = re.sub(
+                r'\bLIMIT\s+(\d+)(?!\s+OFFSET)',
+                r'OFFSET 0 ROWS FETCH NEXT \1 ROWS ONLY',
+                result,
+                flags=re.IGNORECASE
+            )
+
             return result
 
         # For unknown databases, return as-is and hope for the best
@@ -431,6 +599,7 @@ class DatabaseManager:
             if self._connection:
                 try:
                     self._connection.rollback()
+                    logger.debug("Rolled back transaction after error")
                 except Exception:
                     pass  # Ignore rollback errors
             logger.error(f"Query execution failed: {e}")
@@ -447,7 +616,16 @@ class DatabaseManager:
         try:
             cursor = self._execute_raw(query, params)
             row = cursor.fetchone()
-            return dict(row) if row else None
+            if not row:
+                return None
+
+            # Handle different cursor types
+            if self.config.database_type == DatabaseType.MSSQL:
+                # pyodbc Row object - convert to dict using column names
+                return {cursor.description[i][0]: row[i] for i in range(len(row))}
+            else:
+                # PostgreSQL/MySQL dict cursor or SQLite Row
+                return dict(row)
         except Exception as e:
             logger.error(f"fetch_one failed: {e}")
             return None
@@ -463,7 +641,14 @@ class DatabaseManager:
         try:
             cursor = self._execute_raw(query, params)
             rows = cursor.fetchall()
-            return [dict(row) for row in rows]
+
+            # Handle different cursor types
+            if self.config.database_type == DatabaseType.MSSQL:
+                # pyodbc Row objects - convert to dicts
+                return [{cursor.description[i][0]: row[i] for i in range(len(row))} for row in rows]
+            else:
+                # PostgreSQL/MySQL dict cursor or SQLite Row
+                return [dict(row) for row in rows]
         except Exception as e:
             logger.error(f"fetch_all failed: {e}")
             return []
@@ -475,7 +660,7 @@ class DatabaseManager:
         logger.info(f"Created table: {table_name}")
     
     def table_exists(self, table_name: str) -> bool:
-        """Check if a table exists - works on PostgreSQL and SQLite"""
+        """Check if a table exists - works on all supported databases"""
         try:
             if self.config.database_type == DatabaseType.POSTGRESQL:
                 result = self.fetch_one("""
@@ -485,15 +670,32 @@ class DatabaseManager:
                     )
                 """, {"table_name": table_name})
                 return result and result.get('exists', False)
+
+            elif self.config.database_type == DatabaseType.MYSQL:
+                result = self.fetch_one("""
+                    SELECT COUNT(*) as count FROM information_schema.tables
+                    WHERE table_name = :table_name
+                    AND table_schema = DATABASE()
+                """, {"table_name": table_name})
+                return result and result.get('count', 0) > 0
+
+            elif self.config.database_type == DatabaseType.MSSQL:
+                result = self.fetch_one("""
+                    SELECT COUNT(*) as count FROM information_schema.tables
+                    WHERE table_name = :table_name
+                """, {"table_name": table_name})
+                return result and result.get('count', 0) > 0
+
             else:  # SQLite
                 result = self.fetch_one(
                     "SELECT name FROM sqlite_master WHERE type='table' AND name=:table_name",
                     {"table_name": table_name}
                 )
                 return result is not None
+
         except Exception as e:
             logger.error(f"table_exists failed: {e}")
-            if self.config.database_type == DatabaseType.POSTGRESQL and self._connection:
+            if self.config.database_type in [DatabaseType.POSTGRESQL, DatabaseType.MYSQL, DatabaseType.MSSQL] and self._connection:
                 try:
                     self._connection.rollback()
                 except:
@@ -511,20 +713,23 @@ class DatabaseManager:
                 self._connection.executescript(translated_script)
                 self._connection.commit()
             else:
-                # For PostgreSQL/MySQL, execute statements one by one
+                # For PostgreSQL/MySQL/MSSQL, execute statements one by one
                 statements = [stmt.strip() for stmt in translated_script.split(';') if stmt.strip()]
                 for statement in statements:
+                    # Skip empty statements
+                    if not statement:
+                        continue
                     self.execute(statement)
 
-            return QueryResult(success=True)
+            return QueryResult(success=True, data=[], row_count=0)
         except Exception as e:
             logger.error(f"Script execution failed: {e}")
-            if self.config.database_type == DatabaseType.POSTGRESQL and self._connection:
+            if self.config.database_type in [DatabaseType.POSTGRESQL, DatabaseType.MYSQL, DatabaseType.MSSQL] and self._connection:
                 try:
                     self._connection.rollback()
                 except:
                     pass
-            return QueryResult(success=False, error=str(e))
+            return QueryResult(success=False, data=[], row_count=0, error_message=str(e))
 
     def __enter__(self):
         """Context manager entry"""

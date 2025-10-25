@@ -11,7 +11,7 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, UTC
 import asyncio
 import json
-from ..services.multi_agent_service import MultiAgentService
+from services.multi_agent_service import MultiAgentService
 
 router = APIRouter(prefix="/api/multi-agent", tags=["multi-agent"])
 

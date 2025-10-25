@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: testpass
       POSTGRES_DB: ia_modules_test
     ports:
-      - "5434:5432"
+      - "15432:5432"  # Changed to avoid conflicts
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U testuser"]
       interval: 5s
@@ -23,34 +23,33 @@ services:
       MYSQL_PASSWORD: testpass
       MYSQL_DATABASE: ia_modules_test
     ports:
-      - "3306:3306"
+      - "13306:3306"  # Changed to avoid conflicts
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "testuser", "-ptestpass"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  # MSSQL: Commented out - uncomment when ready to test locally
-  # mssql:
-  #   image: mcr.microsoft.com/mssql/server:2022-latest
-  #   container_name: ia_modules_test_mssql
-  #   environment:
-  #     ACCEPT_EULA: Y
-  #     SA_PASSWORD: TestPass123!
-  #     MSSQL_PID: Express
-  #   ports:
-  #     - "1433:1433"
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPass123! -Q 'SELECT 1'"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 10
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ia_modules_test_mssql
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: TestPass123!
+      MSSQL_PID: Express
+    ports:
+      - "11433:1433"  # Changed to avoid conflicts
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P TestPass123! -Q 'SELECT 1' -C"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7-alpine
     container_name: ia_modules_test_redis
     ports:
-      - "6379:6379"
+      - "16379:6379"  # Changed to avoid conflicts
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -67,7 +66,7 @@ services:
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
     ports:
-      - "9090:9090"
+      - "19090:9090"  # Changed to avoid conflicts
     volumes:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -85,7 +84,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
     ports:
-      - "3001:3000"
+      - "13001:3000"  # Changed to avoid conflicts
     volumes:
       - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources
       - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards
@@ -105,11 +104,11 @@ services:
     volumes:
       - ./observability/otel-collector-config.yml:/etc/otel-collector-config.yml
     ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-      - "8888:8888"   # Prometheus metrics exposed by the collector
-      - "8889:8889"   # Prometheus exporter metrics
-      - "13133:13133" # health_check extension
+      - "14317:4317"   # OTLP gRPC receiver (changed to avoid conflicts)
+      - "14318:4318"   # OTLP HTTP receiver (changed to avoid conflicts)
+      - "18888:8888"   # Prometheus metrics exposed by the collector
+      - "18889:8889"   # Prometheus exporter metrics
+      - "23133:13133" # health_check extension
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:13133/"]
       interval: 10s
@@ -126,9 +125,8 @@ services:
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     ports:
-      - "16686:16686"  # Jaeger UI
+      - "16686:16686"  # Jaeger UI (also used for health check)
       - "14268:14268"  # Jaeger collector HTTP
-      - "14269:14269"  # Jaeger admin/health
       - "14250:14250"  # Jaeger collector gRPC
       - "4319:4317"    # OTLP gRPC (mapped to 4319 to avoid conflict)
       - "4320:4318"    # OTLP HTTP (mapped to 4320 to avoid conflict)

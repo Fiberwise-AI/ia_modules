@@ -58,9 +58,9 @@ def simple_pipeline(telemetry):
     flow = {
         "start_at": "step1",
         "paths": [
-            {"from_step": "step1", "to_step": "step2"},
-            {"from_step": "step2", "to_step": "step3"},
-            {"from_step": "step3", "to_step": "end_with_success"}
+            {"from": "step1", "to": "step2"},
+            {"from": "step2", "to": "step3"},
+            {"from": "step3", "to": "end_with_success"}
         ]
     }
 
@@ -135,8 +135,8 @@ class TestPipelineTelemetryIntegration:
         flow = {
             "start_at": "step1",
             "paths": [
-                {"from_step": "step1", "to_step": "failing_step"},
-                {"from_step": "failing_step", "to_step": "end_with_success"}
+                {"from": "step1", "to": "failing_step"},
+                {"from": "failing_step", "to": "end_with_success"}
             ]
         }
 
@@ -337,7 +337,7 @@ class TestTelemetryDisabled:
         flow = {
             "start_at": "step1",
             "paths": [
-                {"from_step": "step1", "to_step": "end_with_success"}
+                {"from": "step1", "to": "end_with_success"}
             ]
         }
 
@@ -368,9 +368,9 @@ class TestTelemetryPerformance:
         flow = {
             "start_at": "step0",
             "paths": [
-                {"from_step": f"step{i}", "to_step": f"step{i+1}"}
+                {"from": f"step{i}", "to": f"step{i+1}"}
                 for i in range(4)
-            ] + [{"from_step": "step4", "to_step": "end_with_success"}]
+            ] + [{"from": "step4", "to": "end_with_success"}]
         }
 
         # Run with telemetry

@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List
-from ..models import PipelineCreate, PipelineUpdate, PipelineResponse, PipelineGraphResponse, GraphNode, GraphEdge
+from models import PipelineCreate, PipelineUpdate, PipelineResponse, PipelineGraphResponse, GraphNode, GraphEdge
 
 router = APIRouter()
 
@@ -83,9 +83,8 @@ async def get_pipeline_graph(pipeline_id: str, service=Depends(get_pipeline_serv
             position={"x": 250, "y": idx * 120}
         ))
     
-    # Generate edges from flow paths/transitions
     edges = []
-    paths = flow.get("paths", flow.get("transitions", []))
+    paths = flow.get("paths", [])
     
     for path in paths:
         from_step = path.get("from_step", path.get("from"))

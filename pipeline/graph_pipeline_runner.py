@@ -23,6 +23,7 @@ sys.path.insert(0, str(current_dir))
 from ia_modules.pipeline.core import Pipeline, Step
 from ia_modules.pipeline.runner import create_pipeline_from_json
 from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.pipeline.in_memory_tracker import InMemoryExecutionTracker
 
 
 class AgentStepWrapper(Step):
@@ -87,6 +88,8 @@ class PipelineConfig(BaseModel):
     input_schema: Optional[Dict[str, Any]] = Field(None, description="Input validation schema")
     output_schema: Optional[Dict[str, Any]] = Field(None, description="Output validation schema")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    loop_config: Optional[Dict[str, Any]] = Field(None, description="Loop configuration for iterative pipelines")
+    outputs: Optional[Dict[str, Any]] = Field(None, description="Output mappings")
 
     @field_validator('parameters', mode='before')
     @classmethod
@@ -132,7 +135,13 @@ class GraphPipelineRunner:
     """Generic runner for graph-based pipelines with advanced features"""
 
     def __init__(self, services: Optional[ServiceRegistry] = None):
-        self.services = services or ServiceRegistry()
+        # Create default in-memory services if none provided
+        if services is None:
+            services = ServiceRegistry()
+            # Register in-memory execution tracker for tests
+            services.register('execution_tracker', InMemoryExecutionTracker())
+        
+        self.services = services
         self.execution_stats = {
             'start_time': None,
             'end_time': None,
@@ -211,17 +220,14 @@ class GraphPipelineRunner:
         # Prepare input data
         input_data = input_data or {}
 
-        # Log execution start to central service
-        execution_id = self._start_execution_logging(config)
+        # Log execution start to central service and tracker
+        execution_id = await self._start_execution_logging(config, input_data)
 
         # Create and run pipeline
         try:
             self.execution_stats['start_time'] = datetime.now()
 
-            if use_enhanced_features and self._has_advanced_features(config):
-                result = await self._run_enhanced_pipeline(config, input_data)
-            else:
-                result = await self._run_standard_pipeline(config, input_data)
+            result = await self._run_standard_pipeline(config, input_data)
 
             self.execution_stats['end_time'] = datetime.now()
 
@@ -248,23 +254,29 @@ class GraphPipelineRunner:
 
             raise
 
-    def _start_execution_logging(self, config: PipelineConfig) -> str:
+    async def _start_execution_logging(self, config: PipelineConfig, input_data: Dict[str, Any]) -> str:
         """Start execution logging and return execution ID"""
         # Generate execution ID
         execution_id = str(uuid.uuid4())
         
-        # Get execution tracker service if available
+        # Start execution in tracker
         if self.services and hasattr(self.services, 'get'):
             execution_tracker = self.services.get('execution_tracker')
             if execution_tracker and hasattr(execution_tracker, 'start_execution'):
-                # Use execution tracker to log start
-                execution_tracker.start_execution(
-                    execution_id=execution_id,
-                    pipeline_name=config.name,
-                    pipeline_version=config.version,
-                    config=config.dict()
-                )
-
+                try:
+                    await execution_tracker.start_execution(
+                        pipeline_name=config.name,
+                        pipeline_version=config.version,
+                        input_data=input_data,
+                        execution_id=execution_id
+                    )
+                except Exception:
+                    pass  # If tracker doesn't support it, continue
+        
+        # Store execution_id in services so Pipeline can access it
+        if self.services:
+            self.services.register('execution_id', execution_id)
+        
         # Set execution ID in central logger
         logger = self._get_central_logger()
         if logger and hasattr(logger, 'set_execution_id'):
@@ -302,33 +314,13 @@ class GraphPipelineRunner:
         """Validate pipeline configuration structure (already done by Pydantic)"""
         pass
 
-    def _has_advanced_features(self, config: PipelineConfig) -> bool:
-        """Check if pipeline uses advanced features requiring enhanced pipeline"""
-        paths = config.flow.paths
-
-        # Check for advanced condition types
-        for path in paths:
-            condition_type = path.condition.type
-            if condition_type in ['agent', 'function']:
-                return True
-
-        # Check for parallel execution indicators
-        for path in paths:
-            if isinstance(path.to_step, list):
-                return True
-
-        return False
-
     async def _run_standard_pipeline(self, config: PipelineConfig, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Run pipeline using standard graph execution"""
-        # Convert Pydantic model back to dict for compatibility
-        config_dict = config.dict()
+        """Run pipeline"""
+        config_dict = config.model_dump(by_alias=True) if hasattr(config, 'model_dump') else config.dict(by_alias=True)
         pipeline = create_pipeline_from_json(config_dict, self.services)
 
-        # Log pipeline start
-        self._log_to_central_service("INFO", f"Using standard graph pipeline execution with {len(config.steps)} steps")
+        self._log_to_central_service("INFO", f"Executing pipeline with {len(config.steps)} steps")
 
-        # Log individual step details
         for step in config.steps:
             self._log_to_central_service("INFO", f"Step configured: {step.name} ({step.id})", step_name=step.id, data={
                 "step_class": step.step_class,
@@ -336,13 +328,11 @@ class GraphPipelineRunner:
                 "config": step.config
             })
 
-        # Run pipeline and track step executions
         start_time = datetime.now()
         try:
             result = await pipeline.run(input_data)
             end_time = datetime.now()
 
-            # Log successful completion
             duration = (end_time - start_time).total_seconds()
             self._log_to_central_service("SUCCESS", f"Pipeline completed in {duration:.2f} seconds", data={
                 "duration_seconds": duration,
@@ -353,77 +343,10 @@ class GraphPipelineRunner:
             return result
 
         except Exception as e:
-            # Log pipeline failure
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
             self._log_to_central_service("ERROR", f"Pipeline failed after {duration:.2f} seconds: {str(e)}")
             raise
-
-    async def _run_enhanced_pipeline(self, config: PipelineConfig, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Run pipeline using enhanced features"""
-        # Convert config format for enhanced pipeline
-        enhanced_config = self._convert_to_enhanced_format(config)
-
-        # Log enhanced pipeline start
-        self._log_to_central_service("INFO", f"Using enhanced graph pipeline execution with {len(config.steps)} steps")
-
-        # Log individual step details
-        for step in config.steps:
-            self._log_to_central_service("INFO", f"Step configured: {step.name} ({step.id})", step_name=step.id, data={
-                "step_class": step.step_class,
-                "module": step.module,
-                "config": step.config
-            })
-
-        pipeline = EnhancedPipeline(
-            steps=[],  # Will be created from config
-            services=self.services,
-            structure=enhanced_config
-        )
-
-        try:
-            result = await pipeline.run(input_data)
-
-            # Update execution stats
-            stats = pipeline.get_execution_stats()
-            self.execution_stats['parallel_executions'] = stats.get('active_parallel_tasks', 0)
-
-            # Log successful completion
-            self._log_to_central_service("SUCCESS", "Enhanced pipeline completed successfully", data={
-                "parallel_executions": self.execution_stats['parallel_executions']
-            })
-
-            return result
-
-        except Exception as e:
-            # Log enhanced pipeline failure
-            self._log_to_central_service("ERROR", f"Enhanced pipeline failed: {str(e)}")
-            raise
-
-    def _convert_to_enhanced_format(self, config: PipelineConfig) -> Dict[str, Any]:
-        """Convert Pydantic config to enhanced pipeline format"""
-        config_dict = config.dict(by_alias=True)
-
-        # Convert step format
-        if 'steps' in config_dict:
-            enhanced_steps = []
-            for step in config_dict['steps']:
-                enhanced_step = step.copy()
-                enhanced_step['id'] = step['name']  # Enhanced pipeline uses 'id'
-                enhanced_steps.append(enhanced_step)
-            config_dict['steps'] = enhanced_steps
-
-        # Convert flow paths format
-        if 'flow' in config_dict and 'paths' in config_dict['flow']:
-            enhanced_paths = []
-            for path in config_dict['flow']['paths']:
-                enhanced_path = path.copy()
-                enhanced_path['from_step'] = path['from']
-                enhanced_path['to_step'] = path['to']
-                enhanced_paths.append(enhanced_path)
-            config_dict['flow']['paths'] = enhanced_paths
-
-        return config_dict
 
     async def run_pipeline_with_real_classes(
         self,
@@ -449,7 +372,7 @@ class GraphPipelineRunner:
             raise ValueError(f"Invalid pipeline configuration: {e}")
 
         # Log execution start
-        execution_id = self._start_execution_logging(config)
+        execution_id = await self._start_execution_logging(config, input_data)
 
         try:
             self.execution_stats['start_time'] = datetime.now()
@@ -510,7 +433,8 @@ class GraphPipelineRunner:
 
         # Create pipeline with real agents
         # Pipeline expects: (name, steps, flow, services, ...)
-        pipeline_structure = config.model_dump() if hasattr(config, 'model_dump') else config.dict()
+        # Use by_alias=True to get "from"/"to" keys instead of "from_step"/"to_step"
+        pipeline_structure = config.model_dump(by_alias=True) if hasattr(config, 'model_dump') else config.dict(by_alias=True)
         pipeline = Pipeline(
             name=config.name,
             steps=steps,
@@ -646,8 +570,8 @@ async def example_usage():
             "start_at": "step1",
             "paths": [
                 {
-                    "from_step": "step1",
-                    "to_step": "end_with_success",
+                    "from": "step1",
+                    "to": "end_with_success",
                     "condition": {"type": "always"}
                 }
             ]

@@ -281,6 +281,7 @@ asyncio.run(main())
 
 ### 🏗️ **Architecture & Development**
 - **[Pipeline Architecture](docs/PIPELINE_ARCHITECTURE.md)** - Core system design
+- **[Execution Architecture](docs/EXECUTION_ARCHITECTURE.md)** - How pipelines execute, step loading, tracking explained
 - **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - Development workflow
 - **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
 - **[Testing Guide](docs/TESTING_GUIDE.md)** - Testing strategies
@@ -736,29 +737,57 @@ The core table is `pipelines`, which stores the JSON definition and metadata for
 
 See [docs/COMPARISON_LANGCHAIN_LANGGRAPH.md](docs/COMPARISON_LANGCHAIN_LANGGRAPH.md) for detailed comparison.
 
-## Production-Ready Features
+## Production Readiness
+
+### Current Status: **Development/Staging Ready**
+
+IA Modules has been validated for **development and staging environments**. For production deployment, additional validation is recommended:
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| **Core Pipeline System** | ✅ Validated | 644/650 tests passing (99.1%) |
+| **Database Layer** | ✅ Validated | Works with PostgreSQL, MySQL, MSSQL, SQLite |
+| **Reliability Tracking** | ✅ Validated | EARF metrics fully implemented |
+| **Multi-Agent System** | ✅ Validated | 5 patterns tested |
+| **Performance Testing** | ⚠️ Not Validated | Load tests needed |
+| **Security Audit** | ⚠️ Not Completed | Review needed |
+| **Disaster Recovery** | ⚠️ Not Tested | Backup/restore procedures needed |
+
+### Before Production Deployment
+
+**Required Steps:**
+1. **Performance Testing** - Load test with expected traffic (2-3 days)
+2. **Security Audit** - Review for OWASP Top 10 vulnerabilities (2 days)
+3. **Backup Strategy** - Configure and test backup/restore (1 day)
+4. **Monitoring** - Set up Prometheus/Grafana dashboards (1-2 days)
+5. **Connection Pooling** - Configure database connection pools (4 hours)
+
+**Estimated Effort:** 7-10 days additional validation
+
+See [showcase_app/REVIEW_FEATURES_E2E.md](showcase_app/REVIEW_FEATURES_E2E.md) for detailed production checklist.
 
 ### Reliability Metrics (EARF)
 
 Track comprehensive reliability metrics across all workflows:
 
-- **SR (Success Rate)**: % of successful executions
-- **CR (Compensation Rate)**: % requiring rollback/compensation
-- **PC (Pass Confidence)**: Statistical confidence in success rate
-- **HIR (Human Intervention Rate)**: % requiring human review
-- **MA (Model Accuracy)**: Agent decision accuracy
-- **TCL (Tool Call Latency)**: Average tool execution time
-- **WCT (Workflow Completion Time)**: End-to-end duration
+- **SR (Success Rate)**: % of successful executions (validated in tests)
+- **CR (Compensation Rate)**: % requiring rollback/compensation (validated in tests)
+- **PC (Pass Confidence)**: Statistical confidence in success rate (validated in tests)
+- **HIR (Human Intervention Rate)**: % requiring human review (validated in tests)
+- **MA (Model Accuracy)**: Agent decision accuracy (validated in tests)
+- **TCL (Tool Call Latency)**: Average tool execution time (validated in tests)
+- **WCT (Workflow Completion Time)**: End-to-end duration (validated in tests)
 
 ### Storage Backends
 
-Choose the right storage for your needs:
+Validated storage options:
 
-- **In-Memory**: Fast, perfect for development
-- **SQLite**: Simple, file-based persistence
-- **PostgreSQL**: Enterprise-grade, production-ready
-- **MySQL**: Wide compatibility
-- **Redis**: High-performance caching (optional)
+- **In-Memory**: ✅ Fast, perfect for development and testing
+- **SQLite**: ✅ Simple, file-based persistence (not for high concurrency)
+- **PostgreSQL**: ✅ Enterprise-grade (recommended for production)
+- **MySQL**: ✅ Wide compatibility (tested with version 8+)
+- **MSSQL**: ✅ Microsoft SQL Server (tested with 2019+)
+- **Redis**: ⚠️ Experimental (checkpointing only, needs more testing)
 
 ### SLO Monitoring
 

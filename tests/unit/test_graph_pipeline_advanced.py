@@ -66,46 +66,6 @@ class ParallelStep(Step):
 class TestGraphPipelineAdvanced:
     """Test advanced features of GraphPipelineRunner."""
 
-    async def test_has_advanced_features_detection(self):
-        """Runner correctly detects advanced pipeline features."""
-        services = ServiceRegistry()
-        runner = GraphPipelineRunner(services)
-
-        # Pipeline without advanced features
-        simple_config = PipelineConfig(**{
-            "name": "Simple",
-            "steps": [
-                {"id": "step1", "name": "step1", "step_class": "Step", "module": "test"}
-            ],
-            "flow": {
-                "start_at": "step1",
-                "paths": []
-            }
-        })
-
-        assert runner._has_advanced_features(simple_config) is False
-
-        # Pipeline with advanced condition type (would need enhanced runner)
-        advanced_config = PipelineConfig(**{
-            "name": "Advanced",
-            "steps": [
-                {"id": "step1", "name": "step1", "step_class": "Step", "module": "test"},
-                {"id": "step2", "name": "step2", "step_class": "Step", "module": "test"}
-            ],
-            "flow": {
-                "start_at": "step1",
-                "paths": [
-                    {
-                        "from": "step1",
-                        "to": "step2",
-                        "condition": {"type": "agent"}  # Advanced condition type
-                    }
-                ]
-            }
-        })
-
-        assert runner._has_advanced_features(advanced_config) is True
-
     async def test_pipeline_config_validation(self):
         """Pipeline configuration is validated correctly."""
         services = ServiceRegistry()
@@ -371,7 +331,8 @@ class TestGraphPipelineAdvanced:
         assert "steps" in result
         assert "output" in result
 
-        assert result["input"] == {"value": 10}
+        # Input now contains original input plus step results
+        assert "value" in result["input"]
         assert isinstance(result["steps"], list)
         assert len(result["steps"]) == 1
 

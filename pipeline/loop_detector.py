@@ -44,10 +44,10 @@ class LoopDetector:
         Initialize loop detector.
 
         Args:
-            flow: Pipeline flow definition with 'transitions' list
+            flow: Pipeline flow definition with 'paths' list
         """
         self.flow = flow
-        self.transitions = flow.get('transitions', [])
+        self.transitions = flow.get('paths', [])
         self._graph = None
 
     def detect_loops(self) -> List[Loop]:
@@ -59,7 +59,7 @@ class LoopDetector:
 
         Example:
             >>> flow = {
-            ...     'transitions': [
+            ...     'paths': [
             ...         {'from': 'a', 'to': 'b'},
             ...         {'from': 'b', 'to': 'a', 'condition': {...}}
             ...     ]

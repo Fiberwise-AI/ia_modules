@@ -15,25 +15,34 @@ class ResultsMergerStep(Step):
         
     async def run(self, input: Dict[str, Any]) -> Dict[str, Any]:
         """Merge results from different parallel processing streams"""
-        # Get all the processed data from different streams using new input format
+        # Get all the processed data from different streams
         stream_results = []
 
-        # Collect results from all parallel processors
-        processed_data_1 = input.get('processed_data_1', {})
-        processed_data_2 = input.get('processed_data_2', {})
-        processed_data_3 = input.get('processed_data_3', {})
-
-        # Add non-empty results to the list
-        for data in [processed_data_1, processed_data_2, processed_data_3]:
-            if data:
-                stream_results.append(data)
-                
-        # If we don't find stream-specific data, try to merge what's available
+        # Try to collect results from parallel processors
+        # Option 1: Named inputs (processed_data_1, processed_data_2, processed_data_3)
+        for i in range(1, 4):
+            key = f'processed_data_{i}'
+            if key in input and input[key]:
+                stream_results.append(input[key])
+        
+        # Option 2: If no named inputs, try to get the last step's processed_data
+        if not stream_results and 'processed_data' in input:
+            data = input['processed_data']
+            if isinstance(data, list):
+                # If it's a list of results from parallel steps, use them
+                stream_results = data
+            else:
+                # Single result - wrap in list
+                stream_results = [data]
+        
+        # Option 3: Try to extract any data that looks like processed results
         if not stream_results:
-            # Try to extract any data that looks like processed results
-            for key, value in data.items():
-                if isinstance(value, (list, dict)) and key != 'data_chunks':
-                    stream_results.append(value)
+            for key, value in input.items():
+                if 'processed' in key.lower() and isinstance(value, (list, dict)):
+                    if isinstance(value, list):
+                        stream_results.extend(value)
+                    else:
+                        stream_results.append(value)
         
         # Merge the results
         merged_data = self._merge_results(stream_results)
@@ -41,7 +50,7 @@ class ResultsMergerStep(Step):
         return {
             "merged_results": merged_data,
             "stream_count": len(stream_results),
-            "total_records": len(merged_data) if isinstance(merged_data, list) else 1,
+            "total_records": len(merged_data) if isinstance(merged_data, list) else sum(r.get('record_count', 0) for r in stream_results if isinstance(r, dict)),
             "processing_summary": self._get_processing_summary(stream_results)
         }
         
@@ -61,12 +70,28 @@ class ResultsMergerStep(Step):
                     merged.append(result)
             return merged
             
-        # If all results are dictionaries, merge them
+        # If all results are dictionaries, merge them intelligently
         elif all(isinstance(r, dict) for r in results):
-            merged = {}
+            merged = {
+                "processed_data": []
+            }
+            
+            # Merge processed_data lists from all streams
             for result in results:
                 if isinstance(result, dict):
-                    merged.update(result)
+                    # Extract and merge processed_data
+                    if 'processed_data' in result:
+                        data = result['processed_data']
+                        if isinstance(data, list):
+                            merged['processed_data'].extend(data)
+                        else:
+                            merged['processed_data'].append(data)
+                    
+                    # Copy other fields from first result
+                    for key, value in result.items():
+                        if key != 'processed_data' and key not in merged:
+                            merged[key] = value
+            
             return merged
             
         # Otherwise, just return the first result

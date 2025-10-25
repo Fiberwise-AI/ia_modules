@@ -104,13 +104,22 @@ class ExecutionTracker:
             rows = self.db.fetch_all(query, {'status1': active_statuses[0], 'status2': active_statuses[1]})
 
             for row in rows:
+                # Normalize timestamps from database (PostgreSQL returns datetime, SQLite returns string)
+                started_at = row['started_at']
+                if isinstance(started_at, datetime):
+                    started_at = started_at.replace(tzinfo=None).isoformat()
+                
+                completed_at = row['completed_at']
+                if completed_at and isinstance(completed_at, datetime):
+                    completed_at = completed_at.replace(tzinfo=None).isoformat()
+                
                 execution = ExecutionRecord(
                     execution_id=row['execution_id'],
                     pipeline_id=row['pipeline_id'],
                     pipeline_name=row['pipeline_name'],
                     status=ExecutionStatus(row['status']),
-                    started_at=row['started_at'],
-                    completed_at=row['completed_at'],
+                    started_at=started_at,
+                    completed_at=completed_at,
                     total_steps=row.get('total_steps', 0),
                     completed_steps=row.get('completed_steps', 0),
                     failed_steps=row.get('failed_steps', 0),
@@ -138,7 +147,7 @@ class ExecutionTracker:
         logger.info(f"START: start_execution called for pipeline {pipeline_name}")
         
         execution_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
 
         execution = ExecutionRecord(
             execution_id=execution_id,
@@ -179,8 +188,8 @@ class ExecutionTracker:
             return
 
         execution = self.active_executions[execution_id]
-        execution.status = status
 
+        # Update step counts first (before validation)
         if completed_steps is not None:
             execution.completed_steps = completed_steps
 
@@ -193,14 +202,41 @@ class ExecutionTracker:
         if error_message is not None:
             execution.error_message = error_message
 
-        # Set completion time for terminal states
-        if status in [ExecutionStatus.COMPLETED, ExecutionStatus.FAILED, ExecutionStatus.CANCELLED]:
-            execution.completed_at = datetime.now(timezone.utc).isoformat()
+        # Validate: COMPLETED status should have at least one completed step
+        if status == ExecutionStatus.COMPLETED:
+            if execution.total_steps > 0 and execution.completed_steps == 0:
+                logger.error(
+                    f"Cannot mark execution {execution_id} as COMPLETED: "
+                    f"has {execution.total_steps} total steps but 0 completed_steps. "
+                    f"This indicates a data integrity issue."
+                )
+                raise ValueError(
+                    f"Execution {execution_id} cannot be marked as COMPLETED with 0 completed steps. "
+                    f"Total steps: {execution.total_steps}, Completed: {execution.completed_steps}"
+                )
 
-            # Calculate execution time
+        # Update status after validation passes
+        execution.status = status
+
+        # Set completion time for terminal states (use naive datetime for consistency)
+        if status in [ExecutionStatus.COMPLETED, ExecutionStatus.FAILED, ExecutionStatus.CANCELLED]:
+            execution.completed_at = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
+
+            # Calculate execution time (both timestamps are now naive)
             if execution.started_at and execution.completed_at:
-                start_time = datetime.fromisoformat(execution.started_at.replace('Z', '+00:00'))
-                end_time = datetime.fromisoformat(execution.completed_at.replace('Z', '+00:00'))
+                # Ensure both are naive datetimes by removing any timezone info
+                started_str = execution.started_at.replace('Z', '+00:00') if 'Z' in execution.started_at else execution.started_at
+                completed_str = execution.completed_at.replace('Z', '+00:00') if 'Z' in execution.completed_at else execution.completed_at
+                
+                start_time = datetime.fromisoformat(started_str)
+                end_time = datetime.fromisoformat(completed_str)
+                
+                # Strip timezone info if present to ensure naive datetime subtraction
+                if start_time.tzinfo is not None:
+                    start_time = start_time.replace(tzinfo=None)
+                if end_time.tzinfo is not None:
+                    end_time = end_time.replace(tzinfo=None)
+                
                 execution.execution_time_ms = int((end_time - start_time).total_seconds() * 1000)
 
             # Remove from active executions only if completed or cancelled (keep failed for review)
@@ -225,7 +261,7 @@ class ExecutionTracker:
         """Start tracking a step execution"""
 
         step_execution_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
 
         step_execution = StepExecutionRecord(
             step_execution_id=step_execution_id,
@@ -262,9 +298,9 @@ class ExecutionTracker:
             logger.warning(f"Step execution {step_execution_id} not found")
             return
 
-        # Update status and completion time
+        # Update status and completion time (use naive datetime for consistency)
         step_execution.status = status
-        step_execution.completed_at = datetime.now(timezone.utc).isoformat()
+        step_execution.completed_at = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
         step_execution.retry_count = retry_count
 
         if output_data is not None:
@@ -275,8 +311,20 @@ class ExecutionTracker:
 
         # Calculate execution time
         if step_execution.started_at and step_execution.completed_at:
-            start_time = datetime.fromisoformat(step_execution.started_at.replace('Z', '+00:00'))
-            end_time = datetime.fromisoformat(step_execution.completed_at.replace('Z', '+00:00'))
+            # Parse ISO strings to datetime objects for calculation
+            # Ensure both are naive datetimes by removing any timezone info
+            started_str = step_execution.started_at.replace('Z', '+00:00') if 'Z' in step_execution.started_at else step_execution.started_at
+            completed_str = step_execution.completed_at.replace('Z', '+00:00') if 'Z' in step_execution.completed_at else step_execution.completed_at
+            
+            start_time = datetime.fromisoformat(started_str)
+            end_time = datetime.fromisoformat(completed_str)
+            
+            # Strip timezone info if present to ensure naive datetime subtraction
+            if start_time.tzinfo is not None:
+                start_time = start_time.replace(tzinfo=None)
+            if end_time.tzinfo is not None:
+                end_time = end_time.replace(tzinfo=None)
+            
             step_execution.execution_time_ms = int((end_time - start_time).total_seconds() * 1000)
 
         # Update step execution in database
@@ -304,13 +352,22 @@ class ExecutionTracker:
         if not row:
             return None
 
+        # Normalize timestamps from database (PostgreSQL returns datetime, SQLite returns string)
+        started_at = row['started_at']
+        if isinstance(started_at, datetime):
+            started_at = started_at.replace(tzinfo=None).isoformat()
+        
+        completed_at = row['completed_at']
+        if completed_at and isinstance(completed_at, datetime):
+            completed_at = completed_at.replace(tzinfo=None).isoformat()
+
         return ExecutionRecord(
             execution_id=row['execution_id'],
             pipeline_id=row['pipeline_id'],
             pipeline_name=row['pipeline_name'],
             status=ExecutionStatus(row['status']),
-            started_at=row['started_at'],
-            completed_at=row['completed_at'],
+            started_at=started_at,
+            completed_at=completed_at,
             total_steps=row.get('total_steps', 0),
             completed_steps=row.get('completed_steps', 0),
             failed_steps=row.get('failed_steps', 0),
@@ -380,13 +437,22 @@ class ExecutionTracker:
 
         executions = []
         for row in rows:
+            # Normalize timestamps from database (PostgreSQL returns datetime, SQLite returns string)
+            started_at = row['started_at']
+            if isinstance(started_at, datetime):
+                started_at = started_at.replace(tzinfo=None).isoformat()
+            
+            completed_at = row['completed_at']
+            if completed_at and isinstance(completed_at, datetime):
+                completed_at = completed_at.replace(tzinfo=None).isoformat()
+            
             execution = ExecutionRecord(
                 execution_id=row['execution_id'],
                 pipeline_id=row['pipeline_id'],
                 pipeline_name=row['pipeline_name'],
                 status=ExecutionStatus(row['status']),
-                started_at=row['started_at'],
-                completed_at=row['completed_at'],
+                started_at=started_at,
+                completed_at=completed_at,
                 total_steps=row.get('total_steps', 0),
                 completed_steps=row.get('completed_steps', 0),
                 failed_steps=row.get('failed_steps', 0),
@@ -417,13 +483,22 @@ class ExecutionTracker:
         if not row:
             return None
         
+        # Normalize timestamps from database (PostgreSQL returns datetime, SQLite returns string)
+        started_at = row['started_at']
+        if isinstance(started_at, datetime):
+            started_at = started_at.replace(tzinfo=None).isoformat()
+        
+        completed_at = row['completed_at']
+        if completed_at and isinstance(completed_at, datetime):
+            completed_at = completed_at.replace(tzinfo=None).isoformat()
+        
         execution = ExecutionRecord(
             execution_id=row['execution_id'],
             pipeline_id=row['pipeline_id'],
             pipeline_name=row['pipeline_name'],
             status=ExecutionStatus(row['status']),
-            started_at=row['started_at'],
-            completed_at=row['completed_at'],
+            started_at=started_at,
+            completed_at=completed_at,
             total_steps=row.get('total_steps', 0),
             completed_steps=row.get('completed_steps', 0),
             failed_steps=row.get('failed_steps', 0),
@@ -584,7 +659,7 @@ class ExecutionTracker:
             'metadata_json': json.dumps(step_execution.metadata) if step_execution.metadata else None
         }
 
-        self.db.execute(query, params)
+        await self.db.execute_async(query, params)
 
     async def _update_step_execution(self, step_execution: StepExecutionRecord):
         """Update existing step execution record in database"""
@@ -623,6 +698,30 @@ class ExecutionTracker:
         if not row:
             return None
 
+        # Normalize timestamps to naive ISO format strings
+        # PostgreSQL returns datetime objects (timezone-aware)
+        # SQLite returns ISO strings (may include 'Z' or '+00:00')
+        def normalize_timestamp(value):
+            """Convert any timestamp format to naive ISO string"""
+            if value is None:
+                return None
+            if isinstance(value, datetime):
+                # DateTime object - remove timezone and convert to ISO string
+                return value.replace(tzinfo=None).isoformat()
+            elif isinstance(value, str):
+                # String - parse and convert to naive datetime, then back to ISO string
+                # This handles strings like '2024-10-24T10:30:00+00:00' or '2024-10-24T10:30:00Z'
+                try:
+                    dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                    return dt.replace(tzinfo=None).isoformat()
+                except Exception:
+                    # If parsing fails, just remove timezone markers
+                    return value.replace('Z', '').replace('+00:00', '').replace('-00:00', '')
+            return value
+        
+        started_at = normalize_timestamp(row['started_at'])
+        completed_at = normalize_timestamp(row['completed_at'])
+
         return StepExecutionRecord(
             step_execution_id=row['step_execution_id'],
             execution_id=row['execution_id'],
@@ -630,8 +729,8 @@ class ExecutionTracker:
             step_name=row['step_name'],
             step_type=row['step_type'],
             status=StepStatus(row['status']),
-            started_at=row['started_at'],
-            completed_at=row['completed_at'],
+            started_at=started_at,
+            completed_at=completed_at,
             input_data=json.loads(row['input_data']) if row['input_data'] else None,
             output_data=json.loads(row['output_data']) if row['output_data'] else None,
             error_message=row['error_message'],
@@ -661,7 +760,7 @@ class ExecutionTracker:
             execution.failed_steps = result['failed']
 
             # Update database
-            await self._save_execution(execution)
+            await self._update_execution(execution)
 
     async def _broadcast_execution_update(self, execution: ExecutionRecord):
         """Broadcast execution update to WebSocket connections"""

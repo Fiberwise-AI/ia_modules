@@ -18,6 +18,7 @@ load_dotenv()
 from pathlib import Path
 
 from ia_modules.database.manager import DatabaseManager
+from ia_modules.reliability.decision_trail import DecisionTrailBuilder
 
 from api.pipelines import router as pipelines_router
 from api.execution import router as execution_router
@@ -61,7 +62,7 @@ async def lifespan(app: FastAPI):
     services = ServiceContainer()
 
     # Initialize database with migrations
-    db_url = os.getenv('DATABASE_URL', 'sqlite:///./showcase_app.db')
+    db_url = os.getenv('DATABASE_URL', 'postgresql://localhost/showcase_app')
     services.db_manager = DatabaseManager(db_url)
 
     # Use built-in migration system - no app-specific migrations needed
@@ -71,7 +72,10 @@ async def lifespan(app: FastAPI):
 
     # Initialize services
     services.metrics_service = MetricsService(services.db_manager)
-    services.pipeline_service = PipelineService(services.metrics_service, services.db_manager)
+    services.pipeline_service = PipelineService(
+        services.metrics_service, 
+        services.db_manager
+    )
     services.reliability_service = ReliabilityService(services.db_manager)
     services.benchmark_service = BenchmarkService(services.pipeline_service, services.db_manager)
     
@@ -87,10 +91,8 @@ async def lifespan(app: FastAPI):
         pipeline_service=services.pipeline_service
     )
     
-    # Initialize memory service with memory backend from pipeline_service
-    services.memory_service = MemoryService(
-        memory_backend=services.pipeline_service.memory_backend
-    )
+    # Initialize memory service (memory backend can be added later if needed)
+    services.memory_service = MemoryService(memory_backend=None)
     
     # Initialize replay service
     services.replay_service = ReplayService(
@@ -98,9 +100,16 @@ async def lifespan(app: FastAPI):
         pipeline_service=services.pipeline_service
     )
     
+    # Initialize decision trail builder from ia_modules
+    decision_trail_builder = DecisionTrailBuilder(
+        state_manager=None,  # Can be added if state management is needed
+        tool_registry=None,   # Can be added if tool tracking is needed
+        checkpointer=services.pipeline_service.checkpointer
+    )
+    
     # Initialize decision trail service
     services.decision_trail_service = DecisionTrailService(
-        decision_trail_builder=services.pipeline_service.decision_trail_builder,
+        decision_trail_builder=decision_trail_builder,
         reliability_metrics=services.reliability_service
     )
 
@@ -153,14 +162,32 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
+    db_type = "unknown"
+    services_status = {}
+    
+    if hasattr(app.state, 'services'):
+        services = app.state.services
+        if services.db_manager:
+            db_type = services.db_manager.config.database_type.value.upper()
+            if db_type == "SQLITE":
+                db_type = "SQLite"
+            elif db_type == "POSTGRESQL":
+                db_type = "PostgreSQL"
+            elif db_type == "MEMORY":
+                db_type = "In-Memory"
+        
+        services_status = {
+            "metrics": services.metrics_service is not None,
+            "pipelines": services.pipeline_service is not None,
+            "database": services.db_manager is not None,
+        }
+    
     return {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "version": "0.0.3",
-        "services": {
-            "metrics": metrics_service is not None,
-            "pipelines": pipeline_service is not None,
-        }
+        "database": db_type,
+        "services": services_status
     }
 
 

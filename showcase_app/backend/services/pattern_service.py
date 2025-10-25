@@ -427,9 +427,10 @@ Return valid JSON in this format:
             }
         )
         
-        if isinstance(result, dict) and "steps" in result:
+        # LLM response should be deterministic - expect dict with "steps" or "plan" key
+        if "steps" in result:
             return result["steps"]
-        elif isinstance(result, dict) and "plan" in result:
+        elif "plan" in result:
             return result["plan"]
         elif isinstance(result, list):
             return result

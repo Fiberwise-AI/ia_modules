@@ -24,10 +24,9 @@ sys.path.insert(0, str(ia_modules_path))
 project_root = current_dir.parent
 sys.path.insert(0, str(project_root))
 
-from ia_modules.pipeline.runner import create_pipeline_from_json
 from ia_modules.pipeline.services import ServiceRegistry
-from ia_modules.pipeline.core import InputResolver
 from ia_modules.database.manager import DatabaseManager
+from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
 
 
 class PipelineLoader:
@@ -137,73 +136,21 @@ def run_pipeline_test(
     if db_manager:
         services.register('database', db_manager)
 
-    # Create and run pipeline with new schema support
-    pipeline = create_pipeline_from_json(pipeline_config, services)
-    result = asyncio.run(run_with_new_schema(pipeline, pipeline_config, input_data, parameter_values))
+    # Create GraphPipelineRunner with services
+    runner = GraphPipelineRunner(services)
+    
+    # Run pipeline using unified execution engine
+    result = asyncio.run(runner.run_pipeline_from_json(
+        pipeline_config=pipeline_config,
+        input_data=input_data,
+        use_enhanced_features=True
+    ))
 
     # Cleanup
     if db_manager:
         db_manager.disconnect()
 
     return result
-
-async def run_with_new_schema(pipeline, config, input_data, parameter_values):
-    """Run pipeline with new input/output schema support"""
-
-    def _get_central_logger():
-        """Get the central logging service"""
-        return logging.getLogger('central_pipeline')
-
-    def _log_to_central_service(level: str, message: str, step_name: str = None, data: dict = None):
-        """Log a message to the central logging service"""
-        logger = _get_central_logger()
-        if level == 'INFO':
-            logger.info(f"{message} - Step: {step_name} - Data: {data}")
-        elif level == 'ERROR':
-            logger.error(f"{message} - Step: {step_name} - Data: {data}")
-        elif level == 'DEBUG':
-            logger.debug(f"{message} - Step: {step_name} - Data: {data}")
-
-    # Build context for template resolution
-    context = {
-        "pipeline_input": input_data,
-        "parameters": input_data or {},
-        "steps": {}
-    }
-
-    results = {"input": input_data, "steps": {}, "output": None}
-
-    # Execute steps with new schema
-    for step_config in config["steps"]:
-        step_id = step_config["id"]
-
-        # Find the step instance
-        step = None
-        for s in pipeline.steps:
-            if s.name == step_id:
-                step = s
-                break
-
-        if not step:
-            continue
-
-        # Resolve inputs if step has new schema
-        if "inputs" in step_config:
-            step_inputs = InputResolver.resolve_step_inputs(step_config["inputs"], context)
-        else:
-            step_inputs = input_data or {}
-
-        # Run step
-        _log_to_central_service('INFO', f'Starting step {step_id}', step_id, step_inputs)
-        step_result = await step.run(step_inputs)
-        _log_to_central_service('INFO', f'Step {step_id} completed', step_id, step_result)
-
-        # Store result
-        results["steps"][step_id] = step_result
-        context["steps"][step_id] = step_result
-
-    results["output"] = step_result
-    return results
 
 
 def main():

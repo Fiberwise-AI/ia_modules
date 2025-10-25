@@ -66,7 +66,7 @@ class Message:
             role=MessageRole(data.get('role', 'user')),
             content=data.get('content', ''),
             metadata=data.get('metadata', {}),
-            timestamp=datetime.fromisoformat(data['timestamp']) if isinstance(data.get('timestamp'), str) else data.get('timestamp', datetime.now()),
+            timestamp=datetime.fromisoformat(data['timestamp']) if data.get('timestamp') else datetime.now(),
             function_call=data.get('function_call'),
             function_name=data.get('function_name')
         )

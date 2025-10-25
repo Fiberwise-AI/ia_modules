@@ -154,16 +154,20 @@ class TelemetryService:
             "status": getattr(span, "status", "ok")
         }
 
-        # Handle timestamps
+        # Handle timestamps - may be datetime objects or Unix timestamps (float)
         if hasattr(span, "start_time") and span.start_time:
             if isinstance(span.start_time, datetime):
                 span_dict["start_time"] = span.start_time.isoformat()
+            elif isinstance(span.start_time, (int, float)):
+                span_dict["start_time"] = datetime.fromtimestamp(span.start_time, tz=timezone.utc).isoformat()
             else:
                 span_dict["start_time"] = str(span.start_time)
 
         if hasattr(span, "end_time") and span.end_time:
             if isinstance(span.end_time, datetime):
                 span_dict["end_time"] = span.end_time.isoformat()
+            elif isinstance(span.end_time, (int, float)):
+                span_dict["end_time"] = datetime.fromtimestamp(span.end_time, tz=timezone.utc).isoformat()
             else:
                 span_dict["end_time"] = str(span.end_time)
 
@@ -172,7 +176,10 @@ class TelemetryService:
             span_dict["duration_ms"] = span.duration_ms
         elif hasattr(span, "start_time") and hasattr(span, "end_time"):
             if span.start_time and span.end_time:
-                if isinstance(span.start_time, datetime) and isinstance(span.end_time, datetime):
+                # Handle both datetime and Unix timestamp formats
+                if isinstance(span.start_time, (int, float)) and isinstance(span.end_time, (int, float)):
+                    span_dict["duration_ms"] = (span.end_time - span.start_time) * 1000
+                elif isinstance(span.start_time, datetime) and isinstance(span.end_time, datetime):
                     delta = span.end_time - span.start_time
                     span_dict["duration_ms"] = delta.total_seconds() * 1000
 

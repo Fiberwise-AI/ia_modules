@@ -133,33 +133,34 @@ markers = [
 
 [tool.coverage.run]
 source = [
-    "auth",
-    "agents",
-    "benchmarking",
-    "checkpoint",
-    "cli",
-    "dashboard",
-    "database",
-    "memory",
-    "pipeline",
-    "plugins",
-    "rag",
-    "reliability",
-    "scheduler",
-    "telemetry",
-    "tools",
-    "validation",
+    "ia_modules",
 ]
+# Coverage includes all submodules:
+# agents, auth, benchmarking, checkpoint, cli, database,
+# memory, pipeline, plugins, rag, reliability, scheduler,
+# telemetry, tools, validation
 omit = [
+    # Test files and directories
     "*/tests/*",
     "*/test_*.py",
-    "*/__pycache__/*",
     "*/conftest.py",
+    "tests/*",
+
+    # Build and cache directories
+    "*/__pycache__/*",
+    "*.egg-info/*",
+
+    # Excluded apps and utilities
+    "showcase_app/*",
+    "archive/*",
+    "docs/*",
+    "release_notes/*",
+
+    # Example and manual test scripts
     "tests/llm_config_example.py",
     "tests/manual_database_test.py",
     "tests/pipeline_runner.py",
     "tests/pipeline_runner_with_llm.py",
-    "showcase_app/*",
 ]
 branch = true
 

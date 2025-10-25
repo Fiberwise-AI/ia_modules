@@ -37,8 +37,8 @@ async def test_pipeline_integration():
             "start_at": "step1",
             "paths": [
                 {
-                    "from_step": "step1",
-                    "to_step": "end_with_success",
+                    "from": "step1",
+                    "to": "end_with_success",
                     "condition": {"type": "always"}
                 }
             ]
@@ -84,13 +84,13 @@ async def test_complex_pipeline_integration():
             "start_at": "step1",
             "paths": [
                 {
-                    "from_step": "step1",
-                    "to_step": "step2",
+                    "from": "step1",
+                    "to": "step2",
                     "condition": {"type": "always"}
                 },
                 {
-                    "from_step": "step2",
-                    "to_step": "end_with_success",
+                    "from": "step2",
+                    "to": "end_with_success",
                     "condition": {"type": "always"}
                 }
             ]

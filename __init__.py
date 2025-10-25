@@ -11,10 +11,12 @@ __version__ = "0.0.4"
 from . import database
 from . import pipeline 
 from . import auth
+from . import utils
 
 
 __all__ = [
     'database',
     'pipeline',
     'auth',
+    'utils',
 ]

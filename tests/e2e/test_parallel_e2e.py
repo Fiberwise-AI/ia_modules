@@ -13,7 +13,7 @@ from unittest.mock import patch, AsyncMock
 # Add the parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from tests.pipeline_runner import run_with_new_schema, create_pipeline_from_json
+from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
 from ia_modules.pipeline.services import ServiceRegistry
 
 
@@ -43,8 +43,8 @@ class TestParallelE2E:
         }
 
         # Execute pipeline
-        pipeline = create_pipeline_from_json(pipeline_config)
-        result = await run_with_new_schema(pipeline, pipeline_config, input_data, None)
+        runner = GraphPipelineRunner()
+        result = await runner.run_pipeline_from_json(pipeline_config, input_data)
 
         # Verify parallel execution structure
         assert result is not None
@@ -84,8 +84,8 @@ class TestParallelE2E:
             "loaded_data": [{"id": i, "value": i * 100} for i in range(1, 13)]  # 12 items
         }
 
-        pipeline = create_pipeline_from_json(pipeline_config)
-        result = await run_with_new_schema(pipeline, pipeline_config, input_data, None)
+        runner = GraphPipelineRunner()
+        result = await runner.run_pipeline_from_json(pipeline_config, input_data)
 
         # Verify data integrity
         assert result is not None
@@ -121,8 +121,8 @@ class TestParallelE2E:
         # Measure execution time
         start_time = time.time()
 
-        pipeline = create_pipeline_from_json(pipeline_config)
-        result = await run_with_new_schema(pipeline, pipeline_config, large_data, None)
+        runner = GraphPipelineRunner()
+        result = await runner.run_pipeline_from_json(pipeline_config, large_data)
 
         end_time = time.time()
         execution_time = end_time - start_time
@@ -188,19 +188,19 @@ class TestParallelE2E:
                 ]
             }
 
-            pipeline = create_pipeline_from_json(pipeline_config)
-            result = await run_with_new_schema(pipeline, pipeline_config, input_data, None)
+            runner = GraphPipelineRunner()
+        result = await runner.run_pipeline_from_json(pipeline_config, input_data)
 
-            # Verify successful scaling
-            assert result is not None
-            assert "steps" in result
+        # Verify successful scaling
+        assert result is not None
+        assert "steps" in result
 
-            # Verify data splitter adapted to size
-            step1_result = result["steps"]["step1"]
-            assert step1_result["original_data_size"] == size
+        # Verify data splitter adapted to size
+        step1_result = result["steps"]["step1"]
+        assert step1_result["original_data_size"] == size
 
-            # Verify final processing completed
-            assert "step6" in result["steps"]
+        # Verify final processing completed
+        assert "step6" in result["steps"]
 
     @pytest.mark.asyncio
     async def test_parallel_execution_order(self):
@@ -215,8 +215,8 @@ class TestParallelE2E:
             "loaded_data": [{"order_test": i} for i in range(20)]
         }
 
-        pipeline = create_pipeline_from_json(pipeline_config)
-        result = await run_with_new_schema(pipeline, pipeline_config, input_data, None)
+        runner = GraphPipelineRunner()
+        result = await runner.run_pipeline_from_json(pipeline_config, input_data)
 
         # Verify execution order dependencies were respected:
         # step1 (splitter) -> [step2, step3, step4] (parallel processors) -> step5 (merger) -> step6 (stats)

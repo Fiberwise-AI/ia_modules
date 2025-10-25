@@ -31,7 +31,7 @@ class TestPipelineLoopIntegration:
         """Pipeline with sequential transitions (no cycles) should not have loops"""
         flow = {
             'start_at': 'step1',
-            'transitions': [
+            'paths': [
                 {'from': 'step1', 'to': 'step2'},
                 {'from': 'step2', 'to': 'end'}
             ]
@@ -49,7 +49,7 @@ class TestPipelineLoopIntegration:
         """Pipeline with a loop should detect it"""
         flow = {
             'start_at': 'step1',
-            'transitions': [
+            'paths': [
                 {'from': 'step1', 'to': 'step2'},
                 {'from': 'step2', 'to': 'step1', 'condition': {'type': 'expression'}},
                 {'from': 'step2', 'to': 'end', 'condition': {'type': 'expression'}}
@@ -71,7 +71,7 @@ class TestPipelineLoopIntegration:
         """Pipeline with loop_config should pass it to executor"""
         flow = {
             'start_at': 'step1',
-            'transitions': [
+            'paths': [
                 {'from': 'step1', 'to': 'step2'},
                 {'from': 'step2', 'to': 'step1', 'condition': {'type': 'expression'}},
                 {'from': 'step2', 'to': 'end', 'condition': {'type': 'expression'}}
@@ -90,7 +90,7 @@ class TestPipelineLoopIntegration:
         """Pipeline with nested loops should detect all loops"""
         flow = {
             'start_at': 'step1',
-            'transitions': [
+            'paths': [
                 {'from': 'step1', 'to': 'step2'},
                 {'from': 'step2', 'to': 'step3'},
                 {'from': 'step3', 'to': 'step2', 'condition': {'type': 'expression'}},  # Inner loop
@@ -112,29 +112,25 @@ class TestPipelineLoopIntegration:
         assert len(loops) >= 1  # At least one loop detected
 
     def test_pipeline_paths_vs_transitions(self):
-        """Pipeline with 'paths' should be handled gracefully"""
-        # Note: LoopDetector primarily works with 'transitions' format
-        # The 'paths' format is used by graph_pipeline_runner which converts to transitions
+        """Pipeline with 'paths' should work with from/to format"""
         flow = {
             'start_at': 'step1',
             'paths': [
-                {'from_step': 'step1', 'to_step': 'step2'},
-                {'from_step': 'step2', 'to_step': 'step1', 'condition': {'type': 'expression'}},
-                {'from_step': 'step2', 'to_step': 'end', 'condition': {'type': 'expression'}}
+                {'from': 'step1', 'to': 'step2'},
+                {'from': 'step2', 'to': 'step1', 'condition': {'type': 'expression'}},
+                {'from': 'step2', 'to': 'end', 'condition': {'type': 'expression'}}
             ]
         }
         steps = [DummyStep('step1', {}), DummyStep('step2', {})]
         pipeline = Pipeline('test', steps, flow, ServiceRegistry())
 
-        # Pipeline should handle 'paths' gracefully (may or may not detect loops)
-        # This is OK - graph_pipeline_runner converts paths to transitions format
         assert pipeline is not None
 
     def test_pipeline_empty_transitions(self):
         """Pipeline with empty transitions list should not have loops"""
         flow = {
             'start_at': 'step1',
-            'transitions': []
+            'paths': []
         }
         steps = [DummyStep('step1', {})]
         pipeline = Pipeline('test', steps, flow, ServiceRegistry())
@@ -146,7 +142,7 @@ class TestPipelineLoopIntegration:
         """Pipeline should initialize detector but has_loops() returns False if no loops found"""
         flow = {
             'start_at': 'step1',
-            'transitions': [
+            'paths': [
                 {'from': 'step1', 'to': 'step2'},
                 {'from': 'step2', 'to': 'step3'}
             ]

@@ -27,6 +27,10 @@ class MockDatabaseManager:
         self.execute_calls.append((query, params))
         return MagicMock(rowcount=1)
 
+    async def execute_async(self, query, params=None):
+        self.execute_calls.append((query, params))
+        return MagicMock(rowcount=1)
+
     def fetch_one(self, query, params=None):
         self.fetch_one_calls.append((query, params))
         return None
@@ -140,6 +144,7 @@ class TestExecutionTracker:
         await tracker.update_execution_status(
             execution_id=execution_id,
             status=ExecutionStatus.COMPLETED,
+            completed_steps=1,
             output_data={"result": "success"}
         )
 
@@ -175,7 +180,8 @@ class TestExecutionTracker:
         # Complete it
         await tracker.update_execution_status(
             execution_id=execution_id,
-            status=ExecutionStatus.COMPLETED
+            status=ExecutionStatus.COMPLETED,
+            completed_steps=1
         )
 
         # Should be removed from active

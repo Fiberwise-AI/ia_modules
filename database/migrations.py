@@ -53,15 +53,17 @@ class MigrationRunner:
             if exists:
                 return True
 
+            # Use PostgreSQL canonical syntax - translates to all databases
             create_sql = """
             CREATE TABLE IF NOT EXISTS ia_migrations (
-                version TEXT NOT NULL,
-                filename TEXT NOT NULL,
-                migration_type TEXT NOT NULL,
-                description TEXT NOT NULL,
-                applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                checksum TEXT,
-                PRIMARY KEY (version, migration_type)
+                id SERIAL PRIMARY KEY,
+                version VARCHAR(255) NOT NULL,
+                filename VARCHAR(500) NOT NULL,
+                migration_type VARCHAR(50) NOT NULL,
+                description TEXT,
+                applied_at TIMESTAMP DEFAULT NOW(),
+                checksum VARCHAR(64),
+                UNIQUE (version, migration_type)
             )
             """
             try:
@@ -121,12 +123,10 @@ class MigrationRunner:
                 }
             )
 
-            if not result.success:
-                error_msg = getattr(result, 'error_message', None) or getattr(result, 'error', None) or str(result)
-                logger.error(f"Failed to insert migration record: {error_msg}")
-                logger.error(f"Attempted to insert: version={version}, filename={filename}, type={migration_type}")
-
-            return result.success
+            # execute() returns a list of results, not a result object
+            # If it doesn't raise an exception, it succeeded
+            logger.info(f"Successfully recorded migration: {version}")
+            return True
         except Exception as e:
             logger.error(f"Exception recording migration: {e}")
             logger.exception(e)

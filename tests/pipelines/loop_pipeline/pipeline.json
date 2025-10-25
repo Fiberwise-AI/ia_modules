@@ -52,7 +52,7 @@
   ],
   "flow": {
     "start_at": "draft_content",
-    "transitions": [
+    "paths": [
       {
         "from": "draft_content",
         "to": "review_content",

@@ -1,8 +1,8 @@
 """Pipeline execution API endpoints"""
 
-from fastapi import APIRouter, HTTPException, Depends, Request
-from typing import Optional
-from ..models import ExecutionRequest, ExecutionResponse, StepDetailResponse
+from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
+from typing import Optional, List, Dict, Any
+from models import ExecutionRequest, ExecutionResponse, StepDetailResponse
 
 router = APIRouter()
 

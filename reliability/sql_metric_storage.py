@@ -61,9 +61,8 @@ class SQLMetricStorage(MetricStorage):
                   :mode, :declared_mode, :mode_violation, :timestamp)
         """
 
-        timestamp = record.get("timestamp", datetime.now(timezone.utc))
-        if isinstance(timestamp, str):
-            timestamp = datetime.fromisoformat(timestamp)
+        timestamp_str = record.get("timestamp")
+        timestamp = datetime.fromisoformat(timestamp_str) if timestamp_str else datetime.now(timezone.utc)
 
         params = {
             "agent_name": record["agent"],
@@ -85,26 +84,34 @@ class SQLMetricStorage(MetricStorage):
         Args:
             record: Workflow metric data
         """
-        query = """
-        INSERT INTO reliability_workflows (
-            workflow_id, steps, retries, success, required_human, timestamp
-        ) VALUES (:workflow_id, :steps, :retries, :success, :required_human, :timestamp)
+        # Check if workflow already exists (sync call - fetch_one is not async)
+        check_query = """
+        SELECT COUNT(*) as count FROM reliability_workflows WHERE workflow_id = :workflow_id
         """
 
-        timestamp = record.get("timestamp", datetime.now(timezone.utc))
-        if isinstance(timestamp, str):
-            timestamp = datetime.fromisoformat(timestamp)
+        existing = self.db.fetch_one(check_query, {"workflow_id": record["workflow_id"]})
 
-        params = {
-            "workflow_id": record["workflow_id"],
-            "steps": record["steps"],
-            "retries": record.get("retries", 0),
-            "success": record["success"],
-            "required_human": record.get("required_human", False),
-            "timestamp": timestamp
-        }
+        # Only insert if it doesn't exist (DO NOTHING behavior)
+        if existing and existing.get("count", 0) == 0:
+            insert_query = """
+            INSERT INTO reliability_workflows (
+                workflow_id, steps, retries, success, required_human, timestamp
+            ) VALUES (:workflow_id, :steps, :retries, :success, :required_human, :timestamp)
+            """
 
-        await self.db.execute_async(query, params)
+            timestamp_str = record.get("timestamp")
+            timestamp = datetime.fromisoformat(timestamp_str) if timestamp_str else datetime.now(timezone.utc)
+
+            params = {
+                "workflow_id": record["workflow_id"],
+                "steps": record["steps"],
+                "retries": record.get("retries", 0),
+                "success": record["success"],
+                "required_human": record.get("required_human", False),
+                "timestamp": timestamp
+            }
+
+            await self.db.execute_async(insert_query, params)
 
     async def get_steps(
         self,

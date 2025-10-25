@@ -1,5 +1,6 @@
 """Memory service for conversation history and agent memory"""
 
+import asyncio
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
@@ -153,32 +154,14 @@ class MemoryService:
         limit: int = 50
     ) -> List[Dict]:
         """Get messages from memory backend"""
-        try:
-            if hasattr(self.memory, 'get_messages'):
-                messages = await self.memory.get_messages(session_id, limit=limit)
-                return [self._message_to_dict(m) for m in messages]
-            elif hasattr(self.memory, 'get_conversation'):
-                conversation = await self.memory.get_conversation(session_id)
-                return conversation.get("messages", [])[:limit]
-            elif hasattr(self.memory, 'db_manager'):
-                # Fallback: query database directly
-                query = """
-                    SELECT role, content, timestamp, metadata
-                    FROM memory_messages
-                    WHERE session_id = :session_id
-                    ORDER BY timestamp DESC
-                    LIMIT :limit
-                """
-                result = await self.memory.db_manager.execute(
-                    query,
-                    {"session_id": session_id, "limit": limit}
-                )
-                return [dict(row) for row in result]
-            
-            return []
-        except Exception as e:
-            logger.error(f"Error accessing memory backend: {e}")
-            return []
+        if hasattr(self.memory, 'get_messages'):
+            messages = await self.memory.get_messages(session_id, limit=limit)
+            return [self._message_to_dict(m) for m in messages]
+        elif hasattr(self.memory, 'get_conversation'):
+            conversation = await self.memory.get_conversation(session_id)
+            return conversation.get("messages", [])[:limit]
+        
+        return []
 
     async def _keyword_search(
         self,
@@ -186,30 +169,9 @@ class MemoryService:
         session_id: Optional[str],
         limit: int
     ) -> List[Dict]:
-        """Fallback keyword search"""
-        try:
-            if not hasattr(self.memory, 'db_manager'):
-                return []
-
-            sql_query = """
-                SELECT session_id, role, content, timestamp, metadata
-                FROM memory_messages
-                WHERE content LIKE :query
-            """
-            
-            params = {"query": f"%{query}%", "limit": limit}
-            
-            if session_id:
-                sql_query += " AND session_id = :session_id"
-                params["session_id"] = session_id
-            
-            sql_query += " ORDER BY timestamp DESC LIMIT :limit"
-            
-            result = await self.memory.db_manager.execute(sql_query, params)
-            return [dict(row) for row in result]
-        except Exception as e:
-            logger.error(f"Error in keyword search: {e}")
-            return []
+        """Keyword search - not implemented without proper memory backend"""
+        logger.warning("Keyword search not available without memory backend")
+        return []
 
     def _message_to_dict(self, message) -> Dict:
         """Convert message object to dictionary"""

@@ -14,8 +14,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional
 import os
-from ..services.pattern_service import PatternService
-from ..services.llm_monitoring_service import LLMMonitoringService
+from services.pattern_service import PatternService
+from services.llm_monitoring_service import LLMMonitoringService
 
 router = APIRouter(prefix="/api/patterns", tags=["patterns"])
 pattern_service = PatternService()

@@ -88,7 +88,7 @@ class Checkpoint:
             step_index=data['step_index'],
             step_name=data.get('step_name'),
             state=data.get('state', {}),
-            timestamp=datetime.fromisoformat(data['timestamp']) if isinstance(data.get('timestamp'), str) else data.get('timestamp', datetime.now()),
+            timestamp=datetime.fromisoformat(data['timestamp']) if data.get('timestamp') else datetime.now(),
             metadata=data.get('metadata', {}),
             status=CheckpointStatus(data.get('status', 'completed')),
             parent_checkpoint_id=data.get('parent_checkpoint_id')

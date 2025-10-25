@@ -33,8 +33,9 @@ class PipelineService:
         self.pipelines: Dict[str, Dict[str, Any]] = {}
         self.executions: Dict[str, Dict[str, Any]] = {}
 
-        # ExecutionTracker for PostgreSQL persistence with WebSocket support
-        self.tracker = ExecutionTracker(db_manager) if db_manager else None
+        # Use database execution tracker
+        self.tracker = ExecutionTracker(db_manager)
+        logger.info("Using database execution tracker")
 
         logger.info("Initializing pipeline service with ACTUAL ia_modules library...")
 
@@ -74,47 +75,69 @@ class PipelineService:
         logger.info(f"Pipeline service initialized with {len(self.pipelines)} pipelines")
 
     async def _save_execution_to_db(self, execution: Dict[str, Any]):
-        """Save execution to PostgreSQL"""
+        """Save execution to PostgreSQL with error handling"""
         if not self.db_manager:
             return
 
-        query = """
-            INSERT INTO pipeline_executions
-            (execution_id, pipeline_id, pipeline_name, status, started_at, completed_at,
-             input_data, output_data, error_message, total_steps, completed_steps, failed_steps,
-             execution_time_ms, metadata_json)
-            VALUES (:execution_id, :pipeline_id, :pipeline_name, :status, :started_at, :completed_at,
-                    :input_data, :output_data, :error_message, :total_steps, :completed_steps, :failed_steps,
-                    :execution_time_ms, :metadata_json)
-            ON CONFLICT (execution_id) DO UPDATE SET
-                status = EXCLUDED.status,
-                completed_at = EXCLUDED.completed_at,
-                output_data = EXCLUDED.output_data,
-                error_message = EXCLUDED.error_message,
-                total_steps = EXCLUDED.total_steps,
-                completed_steps = EXCLUDED.completed_steps,
-                failed_steps = EXCLUDED.failed_steps,
-                execution_time_ms = EXCLUDED.execution_time_ms
-        """
+        try:
+            # Prepare common parameters
+            params = {
+                "execution_id": execution["job_id"],
+                "pipeline_id": execution["pipeline_id"],
+                "pipeline_name": execution.get("pipeline_name", "Unknown"),
+                "status": execution["status"],
+                "started_at": execution["started_at"],
+                "completed_at": execution.get("completed_at"),
+                "input_data": json.dumps(execution["input_data"]) if execution.get("input_data") else None,
+                "output_data": json.dumps(execution["output_data"]) if execution.get("output_data") else None,
+                "error_message": execution.get("error"),
+                "total_steps": await self._count_total_steps(execution["job_id"]),
+                "completed_steps": await self._count_completed_steps(execution["job_id"]),
+                "failed_steps": await self._count_failed_steps(execution["job_id"]),
+                "execution_time_ms": self._calculate_duration_ms(execution),
+                "metadata_json": json.dumps({"progress": execution.get("progress", 0.0)})
+            }
 
-        params = {
-            "execution_id": execution["job_id"],
-            "pipeline_id": execution["pipeline_id"],
-            "pipeline_name": execution.get("pipeline_name", "Unknown"),
-            "status": execution["status"],
-            "started_at": execution["started_at"],
-            "completed_at": execution.get("completed_at"),
-            "input_data": json.dumps(execution["input_data"]) if execution.get("input_data") else None,
-            "output_data": json.dumps(execution["output_data"]) if execution.get("output_data") else None,
-            "error_message": execution.get("error"),
-            "total_steps": len(execution.get("steps", [])),
-            "completed_steps": len([s for s in execution.get("steps", []) if s.get("status") == "completed"]),
-            "failed_steps": len([s for s in execution.get("steps", []) if s.get("status") == "failed"]),
-            "execution_time_ms": self._calculate_duration_ms(execution),
-            "metadata_json": json.dumps({"progress": execution.get("progress", 0.0)})
-        }
+            # Check if record exists
+            check_query = "SELECT COUNT(*) as count FROM pipeline_executions WHERE execution_id = :execution_id"
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(None, self.db_manager.fetch_one, check_query, {"execution_id": execution["job_id"]})
+            
+            exists = result and result.get("count", 0) > 0
 
-        await self.db_manager.execute_async(query, params)
+            if exists:
+                # Update existing record
+                update_query = """
+                    UPDATE pipeline_executions SET
+                        status = :status,
+                        completed_at = :completed_at,
+                        output_data = :output_data,
+                        error_message = :error_message,
+                        total_steps = :total_steps,
+                        completed_steps = :completed_steps,
+                        failed_steps = :failed_steps,
+                        execution_time_ms = :execution_time_ms,
+                        metadata_json = :metadata_json
+                    WHERE execution_id = :execution_id
+                """
+                await self.db_manager.execute_async(update_query, params)
+            else:
+                # Insert new record
+                insert_query = """
+                    INSERT INTO pipeline_executions
+                    (execution_id, pipeline_id, pipeline_name, status, started_at, completed_at,
+                     input_data, output_data, error_message, total_steps, completed_steps, failed_steps,
+                     execution_time_ms, metadata_json)
+                    VALUES (:execution_id, :pipeline_id, :pipeline_name, :status, :started_at, :completed_at,
+                            :input_data, :output_data, :error_message, :total_steps, :completed_steps, :failed_steps,
+                            :execution_time_ms, :metadata_json)
+                """
+                await self.db_manager.execute_async(insert_query, params)
+
+        except Exception as e:
+            logger.error(f"Failed to save execution to database: {e}")
+            # DatabaseManager doesn't have rollback - connection auto-rolls back on error
+            raise
 
     def _calculate_duration_ms(self, execution: Dict[str, Any]) -> Optional[int]:
         """Calculate execution duration in milliseconds"""
@@ -127,41 +150,82 @@ class PipelineService:
         except:
             return None
 
+    async def _count_total_steps(self, execution_id: str) -> int:
+        """Count total steps from ExecutionTracker"""
+        if not self.tracker:
+            return 0
+        try:
+            steps = await self.tracker.get_execution_steps(execution_id)
+            return len(steps)
+        except Exception as e:
+            logger.error(f"Error counting total steps: {e}")
+            return 0
+
+    async def _count_completed_steps(self, execution_id: str) -> int:
+        """Count completed steps from ExecutionTracker"""
+        if not self.tracker:
+            return 0
+        try:
+            steps = await self.tracker.get_execution_steps(execution_id)
+            # StepExecutionRecord.status is a StepStatus enum, need to check the value
+            return len([s for s in steps if s.status.value == "completed"])
+        except Exception as e:
+            logger.error(f"Error counting completed steps: {e}")
+            return 0
+
+    async def _count_failed_steps(self, execution_id: str) -> int:
+        """Count failed steps from ExecutionTracker"""
+        if not self.tracker:
+            return 0
+        try:
+            steps = await self.tracker.get_execution_steps(execution_id)
+            # StepExecutionRecord.status is a StepStatus enum, need to check the value
+            return len([s for s in steps if s.status.value == "failed"])
+        except Exception as e:
+            logger.error(f"Error counting failed steps: {e}")
+            return 0
+
     async def _load_executions_from_db(self) -> List[Dict[str, Any]]:
-        """Load recent executions from PostgreSQL"""
+        """Load recent executions from PostgreSQL with error handling"""
         if not self.db_manager:
             return []
 
-        query = """
-            SELECT execution_id, pipeline_id, pipeline_name, status, started_at, completed_at,
-                   input_data, output_data, error_message, total_steps, completed_steps, failed_steps,
-                   execution_time_ms, metadata_json
-            FROM pipeline_executions
-            ORDER BY started_at DESC
-            LIMIT 100
-        """
+        try:
+            query = """
+                SELECT execution_id, pipeline_id, pipeline_name, status, started_at, completed_at,
+                       input_data, output_data, error_message, total_steps, completed_steps, failed_steps,
+                       execution_time_ms, metadata_json
+                FROM pipeline_executions
+                ORDER BY started_at DESC
+                LIMIT 100
+            """
 
-        rows = await self.db_manager.fetch_all_async(query)
+            # fetch_all is sync, so run in thread pool
+            loop = asyncio.get_event_loop()
+            rows = await loop.run_in_executor(None, self.db_manager.fetch_all, query)
 
-        executions = []
-        for row in rows:
-            exec_dict = {
-                "job_id": row["execution_id"],
-                "pipeline_id": row["pipeline_id"],
-                "pipeline_name": row["pipeline_name"],
-                "status": row["status"],
-                "started_at": row["started_at"],
-                "completed_at": row["completed_at"],
-                "input_data": json.loads(row["input_data"]) if row.get("input_data") else None,
-                "output_data": json.loads(row["output_data"]) if row.get("output_data") else None,
-                "error": row["error_message"],
-                "progress": json.loads(row["metadata_json"]).get("progress", 0.0) if row.get("metadata_json") else 0.0,
-                "steps": [],
-                "current_step": None
+            executions = []
+            for row in rows:
+                exec_dict = {
+                    "job_id": row["execution_id"],
+                    "pipeline_id": row["pipeline_id"],
+                    "pipeline_name": row["pipeline_name"],
+                    "status": row["status"],
+                    "started_at": row["started_at"],
+                    "completed_at": row["completed_at"],
+                    "input_data": json.loads(row["input_data"]) if row.get("input_data") else None,
+                    "output_data": json.loads(row["output_data"]) if row.get("output_data") else None,
+                    "error": row["error_message"],
+                    "progress": json.loads(row["metadata_json"]).get("progress", 0.0) if row.get("metadata_json") else 0.0,
+                    "steps": [],
+                    "current_step": None
             }
             executions.append(exec_dict)
 
-        return executions
+            return executions
+        except Exception as e:
+            logger.error(f"Failed to load executions from database: {e}")
+            return []
 
     def load_test_pipelines(self):
         """Load ACTUAL test pipelines from ia_modules/tests/pipelines/"""
@@ -342,14 +406,12 @@ class PipelineService:
                                 step["duration_ms"] = data.get("duration_ms")
                             break
 
-            # Use GraphPipelineRunner for graph-based execution with inputs/outputs routing
+            self.services.register('execution_id', job_id)
+            self.services.register('execution_tracker', self.tracker)
+            
             graph_runner = GraphPipelineRunner(self.services)
             
-            # Add callback if runner supports it (monkey patch for now)
-            if hasattr(graph_runner, 'set_step_callback'):
-                graph_runner.set_step_callback(step_callback)
-            
-            result = await graph_runner.run_pipeline_from_json(pipeline_config, input_data, use_enhanced_features=False)
+            result = await graph_runner.run_pipeline_from_json(pipeline_config, input_data)
 
             execution["output_data"] = result.get("output", result) if isinstance(result, dict) else result
             execution["steps"] = result.get("steps", [])
@@ -490,15 +552,11 @@ class PipelineService:
 
     async def get_execution(self, job_id: str) -> Optional[Dict[str, Any]]:
         """Get execution by ID"""
-        # First check in-memory cache
-        if job_id in self.executions:
-            return self.executions[job_id]
-        
-        # If not in memory, query database
+        # Always load detailed step information from database for completed executions
         if self.tracker:
             record = await self.tracker.get_execution(job_id)
             if record:
-                # Load step executions
+                # Load step executions from database
                 step_records = await self.tracker.get_execution_steps(job_id)
                 steps = []
                 for step_record in step_records:
@@ -507,13 +565,14 @@ class PipelineService:
                         "step_name": step_record.step_name,
                         "step_type": step_record.step_type,
                         "status": step_record.status.value,
-                        "started_at": step_record.started_at.isoformat() if step_record.started_at else None,
-                        "completed_at": step_record.completed_at.isoformat() if step_record.completed_at else None,
-                        "duration_ms": step_record.execution_time_ms,
+                        "started_at": step_record.started_at,  # Already a string
+                        "completed_at": step_record.completed_at,  # Already a string
+                        "execution_time_ms": step_record.execution_time_ms,  # Use correct field name
                         "input_data": step_record.input_data,
                         "output_data": step_record.output_data,
-                        "error": step_record.error_message,
-                        "retry_count": step_record.retry_count
+                        "error_message": step_record.error_message,  # Use correct field name
+                        "retry_count": step_record.retry_count,
+                        "metadata": step_record.metadata
                     })
                 
                 return {

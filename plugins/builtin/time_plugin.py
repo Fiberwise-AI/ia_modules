@@ -39,9 +39,7 @@ class BusinessHoursCondition(ConditionPlugin):
 
         # Get current time (or from data for testing)
         if 'current_time' in data:
-            current_time = data['current_time']
-            if isinstance(current_time, str):
-                current_time = datetime.fromisoformat(current_time)
+            current_time = datetime.fromisoformat(data['current_time']) if isinstance(data['current_time'], str) else data['current_time']
         else:
             current_time = datetime.now()
 
@@ -92,9 +90,7 @@ class TimeRangeCondition(ConditionPlugin):
 
         # Get current time
         if 'current_time' in data:
-            current_time = data['current_time']
-            if isinstance(current_time, str):
-                current_time = datetime.fromisoformat(current_time)
+            current_time = datetime.fromisoformat(data['current_time']) if isinstance(data['current_time'], str) else data['current_time']
             current_time = current_time.time()
         else:
             current_time = datetime.now().time()
@@ -134,9 +130,7 @@ class DayOfWeekCondition(ConditionPlugin):
 
         # Get current day
         if 'current_time' in data:
-            current_time = data['current_time']
-            if isinstance(current_time, str):
-                current_time = datetime.fromisoformat(current_time)
+            current_time = datetime.fromisoformat(data['current_time']) if isinstance(data['current_time'], str) else data['current_time']
         else:
             current_time = datetime.now()
 

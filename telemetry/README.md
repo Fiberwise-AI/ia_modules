@@ -1,47 +1,79 @@
 # IA Modules Telemetry System
 
-Production-ready telemetry and monitoring for IA Modules pipelines.
+**Status:** Development/Staging validated - See production notes below
 
 ## Overview
 
-The telemetry system provides automatic instrumentation, metrics collection, distributed tracing, and production exporters for monitoring pipeline execution in real-time.
+The telemetry system provides automatic instrumentation, metrics collection, distributed tracing, and exporters for monitoring pipeline execution. Validated in unit tests and showcase app.
+
+## Production Readiness
+
+### Current Status: **Validated for Development/Staging**
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| **SimpleTracer** | ✅ Validated | Unit tested, works in showcase_app |
+| **OpenTelemetryTracer** | ⚠️ Needs Integration Testing | Code complete, not tested with real OTLP endpoint |
+| **Prometheus Exporter** | ✅ Validated | Metrics format verified |
+| **CloudWatch Exporter** | ⚠️ Needs AWS Testing | Code complete, not tested with real AWS account |
+| **Datadog Exporter** | ⚠️ Needs DD Testing | Code complete, not tested with real Datadog account |
+| **StatsD Exporter** | ⚠️ Needs Network Testing | Code complete, not tested with real StatsD server |
+
+### Before Production Use:
+
+1. **Test with Real Endpoints** (1-2 days)
+   - Set up OTLP collector and verify traces arrive
+   - Configure AWS CloudWatch and verify metrics appear
+   - Test Datadog integration with real API key
+   - Test StatsD with actual StatsD server
+
+2. **Load Testing** (1 day)
+   - Verify telemetry doesn't impact performance
+   - Test with 1000+ concurrent pipeline executions
+   - Measure overhead: Should be <5% of total execution time
+   - Verify no memory leaks from span collection
+
+3. **Add Sampling** (4 hours)
+   - Implement trace sampling (e.g., 1 in 100 for high-volume)
+   - Add configurable sampling rates
+   - Test with high-throughput scenarios
 
 ## Features
 
-### 🎯 Automatic Instrumentation
+### 🎯 Automatic Instrumentation (VALIDATED)
 
-- **Zero Configuration**: Telemetry is enabled by default
-- **Pipeline Metrics**: Execution count, duration, success rate
-- **Step Metrics**: Individual step duration and error tracking
-- **Performance Metrics**: Cost, throughput, memory, CPU
+- **Zero Configuration**: Telemetry is enabled by default (verified in showcase_app)
+- **Pipeline Metrics**: Execution count, duration, success rate (unit tested)
+- **Step Metrics**: Individual step duration and error tracking (unit tested)
+- **Performance Metrics**: Cost, throughput, memory, CPU (basic implementation)
 
-### 📊 Metrics Collection
+### 📊 Metrics Collection (VALIDATED)
 
-- **Counter**: Monotonically increasing values
-- **Gauge**: Values that can go up or down
-- **Histogram**: Observations in buckets (with percentiles)
-- **Summary**: Quantile calculations (P50, P90, P95, P99)
+- **Counter**: Monotonically increasing values (unit tested)
+- **Gauge**: Values that can go up or down (unit tested)
+- **Histogram**: Observations in buckets (unit tested - needs performance validation)
+- **Summary**: Quantile calculations P50, P90, P95, P99 (unit tested)
 
 ### 🔍 Distributed Tracing
 
-- **SimpleTracer**: In-memory for development
-- **OpenTelemetryTracer**: Production-ready OTLP integration
-- **Automatic Spans**: Pipelines and steps automatically traced
-- **Context Propagation**: Parent-child relationships maintained
+- **SimpleTracer**: ✅ In-memory for development (validated in showcase_app)
+- **OpenTelemetryTracer**: ⚠️ OTLP integration (needs real endpoint testing)
+- **Automatic Spans**: ✅ Pipelines and steps automatically traced (validated)
+- **Context Propagation**: ✅ Parent-child relationships maintained (unit tested)
 
 ### 📤 Production Exporters
 
-- **Prometheus**: Text format for Prometheus scraping
-- **CloudWatch**: AWS CloudWatch Metrics (boto3)
-- **Datadog**: Datadog API integration
-- **StatsD**: UDP protocol for StatsD/Graphite
+- **Prometheus**: ✅ Text format verified (showcase_app uses this)
+- **CloudWatch**: ⚠️ AWS boto3 integration (needs AWS account testing)
+- **Datadog**: ⚠️ API integration (needs Datadog account testing)
+- **StatsD**: ⚠️ UDP protocol (needs StatsD server testing)
 
 ### 📈 Dashboards & Alerts
 
-- **Grafana Dashboard**: 11 pre-configured panels
-- **Prometheus Alerts**: 10 production-ready alert rules
-- **Real-time Monitoring**: Track execution, cost, errors
-- **Cost Tracking**: Monitor API costs per pipeline
+- **Grafana Dashboard**: ⚠️ Template exists (not tested with real data)
+- **Prometheus Alerts**: ⚠️ YAML file exists (not tested in AlertManager)
+- **Real-time Monitoring**: ⚠️ Needs validation at scale
+- **Cost Tracking**: ⚠️ Basic implementation (needs LLM API integration testing)
 
 ## Quick Start
 

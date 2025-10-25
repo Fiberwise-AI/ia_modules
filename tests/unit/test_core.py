@@ -40,8 +40,8 @@ def test_pipeline_creation():
     flow = {
         "start_at": "step1",
         "paths": [
-            {"from_step": "step1", "to_step": "step2", "condition": {"type": "always"}},
-            {"from_step": "step2", "to_step": "end_with_success", "condition": {"type": "always"}}
+            {"from": "step1", "to": "step2", "condition": {"type": "always"}},
+            {"from": "step2", "to": "end_with_success", "condition": {"type": "always"}}
         ]
     }
     services = ServiceRegistry()

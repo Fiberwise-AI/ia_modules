@@ -98,8 +98,8 @@ async def test_router_find_next_steps():
     # Test with a simple path
     paths = [
         {
-            "from_step": "step1",
-            "to_step": "step2",
+            "from": "step1",
+            "to": "step2",
             "condition": {"type": "always"}
         }
     ]

@@ -10,7 +10,7 @@ from pathlib import Path
 # Add the parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from tests.pipeline_runner import run_with_new_schema, create_pipeline_from_json
+from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
 import json
 
 
@@ -26,11 +26,9 @@ async def test_simple_pipeline_e2e():
 
     input_data = {"topic": "e2e_test"}
 
-    # Create the pipeline
-    pipeline = create_pipeline_from_json(pipeline_config)
-
-    # Run the pipeline directly
-    result = await run_with_new_schema(pipeline, pipeline_config, input_data, None)
+    # Run the pipeline using GraphPipelineRunner
+    runner = GraphPipelineRunner()
+    result = await runner.run_pipeline_from_json(pipeline_config, input_data)
 
     # Verify the result structure
     assert result is not None

@@ -424,7 +424,7 @@ class TestFlowValidation:
             ],
             "flow": {
                 "start_at": "step1",
-                "transitions": [
+                "paths": [
                     {"from": "step1", "to": "step2"},
                     {"from": "step2", "to": "end_success"}
                 ]
@@ -797,7 +797,7 @@ class TestComplexPipelines:
             ],
             "flow": {
                 "start_at": "validate",
-                "transitions": [
+                "paths": [
                     {
                         "from": "validate",
                         "to": "process_success",

@@ -1,7 +1,7 @@
-"""Reliability metrics API endpoints"""
+"""Metrics and reliability API endpoints"""
 
 from fastapi import APIRouter, Depends, Request
-from ..models import MetricsReport, SLOCompliance, EventLog
+from models import MetricsReport, SLOCompliance, EventLog
 from typing import List
 
 router = APIRouter()

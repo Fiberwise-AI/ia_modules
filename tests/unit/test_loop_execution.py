@@ -16,7 +16,7 @@ class TestLoopDetector:
         """Test detection of simple A -> B -> A loop."""
         flow = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'},
                 {
                     'from': 'step_b',
@@ -36,7 +36,7 @@ class TestLoopDetector:
         """Test that DAG has no loops."""
         flow = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'},
                 {'from': 'step_b', 'to': 'step_c'}
             ]
@@ -51,7 +51,7 @@ class TestLoopDetector:
         """Test detection of longer loop A -> B -> C -> A."""
         flow = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'},
                 {'from': 'step_b', 'to': 'step_c'},
                 {
@@ -72,7 +72,7 @@ class TestLoopDetector:
         """Test detection of multiple independent loops."""
         flow = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 # Loop 1: a -> b -> a
                 {'from': 'step_a', 'to': 'step_b'},
                 {'from': 'step_b', 'to': 'step_a', 'condition': {'type': 'expression'}},
@@ -92,7 +92,7 @@ class TestLoopDetector:
         """Test that exit conditions are correctly identified."""
         flow = {
             'start_at': 'draft',
-            'transitions': [
+            'paths': [
                 {'from': 'draft', 'to': 'review'},
                 {
                     'from': 'review',
@@ -124,7 +124,7 @@ class TestLoopDetector:
         """Test validation catches loops without exit conditions."""
         flow = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'},
                 {
                     'from': 'step_b',
@@ -144,7 +144,7 @@ class TestLoopDetector:
         """Test validation passes for loop with proper exit."""
         flow = {
             'start_at': 'draft',
-            'transitions': [
+            'paths': [
                 {'from': 'draft', 'to': 'review'},
                 {
                     'from': 'review',
@@ -176,7 +176,7 @@ class TestLoopDetector:
         """Test finding which loop a step belongs to."""
         flow = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'},
                 {'from': 'step_b', 'to': 'step_a', 'condition': {'type': 'expression'}}
             ]
@@ -193,7 +193,7 @@ class TestLoopDetector:
         """Test checking if step is in any loop."""
         flow = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'},
                 {'from': 'step_b', 'to': 'step_c'},
                 {'from': 'step_c', 'to': 'step_a', 'condition': {'type': 'expression'}},
@@ -212,7 +212,7 @@ class TestLoopDetector:
         """Test loop visualization output."""
         flow = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'},
                 {'from': 'step_b', 'to': 'step_a', 'condition': {'type': 'expression'}}
             ]
@@ -335,7 +335,7 @@ class TestLoopAwareExecutor:
         """Test detection of loops in pipeline."""
         flow_with_loop = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'},
                 {'from': 'step_b', 'to': 'step_a', 'condition': {'type': 'expression'}}
             ]
@@ -346,7 +346,7 @@ class TestLoopAwareExecutor:
 
         flow_without_loop = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'},
                 {'from': 'step_b', 'to': 'step_c'}
             ]
@@ -359,7 +359,7 @@ class TestLoopAwareExecutor:
         """Test checking if step is in loop."""
         flow = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'},
                 {'from': 'step_b', 'to': 'step_a', 'condition': {'type': 'expression'}},
                 {'from': 'step_b', 'to': 'step_c'}  # step_c not in loop
@@ -377,7 +377,7 @@ class TestLoopAwareExecutor:
         """Test loop safety checking."""
         flow = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'},
                 {'from': 'step_b', 'to': 'step_a', 'condition': {'type': 'expression'}}
             ]
@@ -402,7 +402,7 @@ class TestLoopAwareExecutor:
         """Test recording step execution."""
         flow = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'}
             ]
         }
@@ -417,7 +417,7 @@ class TestLoopAwareExecutor:
         """Test execution metadata generation."""
         flow = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'},
                 {'from': 'step_b', 'to': 'step_a', 'condition': {'type': 'expression'}}
             ]
@@ -437,7 +437,7 @@ class TestLoopAwareExecutor:
         """Test execution report formatting."""
         flow = {
             'start_at': 'step_a',
-            'transitions': [
+            'paths': [
                 {'from': 'step_a', 'to': 'step_b'},
                 {'from': 'step_b', 'to': 'step_a', 'condition': {'type': 'expression'}}
             ]

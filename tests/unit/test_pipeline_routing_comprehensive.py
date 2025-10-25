@@ -461,8 +461,8 @@ class TestAdvancedRouter:
 
         flow_paths = [
             {
-                "from_step": "step1",
-                "to_step": "step2",
+                "from": "step1",
+                "to": "step2",
                 "condition": {"type": "always"}
             }
         ]
@@ -477,13 +477,13 @@ class TestAdvancedRouter:
 
         flow_paths = [
             {
-                "from_step": "step1",
-                "to_step": "step2a",
+                "from": "step1",
+                "to": "step2a",
                 "condition": {"type": "always"}
             },
             {
-                "from_step": "step1",
-                "to_step": "step2b",
+                "from": "step1",
+                "to": "step2b",
                 "condition": {"type": "always"}
             }
         ]
@@ -500,8 +500,8 @@ class TestAdvancedRouter:
 
         flow_paths = [
             {
-                "from_step": "step2",
-                "to_step": "step3",
+                "from": "step2",
+                "to": "step3",
                 "condition": {"type": "always"}
             }
         ]
@@ -516,8 +516,8 @@ class TestAdvancedRouter:
 
         flow_paths = [
             {
-                "from_step": "step1",
-                "to_step": "step2",
+                "from": "step1",
+                "to": "step2",
                 "condition": {
                     "type": "expression",
                     "config": {

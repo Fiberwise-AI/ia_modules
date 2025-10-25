@@ -34,8 +34,10 @@ class DecisionTrailService:
             Decision trail with nodes, edges, and metadata
         """
         try:
-            # Get decision trail from builder
-            trail = self.decision_trail_builder.get_trail(job_id)
+            # Get decision trail from builder if available
+            trail = None
+            if self.decision_trail_builder:
+                trail = self.decision_trail_builder.get_trail(job_id)
             
             if not trail:
                 return {

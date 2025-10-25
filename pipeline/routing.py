@@ -329,7 +329,7 @@ class AdvancedRouter:
         next_steps = []
 
         for path in flow_paths:
-            if path["from_step"] != current_step:
+            if path["from"] != current_step:
                 continue
 
             condition = path.get("condition", {})
@@ -342,7 +342,7 @@ class AdvancedRouter:
                 )
 
                 if should_take_path:
-                    next_steps.append(path["to_step"])
+                    next_steps.append(path["to"])
 
             except Exception as e:
                 # Log error but continue evaluation

@@ -52,10 +52,10 @@ class SQLCheckpointer(BaseCheckpointer):
         query = """
         INSERT INTO pipeline_checkpoints (
             checkpoint_id, thread_id, pipeline_id, step_id, step_index,
-            step_name, state, metadata, parent_checkpoint_id, created_at
+            step_name, state, metadata, parent_checkpoint_id, timestamp
         ) VALUES (
             :checkpoint_id, :thread_id, :pipeline_id, :step_id, :step_index,
-            :step_name, :state, :metadata, :parent_checkpoint_id, :created_at
+            :step_name, :state, :metadata, :parent_checkpoint_id, :timestamp
         )
         """
 
@@ -69,7 +69,7 @@ class SQLCheckpointer(BaseCheckpointer):
             "state": json.dumps(state),
             "metadata": json.dumps(metadata or {}),
             "parent_checkpoint_id": parent_checkpoint_id,
-            "created_at": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat()
         }
 
         try:
@@ -94,7 +94,7 @@ class SQLCheckpointer(BaseCheckpointer):
             query = """
             SELECT * FROM pipeline_checkpoints
             WHERE thread_id = :thread_id
-            ORDER BY created_at DESC
+            ORDER BY timestamp DESC
             LIMIT 1
             """
             params = {"thread_id": thread_id}
@@ -112,7 +112,7 @@ class SQLCheckpointer(BaseCheckpointer):
                 step_index=row["step_index"],
                 step_name=row["step_name"],
                 state=json.loads(row["state"]),
-                timestamp=datetime.fromisoformat(row["created_at"]),
+                timestamp=datetime.fromisoformat(row["timestamp"]),
                 metadata=json.loads(row["metadata"]),
                 parent_checkpoint_id=row["parent_checkpoint_id"]
             )
@@ -131,7 +131,7 @@ class SQLCheckpointer(BaseCheckpointer):
             query = """
             SELECT * FROM pipeline_checkpoints
             WHERE thread_id = :thread_id AND pipeline_id = :pipeline_id
-            ORDER BY created_at DESC
+            ORDER BY timestamp DESC
             LIMIT :limit OFFSET :offset
             """
             params = {
@@ -144,13 +144,16 @@ class SQLCheckpointer(BaseCheckpointer):
             query = """
             SELECT * FROM pipeline_checkpoints
             WHERE thread_id = :thread_id
-            ORDER BY created_at DESC
+            ORDER BY timestamp DESC
             LIMIT :limit OFFSET :offset
             """
             params = {"thread_id": thread_id, "limit": limit, "offset": offset}
 
         try:
-            rows = await self.db.fetch_all(query, params)
+            # fetch_all is sync, returns list directly
+            import asyncio
+            loop = asyncio.get_event_loop()
+            rows = await loop.run_in_executor(None, self.db.fetch_all, query, params)
             return [
                 Checkpoint(
                     checkpoint_id=row["checkpoint_id"],
@@ -160,7 +163,7 @@ class SQLCheckpointer(BaseCheckpointer):
                     step_index=row["step_index"],
                     step_name=row["step_name"],
                     state=json.loads(row["state"]),
-                    timestamp=datetime.fromisoformat(row["created_at"]),
+                    timestamp=datetime.fromisoformat(row["timestamp"]),
                     metadata=json.loads(row["metadata"]),
                     parent_checkpoint_id=row["parent_checkpoint_id"]
                 )
@@ -215,7 +218,7 @@ class SQLCheckpointer(BaseCheckpointer):
         """Get checkpoint statistics"""
         if thread_id:
             query = """
-            SELECT COUNT(*) as total, MIN(created_at) as oldest, MAX(created_at) as newest
+            SELECT COUNT(*) as total, MIN(timestamp) as oldest, MAX(timestamp) as newest
             FROM pipeline_checkpoints
             WHERE thread_id = :thread_id
             """
@@ -230,7 +233,7 @@ class SQLCheckpointer(BaseCheckpointer):
             }
         else:
             query = """
-            SELECT COUNT(*) as total, MIN(created_at) as oldest, MAX(created_at) as newest,
+            SELECT COUNT(*) as total, MIN(timestamp) as oldest, MAX(timestamp) as newest,
                    COUNT(DISTINCT thread_id) as thread_count
             FROM pipeline_checkpoints
             """

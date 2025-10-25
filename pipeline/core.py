@@ -311,8 +311,8 @@ class Pipeline:
         self.loop_detector = None
         self.loop_executor = None
 
-        # Initialize loop support if flow has transitions/paths
-        if flow and ('transitions' in flow or 'paths' in flow):
+        # Initialize loop support if flow has paths
+        if flow and 'paths' in flow:
             try:
                 from ia_modules.pipeline.loop_detector import LoopDetector
                 from ia_modules.pipeline.loop_executor import LoopAwareExecutor
@@ -502,46 +502,99 @@ class Pipeline:
         # Execute steps in order based on flow
         try:
             # Get the starting step
-            start_step_name = self.flow.get("start_at")
-            if not start_step_name:
+            current_step_name = self.flow.get("start_at")
+            if not current_step_name:
                 raise ValueError("No start step defined in pipeline flow")
 
-            # Build execution path from flow definition
-            execution_path = self._build_execution_path()
-
-            # Execute each step in sequence
-            for step_index, step_name in enumerate(execution_path):
-                step = self.step_map.get(step_name)
+            step_index = 0
+            visited_steps = set()  # Track visited steps for loop detection
+            max_steps = 100  # Safety limit to prevent infinite loops
+            
+            # Execute steps dynamically based on flow transitions
+            while current_step_name and step_index < max_steps:
+                # Check if we've hit a termination step
+                if current_step_name.startswith("end_"):
+                    self.logger.info(f"Reached termination step: {current_step_name}")
+                    break
+                
+                step = self.step_map.get(current_step_name)
                 if not step:
-                    raise ValueError(f"Step '{step_name}' not found")
+                    raise ValueError(f"Step '{current_step_name}' not found")
 
-                self.logger.info(f"Executing step: {step_name}")
+                self.logger.info(f"Executing step {step_index}: {current_step_name}")
+
+                # Check loop safety if loop executor available
+                if self.loop_executor:
+                    loop_id = self.loop_executor.get_loop_id_for_step(current_step_name)
+                    if loop_id:
+                        is_safe, error_msg = await self.loop_executor.check_loop_safety(current_step_name, loop_id)
+                        if not is_safe:
+                            raise RuntimeError(f"Loop safety check failed: {error_msg}")
+                        self.loop_executor.loop_context.increment_iteration(current_step_name)
+
+                # Track step execution start if tracker available
+                step_execution_id = None
+                tracker = self.services.get('execution_tracker') if self.services else None
+                execution_id = self.services.get('execution_id') if self.services else None
+                
+                if tracker and execution_id:
+                    step_execution_id = await tracker.start_step_execution(
+                        execution_id=execution_id,
+                        step_id=current_step_name,
+                        step_name=current_step_name,
+                        step_type="task",
+                        input_data=current_data
+                    )
 
                 # Execute step with telemetry if enabled
-                if self.enable_telemetry and self.telemetry:
-                    parent_span = pipeline_ctx.span if pipeline_ctx else None
-                    with self.telemetry.trace_step(self.name, step_name, parent_span) as step_ctx:
-                        step_result = await step.execute_with_error_handling(current_data)
-                        step_ctx.set_output(step_result)
+                step_error = None
+                try:
+                    if self.enable_telemetry and self.telemetry:
+                        parent_span = pipeline_ctx.span if pipeline_ctx else None
+                        with self.telemetry.trace_step(self.name, current_step_name, parent_span) as step_ctx:
+                            step_result = await step.execute_with_error_handling(current_data)
+                            step_ctx.set_output(step_result)
 
-                        # Extract and set LLM usage if present in result
-                        if isinstance(step_result, dict) and 'llm_response' in step_result:
-                            llm_resp = step_result['llm_response']
-                            if isinstance(llm_resp, dict) and 'usage' in llm_resp:
-                                step_ctx.set_attribute('usage', llm_resp['usage'])
-                else:
-                    step_result = await step.execute_with_error_handling(current_data)
+                            # Extract and set LLM usage if present in result
+                            if isinstance(step_result, dict) and 'llm_response' in step_result:
+                                llm_resp = step_result['llm_response']
+                                if isinstance(llm_resp, dict) and 'usage' in llm_resp:
+                                    step_ctx.set_attribute('usage', llm_resp['usage'])
+                    else:
+                        step_result = await step.execute_with_error_handling(current_data)
+                except Exception as e:
+                    step_error = e
+                    step_result = None
+
+                # Track step execution completion if tracker available
+                if tracker and step_execution_id:
+                    from ia_modules.pipeline.execution_tracker import StepStatus
+                    await tracker.complete_step_execution(
+                        step_execution_id=step_execution_id,
+                        status=StepStatus.FAILED if step_error else StepStatus.COMPLETED,
+                        output_data=step_result,
+                        error_message=str(step_error) if step_error else None
+                    )
+
+                # Re-raise error if step failed
+                if step_error:
+                    raise step_error
 
                 # Store result for this step
                 results["steps"].append({
-                    "step_name": step_name,
+                    "step_name": current_step_name,
                     "step_index": step_index,
                     "result": step_result,
                     "status": "completed"
                 })
 
-                # Update current data for next step
-                current_data = step_result
+                # Merge step result into current data (keep all previous data)
+                # Store result both at top level AND under step name for condition access
+                if isinstance(step_result, dict):
+                    current_data.update(step_result)
+                    current_data[current_step_name] = step_result
+                else:
+                    current_data[current_step_name] = step_result
 
                 # Save checkpoint after each step (if checkpointer enabled)
                 if self.checkpointer and thread_id:
@@ -549,19 +602,52 @@ class Pipeline:
                         checkpoint_id = await self.checkpointer.save_checkpoint(
                             thread_id=thread_id,
                             pipeline_id=self.name,
-                            step_id=step_name,
+                            step_id=current_step_name,
                             step_index=step_index,
                             state={
                                 'pipeline_input': input_data,
                                 'steps': results["steps"],
                                 'current_data': current_data
                             },
-                            metadata={'execution_path': execution_path},
-                            step_name=step_name
+                            metadata={'visited_steps': list(visited_steps)},
+                            step_name=current_step_name
                         )
                         self.logger.debug(f"Saved checkpoint: {checkpoint_id}")
                     except Exception as e:
                         self.logger.warning(f"Failed to save checkpoint: {e}")
+
+                # Find next steps by evaluating transitions
+                next_steps = self._get_next_steps(current_step_name, current_data)
+                
+                if not next_steps:
+                    self.logger.info(f"No more transitions from step '{current_step_name}', pipeline complete")
+                    break
+                
+                # Handle parallel or sequential execution
+                if len(next_steps) > 1:
+                    self.logger.info(f"Parallel fanout: {len(next_steps)} branches from '{current_step_name}'")
+                    # For parallel execution, we need to execute all branches
+                    # Use a simple approach: add all to a queue and process each
+                    # (Real parallel would use asyncio.gather, but this maintains order for now)
+                    pending_steps = list(next_steps)
+                    current_step_name = pending_steps.pop(0)
+                    step_index += 1
+                    
+                    # Store remaining parallel steps to execute after current
+                    if not hasattr(self, '_pending_parallel_steps'):
+                        self._pending_parallel_steps = []
+                    self._pending_parallel_steps.extend(pending_steps)
+                elif hasattr(self, '_pending_parallel_steps') and self._pending_parallel_steps:
+                    # Continue with pending parallel steps
+                    current_step_name = self._pending_parallel_steps.pop(0)
+                    step_index += 1
+                else:
+                    # Single next step
+                    current_step_name = next_steps[0]
+                    step_index += 1
+
+            if step_index >= max_steps:
+                raise RuntimeError(f"Pipeline exceeded maximum steps ({max_steps}), possible infinite loop")
 
             # Set final output
             results["output"] = current_data
@@ -576,6 +662,68 @@ class Pipeline:
         except Exception as e:
             self.logger.error(f"Pipeline execution failed: {e}")
             raise
+    
+    def _get_next_steps(self, current_step: str, current_data: Dict[str, Any]) -> List[str]:
+        """
+        Determine next steps based on current step and data.
+        Returns list of all matching target steps (for parallel execution).
+        """
+        paths = self.flow.get("paths", [])
+        candidates = [p for p in paths if p.get("from") == current_step]
+
+        if not candidates:
+            return []
+
+        next_steps = []
+        for path in candidates:
+            condition = path.get("condition", {"type": "always"})
+            if self._evaluate_condition(condition, current_data):
+                next_step = path.get("to")
+                next_steps.append(next_step)
+        
+        return next_steps
+    
+    def _evaluate_condition(self, condition: Dict[str, Any], data: Dict[str, Any]) -> bool:
+        """
+        Evaluate a condition against current data.
+        
+        Supports:
+        - always: Always true
+        - expression: Evaluate an expression (simple key==value checks)
+        """
+        condition_type = condition.get("type", "always")
+        
+        if condition_type == "always":
+            return True
+        
+        if condition_type == "expression":
+            config = condition.get("config", {})
+            source = config.get("source", "")
+            operator = config.get("operator", "equals")
+            expected_value = config.get("value")
+            
+            # Parse source (e.g., "review_content.approved")
+            parts = source.split(".")
+            actual_value = data
+            for part in parts:
+                if isinstance(actual_value, dict):
+                    actual_value = actual_value.get(part)
+                else:
+                    return False
+            
+            # Evaluate operator
+            if operator == "equals":
+                return actual_value == expected_value
+            elif operator == "not_equals":
+                return actual_value != expected_value
+            elif operator == "greater_than":
+                return actual_value > expected_value
+            elif operator == "less_than":
+                return actual_value < expected_value
+        
+        # Unknown condition type - default to False for safety
+        self.logger.warning(f"Unknown condition type: {condition_type}")
+        return False
 
     def _build_execution_path(self) -> List[str]:
         """Build the execution path based on flow definition"""
@@ -595,8 +743,8 @@ class Pipeline:
 
         # Add steps based on flow paths
         for path in paths:
-            from_step = path.get("from_step")
-            to_step = path.get("to_step")
+            from_step = path.get("from")
+            to_step = path.get("to")
 
             if from_step and to_step and from_step in step_order:
                 # Skip termination markers like "end_with_success"
