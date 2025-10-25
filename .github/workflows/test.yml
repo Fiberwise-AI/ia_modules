@@ -200,14 +200,13 @@ jobs:
         env:
           COLLECTOR_OTLP_ENABLED: "true"
         options: >-
-          --health-cmd "wget --quiet --tries=1 --spider http://localhost:14269/ || exit 1"
+          --health-cmd "wget --quiet --tries=1 --spider http://localhost:16686/ || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 16686:16686  # Jaeger UI
+          - 16686:16686  # Jaeger UI (also used for health check)
           - 14268:14268  # Jaeger Collector HTTP
-          - 14269:14269  # Jaeger Admin/Health
           # OTLP ports (4317/4318) not exposed - use otel-collector instead
 
     steps:
