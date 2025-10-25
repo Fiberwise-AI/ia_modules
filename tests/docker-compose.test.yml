@@ -120,6 +120,7 @@ services:
     # Using Jaeger v2 (EOL for v1 is Dec 31, 2025)
     # https://www.jaegertracing.io/download/
     # NOTE: Jaeger v2 maintains API compatibility with v1
+    # OTLP ports mapped to 4319/4320 to avoid conflict with otel-collector (4317/4318)
     image: jaegertracing/jaeger:latest
     container_name: ia_modules_test_jaeger
     environment:
@@ -129,8 +130,8 @@ services:
       - "14268:14268"  # Jaeger collector HTTP
       - "14269:14269"  # Jaeger admin/health
       - "14250:14250"  # Jaeger collector gRPC
-      - "4317:4317"    # OTLP gRPC
-      - "4318:4318"    # OTLP HTTP
+      - "4319:4317"    # OTLP gRPC (mapped to 4319 to avoid conflict)
+      - "4320:4318"    # OTLP HTTP (mapped to 4320 to avoid conflict)
       - "6831:6831/udp" # Jaeger agent (legacy)
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:16686/"]
