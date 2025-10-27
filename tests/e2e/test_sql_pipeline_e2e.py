@@ -8,6 +8,7 @@ Tests cover real-world scenarios using the actual schema from migrations.
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 import uuid
 from datetime import datetime, timezone, timedelta
 from pathlib import Path

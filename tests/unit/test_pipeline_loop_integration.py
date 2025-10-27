@@ -4,6 +4,7 @@ Integration tests for Pipeline loop detection
 
 import pytest
 from ia_modules.pipeline.core import Pipeline, Step
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.pipeline.services import ServiceRegistry
 
 
@@ -177,5 +178,5 @@ class TestPipelineLoopBackwardCompatibility:
         pipeline = Pipeline('test', steps, flow, ServiceRegistry())
 
         # Should execute without issues
-        result = await pipeline.run({'input': 'test'})
+        result = await pipeline.run({'input': 'test'}, create_test_execution_context())
         assert result is not None

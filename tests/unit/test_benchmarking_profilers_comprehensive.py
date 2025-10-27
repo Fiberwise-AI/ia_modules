@@ -2,6 +2,7 @@
 Comprehensive tests for benchmarking/profilers.py
 """
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
 import time
 from unittest.mock import MagicMock, patch

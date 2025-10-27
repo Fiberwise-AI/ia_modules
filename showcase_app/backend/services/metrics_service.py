@@ -48,18 +48,21 @@ class MetricsService:
         declared_mode: Optional[str] = None
     ):
         """Record step execution"""
-        await self.metrics.record_step(
-            agent=agent,
-            success=success,
-            required_compensation=required_compensation,
-            required_human=required_human,
-            mode=mode,
-            declared_mode=declared_mode
-        )
+        try:
+            await self.metrics.record_step(
+                agent=agent,
+                success=success,
+                required_compensation=required_compensation,
+                required_human=required_human,
+                mode=mode,
+                declared_mode=declared_mode
+            )
 
-        # Track errors for MTTE calculation
-        if not success:
-            self.error_times.append(datetime.now(timezone.utc))
+            # Track errors for MTTE calculation
+            if not success:
+                self.error_times.append(datetime.now(timezone.utc))
+        except Exception as e:
+            logger.error(f"Error recording step metrics for agent {agent}: {e}", exc_info=True)
 
     async def record_workflow(
         self,
@@ -72,28 +75,31 @@ class MetricsService:
         cost: Optional[float] = None
     ):
         """Record workflow execution"""
-        await self.metrics.record_workflow(
-            workflow_id=workflow_id,
-            steps=steps,
-            retries=retries,
-            success=success,
-            required_human=required_human
-        )
+        try:
+            await self.metrics.record_workflow(
+                workflow_id=workflow_id,
+                steps=steps,
+                retries=retries,
+                success=success,
+                required_human=required_human
+            )
 
-        # Track retry success for RSR
-        if retries > 0:
-            self.retry_attempts.append({
-                "workflow_id": workflow_id,
-                "retries": retries,
-                "success": success,
-                "timestamp": datetime.now(timezone.utc)
-            })
+            # Track retry success for RSR
+            if retries > 0:
+                self.retry_attempts.append({
+                    "workflow_id": workflow_id,
+                    "retries": retries,
+                    "success": success,
+                    "timestamp": datetime.now(timezone.utc)
+                })
 
-        # Track tokens and cost for TPW and CPSW
-        if tokens:
-            self.token_counts.append(tokens)
-        if cost and success:
-            self.workflow_costs.append(cost)
+            # Track tokens and cost for TPW and CPSW
+            if tokens:
+                self.token_counts.append(tokens)
+            if cost and success:
+                self.workflow_costs.append(cost)
+        except Exception as e:
+            logger.error(f"Error recording workflow metrics for workflow {workflow_id}: {e}", exc_info=True)
 
     async def get_report(self) -> Dict[str, Any]:
         """Get reliability metrics report"""

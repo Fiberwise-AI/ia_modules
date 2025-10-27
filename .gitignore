@@ -88,3 +88,4 @@ COMMIT_MESSAGE_*.md
 *.temp
 tmp/
 temp/
+.aider*

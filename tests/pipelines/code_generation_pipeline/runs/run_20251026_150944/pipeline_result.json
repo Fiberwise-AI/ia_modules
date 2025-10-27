@@ -1,0 +1,552 @@
+{
+  "input": {
+    "task": "Create a Python function that calculates fibonacci numbers using memoization",
+    "filename": "fibonacci.py",
+    "input_guardrails_result": {
+      "action": "allow",
+      "content": "Create a Python function that calculates fibonacci numbers using memoization",
+      "results": [
+        {
+          "rail_id": "213bd7b8-a7ca-4b91-a149-f9de781027cb",
+          "rail_type": "input",
+          "action": "allow",
+          "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 15:09:44.242100"
+        },
+        {
+          "rail_id": "1420e419-97e1-46f3-996a-18f4b9195898",
+          "rail_type": "input",
+          "action": "allow",
+          "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 15:09:44.242127"
+        },
+        {
+          "rail_id": "dccfd18a-8aa5-46c9-98ae-2af636100d7c",
+          "rail_type": "input",
+          "action": "allow",
+          "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 15:09:44.242501"
+        }
+      ],
+      "triggered_count": 0
+    },
+    "input_guardrails": "[Circular Reference]",
+    "generated_code": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+    "raw_response": "```python\nfrom typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]\n```\n",
+    "llm_metadata": {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "usage": {
+        "prompt_tokens": 92,
+        "completion_tokens": 222,
+        "total_tokens": 314
+      },
+      "timestamp": "2025-10-26T15:09:50.195246"
+    },
+    "generate_code": "[Circular Reference]",
+    "execution_guardrails_result": {
+      "action": "allow",
+      "content": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+      "results": [
+        {
+          "rail_id": "9313bd10-bbd1-406f-97f2-fcd915cc8361",
+          "rail_type": "execution",
+          "action": "allow",
+          "original_content": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {
+            "imports": [
+              "typing"
+            ]
+          },
+          "timestamp": "2025-10-26 15:09:50.196724"
+        }
+      ],
+      "triggered_count": 0
+    },
+    "execution_guardrails": "[Circular Reference]",
+    "output_file": "C:\\Users\\david\\OneDrive\\Documents\\AIArch\\ia_modules\\tests\\pipelines\\code_generation_pipeline\\generated_code\\fibonacci.py",
+    "code_size": 936,
+    "write_code": "[Circular Reference]"
+  },
+  "steps": [
+    {
+      "step_name": "input_guardrails",
+      "step_index": 0,
+      "result": {
+        "task": "Create a Python function that calculates fibonacci numbers using memoization",
+        "filename": "fibonacci.py",
+        "input_guardrails_result": {
+          "action": "allow",
+          "content": "Create a Python function that calculates fibonacci numbers using memoization",
+          "results": [
+            {
+              "rail_id": "213bd7b8-a7ca-4b91-a149-f9de781027cb",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 15:09:44.242100"
+            },
+            {
+              "rail_id": "1420e419-97e1-46f3-996a-18f4b9195898",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 15:09:44.242127"
+            },
+            {
+              "rail_id": "dccfd18a-8aa5-46c9-98ae-2af636100d7c",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 15:09:44.242501"
+            }
+          ],
+          "triggered_count": 0
+        },
+        "input_guardrails": "[Circular Reference]",
+        "generated_code": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+        "raw_response": "```python\nfrom typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]\n```\n",
+        "llm_metadata": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "usage": {
+            "prompt_tokens": 92,
+            "completion_tokens": 222,
+            "total_tokens": 314
+          },
+          "timestamp": "2025-10-26T15:09:50.195246"
+        },
+        "generate_code": "[Circular Reference]",
+        "execution_guardrails_result": {
+          "action": "allow",
+          "content": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+          "results": [
+            {
+              "rail_id": "9313bd10-bbd1-406f-97f2-fcd915cc8361",
+              "rail_type": "execution",
+              "action": "allow",
+              "original_content": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {
+                "imports": [
+                  "typing"
+                ]
+              },
+              "timestamp": "2025-10-26 15:09:50.196724"
+            }
+          ],
+          "triggered_count": 0
+        },
+        "execution_guardrails": "[Circular Reference]",
+        "output_file": "C:\\Users\\david\\OneDrive\\Documents\\AIArch\\ia_modules\\tests\\pipelines\\code_generation_pipeline\\generated_code\\fibonacci.py",
+        "code_size": 936,
+        "write_code": "[Circular Reference]"
+      },
+      "status": "completed"
+    },
+    {
+      "step_name": "generate_code",
+      "step_index": 1,
+      "result": {
+        "task": "Create a Python function that calculates fibonacci numbers using memoization",
+        "filename": "fibonacci.py",
+        "input_guardrails_result": {
+          "action": "allow",
+          "content": "Create a Python function that calculates fibonacci numbers using memoization",
+          "results": [
+            {
+              "rail_id": "213bd7b8-a7ca-4b91-a149-f9de781027cb",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 15:09:44.242100"
+            },
+            {
+              "rail_id": "1420e419-97e1-46f3-996a-18f4b9195898",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 15:09:44.242127"
+            },
+            {
+              "rail_id": "dccfd18a-8aa5-46c9-98ae-2af636100d7c",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 15:09:44.242501"
+            }
+          ],
+          "triggered_count": 0
+        },
+        "input_guardrails": "[Circular Reference]",
+        "generated_code": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+        "raw_response": "```python\nfrom typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]\n```\n",
+        "llm_metadata": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "usage": {
+            "prompt_tokens": 92,
+            "completion_tokens": 222,
+            "total_tokens": 314
+          },
+          "timestamp": "2025-10-26T15:09:50.195246"
+        },
+        "generate_code": "[Circular Reference]",
+        "execution_guardrails_result": {
+          "action": "allow",
+          "content": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+          "results": [
+            {
+              "rail_id": "9313bd10-bbd1-406f-97f2-fcd915cc8361",
+              "rail_type": "execution",
+              "action": "allow",
+              "original_content": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {
+                "imports": [
+                  "typing"
+                ]
+              },
+              "timestamp": "2025-10-26 15:09:50.196724"
+            }
+          ],
+          "triggered_count": 0
+        },
+        "execution_guardrails": "[Circular Reference]",
+        "output_file": "C:\\Users\\david\\OneDrive\\Documents\\AIArch\\ia_modules\\tests\\pipelines\\code_generation_pipeline\\generated_code\\fibonacci.py",
+        "code_size": 936,
+        "write_code": "[Circular Reference]"
+      },
+      "status": "completed"
+    },
+    {
+      "step_name": "execution_guardrails",
+      "step_index": 2,
+      "result": {
+        "task": "Create a Python function that calculates fibonacci numbers using memoization",
+        "filename": "fibonacci.py",
+        "input_guardrails_result": {
+          "action": "allow",
+          "content": "Create a Python function that calculates fibonacci numbers using memoization",
+          "results": [
+            {
+              "rail_id": "213bd7b8-a7ca-4b91-a149-f9de781027cb",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 15:09:44.242100"
+            },
+            {
+              "rail_id": "1420e419-97e1-46f3-996a-18f4b9195898",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 15:09:44.242127"
+            },
+            {
+              "rail_id": "dccfd18a-8aa5-46c9-98ae-2af636100d7c",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 15:09:44.242501"
+            }
+          ],
+          "triggered_count": 0
+        },
+        "input_guardrails": "[Circular Reference]",
+        "generated_code": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+        "raw_response": "```python\nfrom typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]\n```\n",
+        "llm_metadata": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "usage": {
+            "prompt_tokens": 92,
+            "completion_tokens": 222,
+            "total_tokens": 314
+          },
+          "timestamp": "2025-10-26T15:09:50.195246"
+        },
+        "generate_code": "[Circular Reference]",
+        "execution_guardrails_result": {
+          "action": "allow",
+          "content": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+          "results": [
+            {
+              "rail_id": "9313bd10-bbd1-406f-97f2-fcd915cc8361",
+              "rail_type": "execution",
+              "action": "allow",
+              "original_content": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {
+                "imports": [
+                  "typing"
+                ]
+              },
+              "timestamp": "2025-10-26 15:09:50.196724"
+            }
+          ],
+          "triggered_count": 0
+        },
+        "execution_guardrails": "[Circular Reference]",
+        "output_file": "C:\\Users\\david\\OneDrive\\Documents\\AIArch\\ia_modules\\tests\\pipelines\\code_generation_pipeline\\generated_code\\fibonacci.py",
+        "code_size": 936,
+        "write_code": "[Circular Reference]"
+      },
+      "status": "completed"
+    },
+    {
+      "step_name": "write_code",
+      "step_index": 3,
+      "result": {
+        "task": "Create a Python function that calculates fibonacci numbers using memoization",
+        "filename": "fibonacci.py",
+        "input_guardrails_result": {
+          "action": "allow",
+          "content": "Create a Python function that calculates fibonacci numbers using memoization",
+          "results": [
+            {
+              "rail_id": "213bd7b8-a7ca-4b91-a149-f9de781027cb",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 15:09:44.242100"
+            },
+            {
+              "rail_id": "1420e419-97e1-46f3-996a-18f4b9195898",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 15:09:44.242127"
+            },
+            {
+              "rail_id": "dccfd18a-8aa5-46c9-98ae-2af636100d7c",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 15:09:44.242501"
+            }
+          ],
+          "triggered_count": 0
+        },
+        "input_guardrails": "[Circular Reference]",
+        "generated_code": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+        "raw_response": "```python\nfrom typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]\n```\n",
+        "llm_metadata": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "usage": {
+            "prompt_tokens": 92,
+            "completion_tokens": 222,
+            "total_tokens": 314
+          },
+          "timestamp": "2025-10-26T15:09:50.195246"
+        },
+        "generate_code": "[Circular Reference]",
+        "execution_guardrails_result": {
+          "action": "allow",
+          "content": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+          "results": [
+            {
+              "rail_id": "9313bd10-bbd1-406f-97f2-fcd915cc8361",
+              "rail_type": "execution",
+              "action": "allow",
+              "original_content": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {
+                "imports": [
+                  "typing"
+                ]
+              },
+              "timestamp": "2025-10-26 15:09:50.196724"
+            }
+          ],
+          "triggered_count": 0
+        },
+        "execution_guardrails": "[Circular Reference]",
+        "output_file": "C:\\Users\\david\\OneDrive\\Documents\\AIArch\\ia_modules\\tests\\pipelines\\code_generation_pipeline\\generated_code\\fibonacci.py",
+        "code_size": 936,
+        "write_code": "[Circular Reference]"
+      },
+      "status": "completed"
+    }
+  ],
+  "output": {
+    "task": "Create a Python function that calculates fibonacci numbers using memoization",
+    "filename": "fibonacci.py",
+    "input_guardrails_result": {
+      "action": "allow",
+      "content": "Create a Python function that calculates fibonacci numbers using memoization",
+      "results": [
+        {
+          "rail_id": "213bd7b8-a7ca-4b91-a149-f9de781027cb",
+          "rail_type": "input",
+          "action": "allow",
+          "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 15:09:44.242100"
+        },
+        {
+          "rail_id": "1420e419-97e1-46f3-996a-18f4b9195898",
+          "rail_type": "input",
+          "action": "allow",
+          "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 15:09:44.242127"
+        },
+        {
+          "rail_id": "dccfd18a-8aa5-46c9-98ae-2af636100d7c",
+          "rail_type": "input",
+          "action": "allow",
+          "original_content": "Create a Python function that calculates fibonacci numbers using memoization",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 15:09:44.242501"
+        }
+      ],
+      "triggered_count": 0
+    },
+    "input_guardrails": "[Circular Reference]",
+    "generated_code": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+    "raw_response": "```python\nfrom typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]\n```\n",
+    "llm_metadata": {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "usage": {
+        "prompt_tokens": 92,
+        "completion_tokens": 222,
+        "total_tokens": 314
+      },
+      "timestamp": "2025-10-26T15:09:50.195246"
+    },
+    "generate_code": "[Circular Reference]",
+    "execution_guardrails_result": {
+      "action": "allow",
+      "content": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+      "results": [
+        {
+          "rail_id": "9313bd10-bbd1-406f-97f2-fcd915cc8361",
+          "rail_type": "execution",
+          "action": "allow",
+          "original_content": "from typing import Dict\n\ndef fibonacci(n: int, memo: Dict[int, int] = None) -> int:\n    \"\"\"\n    Calculate the nth Fibonacci number using memoization.\n\n    Args:\n        n (int): The position in the Fibonacci sequence to calculate. Must be a non-negative integer.\n        memo (Dict[int, int], optional): A dictionary to store previously calculated Fibonacci numbers.\n                                         Defaults to None, which initializes an empty dictionary.\n\n    Returns:\n        int: The nth Fibonacci number.\n\n    Raises:\n        ValueError: If the input n is a negative integer.\n    \"\"\"\n    if memo is None:\n        memo = {}\n    \n    if n < 0:\n        raise ValueError(\"Input must be a non-negative integer.\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo)\n        return memo[n]",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {
+            "imports": [
+              "typing"
+            ]
+          },
+          "timestamp": "2025-10-26 15:09:50.196724"
+        }
+      ],
+      "triggered_count": 0
+    },
+    "execution_guardrails": "[Circular Reference]",
+    "output_file": "C:\\Users\\david\\OneDrive\\Documents\\AIArch\\ia_modules\\tests\\pipelines\\code_generation_pipeline\\generated_code\\fibonacci.py",
+    "code_size": 936,
+    "write_code": "[Circular Reference]"
+  }
+}

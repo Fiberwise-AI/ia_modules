@@ -23,6 +23,7 @@ from ia_modules.pipeline.hitl import (
     create_approval_step,
     create_conditional_step
 )
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class MockDBManager:
@@ -565,34 +566,43 @@ class TestTimeBasedDecisionStep:
         """Test run creates urgent decision"""
         step = TimeBasedDecisionStep("urgent", {"decision_timeout": 300})
 
-        result = await step.run({"critical": True})
+        try:
+            result = await step.run({"critical": True})
 
-        assert result["status"] == "time_sensitive_decision"
-        assert result["urgent"] is True
-        assert result["timeout_seconds"] == 300
-        assert "interaction_id" in result
+            assert result["status"] == "time_sensitive_decision"
+            assert result["urgent"] is True
+            assert result["timeout_seconds"] == 300
+            assert "interaction_id" in result
+        finally:
+            await step.cleanup()
 
     async def test_run_default_action(self):
         """Test default action configuration"""
         step = TimeBasedDecisionStep("urgent", {"default_action": "abort"})
 
-        result = await step.run({})
+        try:
+            result = await step.run({})
 
-        assert result["default_action"] == "abort"
+            assert result["default_action"] == "abort"
+        finally:
+            await step.cleanup()
 
     async def test_run_ui_schema_structure(self):
         """Test UI schema for urgent decision"""
         step = TimeBasedDecisionStep("urgent", {})
 
-        result = await step.run({})
+        try:
+            result = await step.run({})
 
-        ui_schema = result["ui_schema"]
-        assert ui_schema["type"] == "urgent_decision"
-        assert len(ui_schema["fields"]) == 2
+            ui_schema = result["ui_schema"]
+            assert ui_schema["type"] == "urgent_decision"
+            assert len(ui_schema["fields"]) == 2
 
-        decision_field = ui_schema["fields"][0]
-        assert decision_field["name"] == "decision"
-        assert len(decision_field["options"]) == 3
+            decision_field = ui_schema["fields"][0]
+            assert decision_field["name"] == "decision"
+            assert len(decision_field["options"]) == 3
+        finally:
+            await step.cleanup()
 
     async def test_timeout_handler_applies_default(self):
         """Test timeout handler applies default action"""
@@ -604,16 +614,19 @@ class TestTimeBasedDecisionStep:
             "default_action": "proceed"
         })
 
-        result = await step.run({})
-        interaction_id = result["interaction_id"]
+        try:
+            result = await step.run({})
+            interaction_id = result["interaction_id"]
 
-        # Wait for timeout
-        await asyncio.sleep(1.5)
+            # Wait for timeout
+            await asyncio.sleep(1.5)
 
-        state = await manager.get_state(interaction_id)
-        # State should be completed with timeout
-        if state:
-            assert state.get("status") == "completed"
+            state = await manager.get_state(interaction_id)
+            # State should be completed with timeout
+            if state:
+                assert state.get("status") == "completed"
+        finally:
+            await step.cleanup()
 
 
 @pytest.mark.asyncio

@@ -7,6 +7,7 @@ Tests central logger, execution tracker, and service registry integration.
 import pytest
 from unittest.mock import Mock, AsyncMock, MagicMock, call
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.pipeline.services import ServiceRegistry
 from typing import Dict, Any, List
 import uuid
@@ -43,15 +44,16 @@ class MockExecutionTracker:
         self.executions: Dict[str, Dict[str, Any]] = {}
         self.started: List[str] = []
         self.ended: List[str] = []
+        self.step_executions: Dict[str, Dict[str, Any]] = {}
 
-    def start_execution(self, execution_id: str, pipeline_name: str,
-                       pipeline_version: str, config: Dict[str, Any]):
+    async def start_execution(self, execution_id: str, pipeline_name: str,
+                       pipeline_version: str, input_data: Dict[str, Any] = None):
         self.started.append(execution_id)
         self.executions[execution_id] = {
             "id": execution_id,
             "pipeline_name": pipeline_name,
             "pipeline_version": pipeline_version,
-            "config": config,
+            "input_data": input_data,
             "status": "running"
         }
 
@@ -62,6 +64,25 @@ class MockExecutionTracker:
             self.executions[execution_id]["success"] = success
             if error:
                 self.executions[execution_id]["error"] = error
+
+    async def start_step_execution(self, execution_id: str, step_id: str, step_name: str, step_type: str = None, input_data: Any = None) -> str:
+        step_execution_id = f"{execution_id}_{step_id}"
+        self.step_executions[step_execution_id] = {
+            "execution_id": execution_id,
+            "step_id": step_id,
+            "step_name": step_name,
+            "step_type": step_type,
+            "input_data": input_data,
+            "status": "running"
+        }
+        return step_execution_id
+
+    async def complete_step_execution(self, step_execution_id: str, status: str = None, output_data: Any = None, error_message: str = None):
+        if step_execution_id in self.step_executions:
+            self.step_executions[step_execution_id]["status"] = status or ("completed" if not error_message else "failed")
+            self.step_executions[step_execution_id]["output_data"] = output_data
+            if error_message:
+                self.step_executions[step_execution_id]["error"] = error_message
 
 
 @pytest.mark.asyncio

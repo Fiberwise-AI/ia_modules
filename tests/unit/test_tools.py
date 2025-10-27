@@ -4,6 +4,7 @@ Unit tests for tool system.
 Tests ToolDefinition and ToolRegistry.
 """
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.tools.core import (
     ToolDefinition,
     ToolRegistry,

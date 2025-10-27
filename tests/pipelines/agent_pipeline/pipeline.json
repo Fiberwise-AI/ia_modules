@@ -23,8 +23,8 @@
         {
             "id": "step2",
             "name": "Decision Agent",
-            "step_class": "DecisionAgentStep",
-            "module": "tests.pipelines.agent_pipeline.steps.decision_agent_step",
+                "step_class": "DecisionAgentStep",
+                "module": "tests.pipelines.agent_pipeline.steps.decision_agent_step",
             "config": {
                 "decision_logic": "validation"
             }

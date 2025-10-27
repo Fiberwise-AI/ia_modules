@@ -23,6 +23,7 @@ class ConnectionManager:
     def __init__(self):
         self.metrics_connections: Set[WebSocket] = set()
         self.execution_connections: Dict[str, Set[WebSocket]] = {}
+        self.hitl_connections: Dict[str, Set[WebSocket]] = {}  # user_id -> connections
 
     async def connect_metrics(self, websocket: WebSocket):
         """Connect to metrics stream"""
@@ -90,6 +91,45 @@ class ConnectionManager:
         # Clean up disconnected
         for connection in disconnected:
             self.execution_connections[job_id].discard(connection)
+
+    async def connect_hitl(self, user_id: str, websocket: WebSocket):
+        """Connect to HITL notifications stream for a specific user"""
+        await websocket.accept()
+
+        if user_id not in self.hitl_connections:
+            self.hitl_connections[user_id] = set()
+
+        self.hitl_connections[user_id].add(websocket)
+        logger.info(f"HITL WebSocket connected for user {user_id}")
+
+    def disconnect_hitl(self, user_id: str, websocket: WebSocket):
+        """Disconnect from HITL stream"""
+        if user_id in self.hitl_connections:
+            self.hitl_connections[user_id].discard(websocket)
+
+            if not self.hitl_connections[user_id]:
+                del self.hitl_connections[user_id]
+
+        logger.info(f"HITL WebSocket disconnected for user {user_id}")
+
+    async def broadcast_hitl_notification(self, user_ids: list, message: dict):
+        """Broadcast HITL notification to specific users"""
+        disconnected = []
+
+        for user_id in user_ids:
+            if user_id not in self.hitl_connections:
+                continue
+
+            for connection in self.hitl_connections[user_id]:
+                try:
+                    await connection.send_json(message)
+                except Exception as e:
+                    logger.error(f"Error sending HITL notification to {user_id}: {e}")
+                    disconnected.append((user_id, connection))
+
+        # Clean up disconnected
+        for user_id, connection in disconnected:
+            self.hitl_connections[user_id].discard(connection)
 
 
 manager = ConnectionManager()
@@ -199,6 +239,53 @@ async def metrics_broadcaster():
         except Exception as e:
             logger.error(f"Error in metrics broadcaster: {e}", exc_info=True)
             await asyncio.sleep(5)
+
+
+@router.websocket("/hitl/{user_id}")
+async def websocket_hitl_endpoint(websocket: WebSocket, user_id: str):
+    """WebSocket endpoint for real-time HITL notifications for a specific user"""
+    await manager.connect_hitl(user_id, websocket)
+
+    try:
+        # Send initial message
+        await websocket.send_json({
+            "type": "connected",
+            "message": f"Connected to HITL notifications for user {user_id}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+
+        # Keep connection alive and listen for messages
+        while True:
+            try:
+                # Wait for message with timeout
+                data = await asyncio.wait_for(
+                    websocket.receive_text(),
+                    timeout=30.0
+                )
+
+                # Parse message
+                try:
+                    msg = json.loads(data)
+                    if msg.get("type") == "ping":
+                        await websocket.send_json({
+                            "type": "pong",
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        })
+                except json.JSONDecodeError:
+                    pass
+
+            except asyncio.TimeoutError:
+                # Send keepalive
+                await websocket.send_json({
+                    "type": "keepalive",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+
+    except WebSocketDisconnect:
+        manager.disconnect_hitl(user_id, websocket)
+    except Exception as e:
+        logger.error(f"HITL WebSocket error for user {user_id}: {e}", exc_info=True)
+        manager.disconnect_hitl(user_id, websocket)
 
 
 # Export manager for use in other modules

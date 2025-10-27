@@ -21,6 +21,7 @@ from ia_modules.pipeline.errors import (
     ConfigurationError,
     classify_exception
 )
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestErrorSeverity:

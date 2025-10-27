@@ -4,6 +4,7 @@ import pytest
 import json
 from pathlib import Path
 from ia_modules.pipeline.runner import load_step_class, create_step_from_json, create_pipeline_from_json, run_pipeline_from_json
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.pipeline.core import Step
 from ia_modules.pipeline.services import ServiceRegistry
 
@@ -67,7 +68,8 @@ def test_create_pipeline_from_json_basic():
         'name': 'test_pipeline',
         'steps': [{'id': 'step1', 'module': 'tests.unit.test_runner', 'class': 'DummyStep', 'config': {}}]
     }
-    pipeline = create_pipeline_from_json(config)
+    services = ServiceRegistry()
+    pipeline = create_pipeline_from_json(config, services=services)
     assert pipeline.name == 'test_pipeline'
     assert len(pipeline.steps) == 1
 
@@ -82,7 +84,8 @@ def test_create_pipeline_from_json_with_flow():
         ],
         'flow': {'start': 'step1', 'routes': [{'from': 'step1', 'to': 'step2'}]}
     }
-    pipeline = create_pipeline_from_json(config)
+    services = ServiceRegistry()
+    pipeline = create_pipeline_from_json(config, services=services)
     assert len(pipeline.steps) == 2
 
 

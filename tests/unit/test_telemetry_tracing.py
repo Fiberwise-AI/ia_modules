@@ -3,6 +3,7 @@ Tests for distributed tracing
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
 from ia_modules.telemetry import (
     Span,

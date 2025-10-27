@@ -3,6 +3,7 @@ Tests for auth.session module
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from ia_modules.auth.session import SessionManager

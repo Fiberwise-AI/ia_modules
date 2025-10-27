@@ -88,6 +88,23 @@ export const executionAPI = {
   cancel: (jobId) => api.delete(`/execute/${jobId}`),
 }
 
+// Human-in-the-Loop
+export const hitlAPI = {
+  getPending: (executionId, pipelineId) => {
+    const params = new URLSearchParams();
+    if (executionId) params.append('execution_id', executionId);
+    if (pipelineId) params.append('pipeline_id', pipelineId);
+    return api.get(`/hitl/pending?${params.toString()}`);
+  },
+  getInteraction: (interactionId) => api.get(`/hitl/${interactionId}`),
+  respond: (interactionId, humanInput, respondedBy) =>
+    api.post(`/hitl/${interactionId}/respond`, {
+      human_input: humanInput,
+      responded_by: respondedBy
+    }),
+  cancel: (interactionId) => api.post(`/hitl/${interactionId}/cancel`),
+}
+
 // Metrics
 export const metricsAPI = {
   getReport: () => api.get('/metrics/report'),

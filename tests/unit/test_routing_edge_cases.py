@@ -9,6 +9,7 @@ from ia_modules.pipeline.routing import (
     AgentConditionEvaluator,
     FunctionConditionEvaluator
 )
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestRoutingContextEdgeCases:

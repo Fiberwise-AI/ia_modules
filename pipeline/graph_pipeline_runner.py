@@ -20,7 +20,7 @@ current_dir = Path(__file__).parent
 sys.path.insert(0, str(current_dir.parent.parent))
 sys.path.insert(0, str(current_dir))
 
-from ia_modules.pipeline.core import Pipeline, Step
+from ia_modules.pipeline.core import Pipeline, Step, ExecutionContext
 from ia_modules.pipeline.runner import create_pipeline_from_json
 from ia_modules.pipeline.services import ServiceRegistry
 from ia_modules.pipeline.in_memory_tracker import InMemoryExecutionTracker
@@ -195,6 +195,7 @@ class GraphPipelineRunner:
         self,
         pipeline_config: Dict[str, Any],
         input_data: Dict[str, Any] = None,
+        execution_context: ExecutionContext = None,
         use_enhanced_features: bool = True
     ) -> Dict[str, Any]:
         """
@@ -203,6 +204,7 @@ class GraphPipelineRunner:
         Args:
             pipeline_config: Pipeline configuration as dictionary
             input_data: Initial input data for the pipeline
+            execution_context: Execution context with execution_id and metadata
             use_enhanced_features: Whether to use enhanced pipeline features
 
         Returns:
@@ -220,16 +222,36 @@ class GraphPipelineRunner:
         # Prepare input data
         input_data = input_data or {}
 
+        # Get execution_id from context, or create in-memory one for tests
+        if execution_context:
+            execution_id = execution_context.execution_id
+        else:
+            execution_id = str(uuid.uuid4())
+
         # Log execution start to central service and tracker
-        execution_id = await self._start_execution_logging(config, input_data)
+        await self._start_execution_logging(config, input_data, execution_id)
 
         # Create and run pipeline
         try:
             self.execution_stats['start_time'] = datetime.now()
 
-            result = await self._run_standard_pipeline(config, input_data)
+            result = await self._run_standard_pipeline(config, input_data, execution_id, execution_context)
 
             self.execution_stats['end_time'] = datetime.now()
+
+            # Check if pipeline is waiting for human input (HITL pause)
+            if isinstance(result, dict) and result.get('status') == 'waiting_for_human':
+                # Don't log as completed - execution is paused
+                # Write central logs to database
+                await self._write_central_logs_to_database()
+
+                self._log_to_central_service("INFO", f"Pipeline paused for human input", data={
+                    "execution_stats": self.execution_stats,
+                    "interaction_id": result.get('interaction_id'),
+                    "waiting_step": result.get('waiting_step')
+                })
+
+                return result
 
             # Log successful execution end to database
             self._log_execution_end_to_database(execution_id, success=True)
@@ -254,11 +276,8 @@ class GraphPipelineRunner:
 
             raise
 
-    async def _start_execution_logging(self, config: PipelineConfig, input_data: Dict[str, Any]) -> str:
-        """Start execution logging and return execution ID"""
-        # Generate execution ID
-        execution_id = str(uuid.uuid4())
-        
+    async def _start_execution_logging(self, config: PipelineConfig, input_data: Dict[str, Any], execution_id: str):
+        """Start execution logging with provided execution ID"""
         # Start execution in tracker
         if self.services and hasattr(self.services, 'get'):
             execution_tracker = self.services.get('execution_tracker')
@@ -272,11 +291,7 @@ class GraphPipelineRunner:
                     )
                 except Exception:
                     pass  # If tracker doesn't support it, continue
-        
-        # Store execution_id in services so Pipeline can access it
-        if self.services:
-            self.services.register('execution_id', execution_id)
-        
+
         # Set execution ID in central logger
         logger = self._get_central_logger()
         if logger and hasattr(logger, 'set_execution_id'):
@@ -288,8 +303,6 @@ class GraphPipelineRunner:
             "pipeline_version": config.version,
             "step_count": len(config.steps)
         })
-
-        return execution_id
 
     def _log_execution_end_to_database(self, execution_id: str, success: bool, error: Optional[str] = None):
         """Log pipeline execution end to execution tracker"""
@@ -314,8 +327,10 @@ class GraphPipelineRunner:
         """Validate pipeline configuration structure (already done by Pydantic)"""
         pass
 
-    async def _run_standard_pipeline(self, config: PipelineConfig, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Run pipeline"""
+    async def _run_standard_pipeline(self, config: PipelineConfig, input_data: Dict[str, Any], execution_id: str, execution_context: ExecutionContext = None) -> Dict[str, Any]:
+        """Run pipeline with execution context"""
+        from .core import ExecutionContext
+
         config_dict = config.model_dump(by_alias=True) if hasattr(config, 'model_dump') else config.dict(by_alias=True)
         pipeline = create_pipeline_from_json(config_dict, self.services)
 
@@ -328,12 +343,32 @@ class GraphPipelineRunner:
                 "config": step.config
             })
 
+        # Create execution context if not provided, otherwise use provided one
+        if not execution_context:
+            execution_context = ExecutionContext(
+                execution_id=execution_id,
+                pipeline_id=getattr(config, 'id', None),
+                metadata={"pipeline_version": config.version}
+            )
+
         start_time = datetime.now()
         try:
-            result = await pipeline.run(input_data)
+            result = await pipeline.run(input_data, execution_context)
             end_time = datetime.now()
 
             duration = (end_time - start_time).total_seconds()
+
+            # Check if pipeline is waiting for human input (HITL pause)
+            if isinstance(result, dict) and result.get('status') == 'waiting_for_human':
+                self._log_to_central_service("INFO", f"Pipeline paused for human input at step: {result.get('waiting_step')}", data={
+                    "duration_seconds": duration,
+                    "steps_executed": len(result.get('steps', [])),
+                    "interaction_id": result.get('interaction_id')
+                })
+                self.execution_stats['steps_executed'] = len(result.get('steps', []))
+                return result
+
+            # Normal completion
             self._log_to_central_service("SUCCESS", f"Pipeline completed in {duration:.2f} seconds", data={
                 "duration_seconds": duration,
                 "steps_executed": len(config.steps)
@@ -435,12 +470,26 @@ class GraphPipelineRunner:
         # Pipeline expects: (name, steps, flow, services, ...)
         # Use by_alias=True to get "from"/"to" keys instead of "from_step"/"to_step"
         pipeline_structure = config.model_dump(by_alias=True) if hasattr(config, 'model_dump') else config.dict(by_alias=True)
+        
+        # Get telemetry and checkpointer from services if available
+        telemetry = self.services.get('telemetry') if self.services else None
+        tracer = self.services.get('tracer') if self.services else None
+        checkpointer = self.services.get('checkpointer') if self.services else None
+        
         pipeline = Pipeline(
             name=config.name,
             steps=steps,
             flow=pipeline_structure.get('flow', {}),
-            services=self.services
+            services=self.services,
+            enable_telemetry=telemetry is not None,
+            checkpointer=checkpointer
         )
+        
+        # Override the pipeline's telemetry with the one from services
+        if telemetry:
+            pipeline.telemetry = telemetry
+        if tracer and hasattr(pipeline, 'tracer'):
+            pipeline.tracer = tracer
 
         # Execute pipeline
         self._log_to_central_service("INFO", f"Executing pipeline with {len(steps)} real agents")

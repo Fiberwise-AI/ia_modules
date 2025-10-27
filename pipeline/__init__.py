@@ -4,7 +4,7 @@ Pipeline Infrastructure Module
 Production-ready pipeline framework with core database integration.
 """
 
-from .core import Step, Pipeline, run_pipeline
+from .core import Step, Pipeline, run_pipeline, ExecutionContext
 from .services import ServiceRegistry
 from .runner import load_step_class, create_step_from_json, run_pipeline_from_json
 
@@ -16,6 +16,7 @@ __all__ = [
     'Step',
     'Pipeline',
     'run_pipeline',
+    'ExecutionContext',
 
     # Service system
     'ServiceRegistry',

@@ -1,0 +1,204 @@
+{
+  "input": {
+    "user_input": "What is AI?",
+    "input_guardrails_result": {
+      "action": "<RailAction object>",
+      "content": "What is AI?",
+      "results": [
+        "<RailResult object>",
+        "<RailResult object>",
+        "<RailResult object>"
+      ],
+      "triggered_count": 0
+    },
+    "input_guardrails": "[Circular Reference]",
+    "llm_response": "Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think and learn like humans. These machines can perform tasks that typically require human intelligence, such as understanding natural language, recognizing patterns, solving problems, and making decisions. AI systems can be classified into two main types:\n\n1. **Narrow AI (Weak AI):** This type of AI is designed to perform a specific task or a set of tasks. Examples include voice ass...",
+    "llm_metadata": {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "usage": {
+        "prompt_tokens": 11,
+        "completion_tokens": 247,
+        "total_tokens": 258
+      },
+      "timestamp": "2025-10-26T08:06:04.939536"
+    },
+    "llm_processing": "[Circular Reference]",
+    "output_guardrails_result": {
+      "action": "<RailAction object>",
+      "content": "Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think and learn like humans. These machines can perform tasks that typically require human intelligence, such as understanding natural language, recognizing patterns, solving problems, and making decisions. AI systems can be classified into two main types:\n\n1. **Narrow AI (Weak AI):** This type of AI is designed to perform a specific task or a set of tasks. Examples include voice ass...",
+      "results": [
+        "<RailResult object>",
+        "<RailResult object>",
+        "<RailResult object>"
+      ],
+      "triggered_count": 1
+    },
+    "output_guardrails": "[Circular Reference]"
+  },
+  "steps": [
+    {
+      "step_name": "input_guardrails",
+      "step_index": 0,
+      "result": {
+        "user_input": "What is AI?",
+        "input_guardrails_result": {
+          "action": "<RailAction object>",
+          "content": "What is AI?",
+          "results": [
+            "<RailResult object>",
+            "<RailResult object>",
+            "<RailResult object>"
+          ],
+          "triggered_count": 0
+        },
+        "input_guardrails": "[Circular Reference]",
+        "llm_response": "Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think and learn like humans. These machines can perform tasks that typically require human intelligence, such as understanding natural language, recognizing patterns, solving problems, and making decisions. AI systems can be classified into two main types:\n\n1. **Narrow AI (Weak AI):** This type of AI is designed to perform a specific task or a set of tasks. Examples include voice ass...",
+        "llm_metadata": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "usage": {
+            "prompt_tokens": 11,
+            "completion_tokens": 247,
+            "total_tokens": 258
+          },
+          "timestamp": "2025-10-26T08:06:04.939536"
+        },
+        "llm_processing": "[Circular Reference]",
+        "output_guardrails_result": {
+          "action": "<RailAction object>",
+          "content": "Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think and learn like humans. These machines can perform tasks that typically require human intelligence, such as understanding natural language, recognizing patterns, solving problems, and making decisions. AI systems can be classified into two main types:\n\n1. **Narrow AI (Weak AI):** This type of AI is designed to perform a specific task or a set of tasks. Examples include voice ass...",
+          "results": [
+            "<RailResult object>",
+            "<RailResult object>",
+            "<RailResult object>"
+          ],
+          "triggered_count": 1
+        },
+        "output_guardrails": "[Circular Reference]"
+      },
+      "status": "completed"
+    },
+    {
+      "step_name": "llm_processing",
+      "step_index": 1,
+      "result": {
+        "user_input": "What is AI?",
+        "input_guardrails_result": {
+          "action": "<RailAction object>",
+          "content": "What is AI?",
+          "results": [
+            "<RailResult object>",
+            "<RailResult object>",
+            "<RailResult object>"
+          ],
+          "triggered_count": 0
+        },
+        "input_guardrails": "[Circular Reference]",
+        "llm_response": "Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think and learn like humans. These machines can perform tasks that typically require human intelligence, such as understanding natural language, recognizing patterns, solving problems, and making decisions. AI systems can be classified into two main types:\n\n1. **Narrow AI (Weak AI):** This type of AI is designed to perform a specific task or a set of tasks. Examples include voice ass...",
+        "llm_metadata": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "usage": {
+            "prompt_tokens": 11,
+            "completion_tokens": 247,
+            "total_tokens": 258
+          },
+          "timestamp": "2025-10-26T08:06:04.939536"
+        },
+        "llm_processing": "[Circular Reference]",
+        "output_guardrails_result": {
+          "action": "<RailAction object>",
+          "content": "Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think and learn like humans. These machines can perform tasks that typically require human intelligence, such as understanding natural language, recognizing patterns, solving problems, and making decisions. AI systems can be classified into two main types:\n\n1. **Narrow AI (Weak AI):** This type of AI is designed to perform a specific task or a set of tasks. Examples include voice ass...",
+          "results": [
+            "<RailResult object>",
+            "<RailResult object>",
+            "<RailResult object>"
+          ],
+          "triggered_count": 1
+        },
+        "output_guardrails": "[Circular Reference]"
+      },
+      "status": "completed"
+    },
+    {
+      "step_name": "output_guardrails",
+      "step_index": 2,
+      "result": {
+        "user_input": "What is AI?",
+        "input_guardrails_result": {
+          "action": "<RailAction object>",
+          "content": "What is AI?",
+          "results": [
+            "<RailResult object>",
+            "<RailResult object>",
+            "<RailResult object>"
+          ],
+          "triggered_count": 0
+        },
+        "input_guardrails": "[Circular Reference]",
+        "llm_response": "Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think and learn like humans. These machines can perform tasks that typically require human intelligence, such as understanding natural language, recognizing patterns, solving problems, and making decisions. AI systems can be classified into two main types:\n\n1. **Narrow AI (Weak AI):** This type of AI is designed to perform a specific task or a set of tasks. Examples include voice ass...",
+        "llm_metadata": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "usage": {
+            "prompt_tokens": 11,
+            "completion_tokens": 247,
+            "total_tokens": 258
+          },
+          "timestamp": "2025-10-26T08:06:04.939536"
+        },
+        "llm_processing": "[Circular Reference]",
+        "output_guardrails_result": {
+          "action": "<RailAction object>",
+          "content": "Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think and learn like humans. These machines can perform tasks that typically require human intelligence, such as understanding natural language, recognizing patterns, solving problems, and making decisions. AI systems can be classified into two main types:\n\n1. **Narrow AI (Weak AI):** This type of AI is designed to perform a specific task or a set of tasks. Examples include voice ass...",
+          "results": [
+            "<RailResult object>",
+            "<RailResult object>",
+            "<RailResult object>"
+          ],
+          "triggered_count": 1
+        },
+        "output_guardrails": "[Circular Reference]"
+      },
+      "status": "completed"
+    }
+  ],
+  "output": {
+    "user_input": "What is AI?",
+    "input_guardrails_result": {
+      "action": "<RailAction object>",
+      "content": "What is AI?",
+      "results": [
+        "<RailResult object>",
+        "<RailResult object>",
+        "<RailResult object>"
+      ],
+      "triggered_count": 0
+    },
+    "input_guardrails": "[Circular Reference]",
+    "llm_response": "Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think and learn like humans. These machines can perform tasks that typically require human intelligence, such as understanding natural language, recognizing patterns, solving problems, and making decisions. AI systems can be classified into two main types:\n\n1. **Narrow AI (Weak AI):** This type of AI is designed to perform a specific task or a set of tasks. Examples include voice ass...",
+    "llm_metadata": {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "usage": {
+        "prompt_tokens": 11,
+        "completion_tokens": 247,
+        "total_tokens": 258
+      },
+      "timestamp": "2025-10-26T08:06:04.939536"
+    },
+    "llm_processing": "[Circular Reference]",
+    "output_guardrails_result": {
+      "action": "<RailAction object>",
+      "content": "Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think and learn like humans. These machines can perform tasks that typically require human intelligence, such as understanding natural language, recognizing patterns, solving problems, and making decisions. AI systems can be classified into two main types:\n\n1. **Narrow AI (Weak AI):** This type of AI is designed to perform a specific task or a set of tasks. Examples include voice ass...",
+      "results": [
+        "<RailResult object>",
+        "<RailResult object>",
+        "<RailResult object>"
+      ],
+      "triggered_count": 1
+    },
+    "output_guardrails": "[Circular Reference]"
+  }
+}

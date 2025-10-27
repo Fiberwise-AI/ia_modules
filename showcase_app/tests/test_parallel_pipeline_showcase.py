@@ -4,6 +4,7 @@ Test to verify parallel pipeline works correctly in showcase app context
 
 import asyncio
 import json
+import uuid
 from pathlib import Path
 import sys
 
@@ -15,7 +16,8 @@ sys.path.insert(0, str(ia_modules_dir))
 sys.path.insert(0, str(showcase_dir))
 
 from ia_modules.pipeline.runner import create_pipeline_from_json
-from tests.pipeline_runner import run_with_new_schema
+from ia_modules.pipeline.core import ExecutionContext
+from ia_modules.pipeline.services import ServiceRegistry
 
 
 async def test_parallel_pipeline_output():
@@ -43,18 +45,31 @@ async def test_parallel_pipeline_output():
     
     print(f"\nInput data: {len(input_data['loaded_data'])} items")
     
-    # Create and run pipeline
-    pipeline = create_pipeline_from_json(pipeline_config)
-    result = await run_with_new_schema(pipeline, pipeline_config, input_data, None)
+    # Create and run pipeline using proper ExecutionContext
+    # Create a basic ServiceRegistry for the pipeline
+    services = ServiceRegistry()
+    
+    pipeline = create_pipeline_from_json(pipeline_config, services)
+    
+    # Create execution context (proper way, not using run_with_new_schema anti-pattern)
+    execution_context = ExecutionContext(
+        execution_id=str(uuid.uuid4()),
+        pipeline_id=pipeline_config.get('name', 'parallel_pipeline_test'),
+        metadata={'source': 'test_runner', 'test_type': 'parallel_pipeline'}
+    )
+    
+    result = await pipeline.run(input_data, execution_context)
     
     print("\n" + "="*60)
     print("PIPELINE EXECUTION RESULTS")
     print("="*60)
     
     # Check step results
+    steps_dict = {step["step_name"]: step["result"] for step in result["steps"]}
+    
     for step_id in ["step1", "step2", "step3", "step4", "step5", "step6"]:
-        if step_id in result["steps"]:
-            step_result = result["steps"][step_id]
+        if step_id in steps_dict:
+            step_result = steps_dict[step_id]
             print(f"\n{step_id.upper()}:")
             
             if step_id == "step1":  # Data Splitter
@@ -86,7 +101,7 @@ async def test_parallel_pipeline_output():
                               f"{stat.get('records_processed')} records")
     
     # Verify final output is NOT empty
-    step6_result = result["steps"]["step6"]
+    step6_result = steps_dict["step6"]
     
     print("\n" + "="*60)
     print("FINAL OUTPUT VERIFICATION")

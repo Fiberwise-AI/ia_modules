@@ -14,6 +14,7 @@ from ia_modules.pipeline.routing import (
     AdvancedRouter,
     ParallelExecutor
 )
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestRoutingContext:

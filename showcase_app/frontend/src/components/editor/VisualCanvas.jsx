@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -9,11 +9,12 @@ import ReactFlow, {
   Panel
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Plus, Save, Code, Eye, Columns } from 'lucide-react';
+import { Plus, Save, Code, Eye, Columns, FileCode } from 'lucide-react';
 import StepNode from './StepNode';
 import ParallelNode from './ParallelNode';
 import DecisionNode from './DecisionNode';
 import ModulePalette from './ModulePalette';
+import StepCodeEditor from './StepCodeEditor';
 
 const nodeTypes = {
   step: StepNode,
@@ -25,13 +26,15 @@ const edgeTypes = {
   default: 'smoothstep',
 };
 
-export default function VisualCanvas({ pipelineConfig, onConfigChange }) {
+export default function VisualCanvas({ pipelineConfig, pipelineId, onConfigChange }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [showCodeEditor, setShowCodeEditor] = useState(false);
+  const [selectedStepForCode, setSelectedStepForCode] = useState(null);
 
   // Initialize from pipeline config
-  useState(() => {
+  useEffect(() => {
     if (pipelineConfig) {
       const { nodes: initialNodes, edges: initialEdges } = convertConfigToGraph(pipelineConfig);
       setNodes(initialNodes);
@@ -58,6 +61,12 @@ export default function VisualCanvas({ pipelineConfig, onConfigChange }) {
 
   const onNodeClick = useCallback((event, node) => {
     setSelectedNode(node);
+    // Don't auto-open code editor on click, only when button is pressed
+  }, []);
+
+  const handleViewCode = useCallback((node) => {
+    setSelectedStepForCode(node);
+    setShowCodeEditor(true);
   }, []);
 
   const onNodesDelete = useCallback(
@@ -186,13 +195,29 @@ export default function VisualCanvas({ pipelineConfig, onConfigChange }) {
           node={selectedNode}
           onUpdate={(data) => updateNodeData(selectedNode.id, data)}
           onClose={() => setSelectedNode(null)}
+          onViewCode={() => handleViewCode(selectedNode)}
+          pipelineId={pipelineId}
         />
+      )}
+
+      {/* Step Code Editor Sidebar */}
+      {showCodeEditor && selectedStepForCode && pipelineId && (
+        <div className="absolute top-0 right-0 w-1/2 h-full border-l bg-white shadow-2xl z-50">
+          <StepCodeEditor
+            pipelineId={pipelineId}
+            stepId={selectedStepForCode.id}
+            onClose={() => {
+              setShowCodeEditor(false);
+              setSelectedStepForCode(null);
+            }}
+          />
+        </div>
       )}
     </div>
   );
 }
 
-function PropertyPanel({ node, onUpdate, onClose }) {
+function PropertyPanel({ node, onUpdate, onClose, onViewCode, pipelineId }) {
   const [label, setLabel] = useState(node.data.label || '');
   const [config, setConfig] = useState(JSON.stringify(node.data.config || {}, null, 2));
 
@@ -245,12 +270,25 @@ function PropertyPanel({ node, onUpdate, onClose }) {
           />
         </div>
 
-        <button
-          onClick={handleSave}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          Apply Changes
-        </button>
+        <div className="space-y-2">
+          <button
+            onClick={handleSave}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Apply Changes
+          </button>
+
+          {/* View Code button - only show for step nodes and if pipeline has ID */}
+          {node.type === 'step' && pipelineId && onViewCode && (
+            <button
+              onClick={onViewCode}
+              className="w-full px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 flex items-center justify-center gap-2"
+            >
+              <FileCode className="w-4 h-4" />
+              View Step Code
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -261,35 +299,120 @@ function convertConfigToGraph(config) {
   const nodes = [];
   const edges = [];
 
-  // Convert steps to nodes
-  if (config.steps) {
-    config.steps.forEach((step, index) => {
-      nodes.push({
-        id: step.id || step.name,
-        type: 'step',
-        position: { x: 100 + index * 200, y: 100 },
-        data: {
-          label: step.name,
-          stepType: step.type || 'task',
-          config: step.config || {},
-        },
-      });
-    });
+  if (!config.steps || config.steps.length === 0) {
+    return { nodes, edges };
   }
 
-  // Convert flow paths to edges
+  // Build adjacency lists for graph traversal
+  const outgoing = {}; // from_step -> [to_steps]
+  const incoming = {}; // to_step -> [from_steps]
+
+  config.steps.forEach(step => {
+    outgoing[step.id] = [];
+    incoming[step.id] = [];
+  });
+
+  // Convert flow paths to edges and build adjacency lists
   if (config.flow?.paths) {
     config.flow.paths.forEach((path, index) => {
       edges.push({
         id: `edge-${index}`,
-        source: path.from || path.from_step,
-        target: path.to || path.to_step,
+        source: path.from,
+        target: path.to,
         type: 'smoothstep',
         animated: false,
-        label: path.condition?.description || '',
+        label: path.condition?.description || path.condition?.type,
       });
+
+      if (outgoing[path.from]) {
+        outgoing[path.from].push(path.to);
+      }
+      if (incoming[path.to]) {
+        incoming[path.to].push(path.from);
+      }
     });
   }
+
+  // Layout algorithm: hierarchical layout for DAG
+  const positions = {};
+  const levels = {}; // step_id -> level (depth from start)
+  const visited = new Set();
+
+  // Find start node
+  const startStep = config.flow?.start_at || config.steps[0].id;
+
+  // BFS to assign levels
+  const queue = [[startStep, 0]];
+  visited.add(startStep);
+  levels[startStep] = 0;
+  let maxLevel = 0;
+
+  while (queue.length > 0) {
+    const [currentId, level] = queue.shift();
+    maxLevel = Math.max(maxLevel, level);
+
+    const children = outgoing[currentId] || [];
+    children.forEach(childId => {
+      if (!visited.has(childId)) {
+        visited.add(childId);
+        levels[childId] = level + 1;
+        queue.push([childId, level + 1]);
+      }
+    });
+  }
+
+  // Steps without level (disconnected) get placed at the end
+  config.steps.forEach(step => {
+    if (levels[step.id] === undefined) {
+      levels[step.id] = maxLevel + 1;
+    }
+  });
+
+  // Group nodes by level
+  const nodesByLevel = {};
+  config.steps.forEach(step => {
+    const level = levels[step.id];
+    if (!nodesByLevel[level]) {
+      nodesByLevel[level] = [];
+    }
+    nodesByLevel[level].push(step);
+  });
+
+  // Assign positions: spread out nodes at same level vertically
+  const horizontalSpacing = 300;
+  const verticalSpacing = 150;
+  const startX = 100;
+  const startY = 100;
+
+  Object.keys(nodesByLevel).forEach(level => {
+    const levelNodes = nodesByLevel[level];
+    const levelInt = parseInt(level);
+
+    // Calculate total height for this level
+    const totalHeight = (levelNodes.length - 1) * verticalSpacing;
+    const startYForLevel = startY - totalHeight / 2;
+
+    levelNodes.forEach((step, index) => {
+      positions[step.id] = {
+        x: startX + levelInt * horizontalSpacing,
+        y: startYForLevel + index * verticalSpacing
+      };
+    });
+  });
+
+  // Convert steps to nodes with calculated positions
+  config.steps.forEach(step => {
+    nodes.push({
+      id: step.id,
+      type: 'step',
+      position: positions[step.id] || { x: 100, y: 100 },
+      data: {
+        label: step.name,
+        stepType: step.type,
+        config: step.config,
+      },
+    });
+  });
 
   return { nodes, edges };
 }

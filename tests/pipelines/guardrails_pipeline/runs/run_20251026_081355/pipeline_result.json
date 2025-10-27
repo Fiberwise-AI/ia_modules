@@ -1,0 +1,204 @@
+{
+  "input": {
+    "user_input": "Explain quantum computing in simple terms",
+    "input_guardrails_result": {
+      "action": "<RailAction object>",
+      "content": "Explain quantum computing in simple terms",
+      "results": [
+        "<RailResult object>",
+        "<RailResult object>",
+        "<RailResult object>"
+      ],
+      "triggered_count": 0
+    },
+    "input_guardrails": "[Circular Reference]",
+    "llm_response": "Quantum computing is a new type of computing that uses the principles of quantum mechanics, which is the science that explains how the smallest particles in the universe behave. Here's a simple breakdown:\n\n1. **Classical Bits vs. Quantum Bits (Qubits):** Traditional computers use bits as the smallest unit of data, which can be either a 0 or a 1. Quantum computers use qubits, which can be both 0 and 1 at the same time, thanks to a property called superposition. This allows quantum computers to...",
+    "llm_metadata": {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "usage": {
+        "prompt_tokens": 13,
+        "completion_tokens": 296,
+        "total_tokens": 309
+      },
+      "timestamp": "2025-10-26T08:14:02.097737"
+    },
+    "llm_processing": "[Circular Reference]",
+    "output_guardrails_result": {
+      "action": "<RailAction object>",
+      "content": "Quantum computing is a new type of computing that uses the principles of quantum mechanics, which is the science that explains how the smallest particles in the universe behave. Here's a simple breakdown:\n\n1. **Classical Bits vs. Quantum Bits (Qubits):** Traditional computers use bits as the smallest unit of data, which can be either a 0 or a 1. Quantum computers use qubits, which can be both 0 and 1 at the same time, thanks to a property called superposition. This allows quantum computers to...",
+      "results": [
+        "<RailResult object>",
+        "<RailResult object>",
+        "<RailResult object>"
+      ],
+      "triggered_count": 1
+    },
+    "output_guardrails": "[Circular Reference]"
+  },
+  "steps": [
+    {
+      "step_name": "input_guardrails",
+      "step_index": 0,
+      "result": {
+        "user_input": "Explain quantum computing in simple terms",
+        "input_guardrails_result": {
+          "action": "<RailAction object>",
+          "content": "Explain quantum computing in simple terms",
+          "results": [
+            "<RailResult object>",
+            "<RailResult object>",
+            "<RailResult object>"
+          ],
+          "triggered_count": 0
+        },
+        "input_guardrails": "[Circular Reference]",
+        "llm_response": "Quantum computing is a new type of computing that uses the principles of quantum mechanics, which is the science that explains how the smallest particles in the universe behave. Here's a simple breakdown:\n\n1. **Classical Bits vs. Quantum Bits (Qubits):** Traditional computers use bits as the smallest unit of data, which can be either a 0 or a 1. Quantum computers use qubits, which can be both 0 and 1 at the same time, thanks to a property called superposition. This allows quantum computers to...",
+        "llm_metadata": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "usage": {
+            "prompt_tokens": 13,
+            "completion_tokens": 296,
+            "total_tokens": 309
+          },
+          "timestamp": "2025-10-26T08:14:02.097737"
+        },
+        "llm_processing": "[Circular Reference]",
+        "output_guardrails_result": {
+          "action": "<RailAction object>",
+          "content": "Quantum computing is a new type of computing that uses the principles of quantum mechanics, which is the science that explains how the smallest particles in the universe behave. Here's a simple breakdown:\n\n1. **Classical Bits vs. Quantum Bits (Qubits):** Traditional computers use bits as the smallest unit of data, which can be either a 0 or a 1. Quantum computers use qubits, which can be both 0 and 1 at the same time, thanks to a property called superposition. This allows quantum computers to...",
+          "results": [
+            "<RailResult object>",
+            "<RailResult object>",
+            "<RailResult object>"
+          ],
+          "triggered_count": 1
+        },
+        "output_guardrails": "[Circular Reference]"
+      },
+      "status": "completed"
+    },
+    {
+      "step_name": "llm_processing",
+      "step_index": 1,
+      "result": {
+        "user_input": "Explain quantum computing in simple terms",
+        "input_guardrails_result": {
+          "action": "<RailAction object>",
+          "content": "Explain quantum computing in simple terms",
+          "results": [
+            "<RailResult object>",
+            "<RailResult object>",
+            "<RailResult object>"
+          ],
+          "triggered_count": 0
+        },
+        "input_guardrails": "[Circular Reference]",
+        "llm_response": "Quantum computing is a new type of computing that uses the principles of quantum mechanics, which is the science that explains how the smallest particles in the universe behave. Here's a simple breakdown:\n\n1. **Classical Bits vs. Quantum Bits (Qubits):** Traditional computers use bits as the smallest unit of data, which can be either a 0 or a 1. Quantum computers use qubits, which can be both 0 and 1 at the same time, thanks to a property called superposition. This allows quantum computers to...",
+        "llm_metadata": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "usage": {
+            "prompt_tokens": 13,
+            "completion_tokens": 296,
+            "total_tokens": 309
+          },
+          "timestamp": "2025-10-26T08:14:02.097737"
+        },
+        "llm_processing": "[Circular Reference]",
+        "output_guardrails_result": {
+          "action": "<RailAction object>",
+          "content": "Quantum computing is a new type of computing that uses the principles of quantum mechanics, which is the science that explains how the smallest particles in the universe behave. Here's a simple breakdown:\n\n1. **Classical Bits vs. Quantum Bits (Qubits):** Traditional computers use bits as the smallest unit of data, which can be either a 0 or a 1. Quantum computers use qubits, which can be both 0 and 1 at the same time, thanks to a property called superposition. This allows quantum computers to...",
+          "results": [
+            "<RailResult object>",
+            "<RailResult object>",
+            "<RailResult object>"
+          ],
+          "triggered_count": 1
+        },
+        "output_guardrails": "[Circular Reference]"
+      },
+      "status": "completed"
+    },
+    {
+      "step_name": "output_guardrails",
+      "step_index": 2,
+      "result": {
+        "user_input": "Explain quantum computing in simple terms",
+        "input_guardrails_result": {
+          "action": "<RailAction object>",
+          "content": "Explain quantum computing in simple terms",
+          "results": [
+            "<RailResult object>",
+            "<RailResult object>",
+            "<RailResult object>"
+          ],
+          "triggered_count": 0
+        },
+        "input_guardrails": "[Circular Reference]",
+        "llm_response": "Quantum computing is a new type of computing that uses the principles of quantum mechanics, which is the science that explains how the smallest particles in the universe behave. Here's a simple breakdown:\n\n1. **Classical Bits vs. Quantum Bits (Qubits):** Traditional computers use bits as the smallest unit of data, which can be either a 0 or a 1. Quantum computers use qubits, which can be both 0 and 1 at the same time, thanks to a property called superposition. This allows quantum computers to...",
+        "llm_metadata": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "usage": {
+            "prompt_tokens": 13,
+            "completion_tokens": 296,
+            "total_tokens": 309
+          },
+          "timestamp": "2025-10-26T08:14:02.097737"
+        },
+        "llm_processing": "[Circular Reference]",
+        "output_guardrails_result": {
+          "action": "<RailAction object>",
+          "content": "Quantum computing is a new type of computing that uses the principles of quantum mechanics, which is the science that explains how the smallest particles in the universe behave. Here's a simple breakdown:\n\n1. **Classical Bits vs. Quantum Bits (Qubits):** Traditional computers use bits as the smallest unit of data, which can be either a 0 or a 1. Quantum computers use qubits, which can be both 0 and 1 at the same time, thanks to a property called superposition. This allows quantum computers to...",
+          "results": [
+            "<RailResult object>",
+            "<RailResult object>",
+            "<RailResult object>"
+          ],
+          "triggered_count": 1
+        },
+        "output_guardrails": "[Circular Reference]"
+      },
+      "status": "completed"
+    }
+  ],
+  "output": {
+    "user_input": "Explain quantum computing in simple terms",
+    "input_guardrails_result": {
+      "action": "<RailAction object>",
+      "content": "Explain quantum computing in simple terms",
+      "results": [
+        "<RailResult object>",
+        "<RailResult object>",
+        "<RailResult object>"
+      ],
+      "triggered_count": 0
+    },
+    "input_guardrails": "[Circular Reference]",
+    "llm_response": "Quantum computing is a new type of computing that uses the principles of quantum mechanics, which is the science that explains how the smallest particles in the universe behave. Here's a simple breakdown:\n\n1. **Classical Bits vs. Quantum Bits (Qubits):** Traditional computers use bits as the smallest unit of data, which can be either a 0 or a 1. Quantum computers use qubits, which can be both 0 and 1 at the same time, thanks to a property called superposition. This allows quantum computers to...",
+    "llm_metadata": {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "usage": {
+        "prompt_tokens": 13,
+        "completion_tokens": 296,
+        "total_tokens": 309
+      },
+      "timestamp": "2025-10-26T08:14:02.097737"
+    },
+    "llm_processing": "[Circular Reference]",
+    "output_guardrails_result": {
+      "action": "<RailAction object>",
+      "content": "Quantum computing is a new type of computing that uses the principles of quantum mechanics, which is the science that explains how the smallest particles in the universe behave. Here's a simple breakdown:\n\n1. **Classical Bits vs. Quantum Bits (Qubits):** Traditional computers use bits as the smallest unit of data, which can be either a 0 or a 1. Quantum computers use qubits, which can be both 0 and 1 at the same time, thanks to a property called superposition. This allows quantum computers to...",
+      "results": [
+        "<RailResult object>",
+        "<RailResult object>",
+        "<RailResult object>"
+      ],
+      "triggered_count": 1
+    },
+    "output_guardrails": "[Circular Reference]"
+  }
+}

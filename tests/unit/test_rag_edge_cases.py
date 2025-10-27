@@ -3,6 +3,7 @@ Edge case tests for rag/core.py to improve coverage
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.rag.core import Document, MemoryVectorStore
 
 

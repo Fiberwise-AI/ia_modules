@@ -237,3 +237,82 @@ CREATE INDEX IF NOT EXISTS idx_reliability_workflows_timestamp ON reliability_wo
 CREATE INDEX IF NOT EXISTS idx_slo_measurements_type ON reliability_slo_measurements(measurement_type);
 CREATE INDEX IF NOT EXISTS idx_anomalies_timestamp ON reliability_anomalies(timestamp);
 CREATE INDEX IF NOT EXISTS idx_costs_entity ON reliability_costs(entity_type, entity_id);
+
+-- ===========================
+-- PIPELINE STEP MODULES
+-- ===========================
+
+CREATE TABLE IF NOT EXISTS pipeline_step_modules (
+    id VARCHAR(255) PRIMARY KEY,
+    pipeline_id VARCHAR(255) NOT NULL,
+    step_id VARCHAR(255) NOT NULL,
+    module_path VARCHAR(500) NOT NULL,
+    class_name VARCHAR(255) NOT NULL,
+    source_code TEXT NOT NULL,
+    file_path VARCHAR(1000),
+    content_hash VARCHAR(64),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    FOREIGN KEY (pipeline_id) REFERENCES pipelines (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_step_modules_pipeline ON pipeline_step_modules(pipeline_id);
+CREATE INDEX IF NOT EXISTS idx_step_modules_step_id ON pipeline_step_modules(step_id);
+CREATE INDEX IF NOT EXISTS idx_step_modules_module_path ON pipeline_step_modules(module_path, class_name);
+CREATE INDEX IF NOT EXISTS idx_step_modules_active ON pipeline_step_modules(is_active);
+CREATE INDEX IF NOT EXISTS idx_step_modules_lookup ON pipeline_step_modules(pipeline_id, step_id, is_active);
+
+-- ===========================
+-- HUMAN-IN-THE-LOOP (HITL)
+-- ===========================
+
+-- Pipeline states for paused executions waiting for human input
+CREATE TABLE IF NOT EXISTS hitl_interactions (
+    interaction_id VARCHAR(255) PRIMARY KEY,
+    execution_id VARCHAR(255) NOT NULL,
+    pipeline_id VARCHAR(255) NOT NULL,
+    step_id VARCHAR(255) NOT NULL,
+    step_name VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'expired', 'cancelled')),
+
+    -- UI Schema for rendering interaction form
+    ui_schema TEXT,  -- JSON
+
+    -- Context data for the interaction
+    prompt TEXT,
+    context_data TEXT,  -- JSON - data available to the step
+
+    -- Response data
+    human_input TEXT,  -- JSON - user's response
+    responded_by VARCHAR(255),  -- user ID who responded
+
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    expires_at TIMESTAMP,
+    completed_at TIMESTAMP,
+
+    -- Foreign keys
+    FOREIGN KEY (execution_id) REFERENCES pipeline_executions(execution_id) ON DELETE CASCADE
+);
+
+-- User assignments for interactions (optional - for role-based assignment)
+CREATE TABLE IF NOT EXISTS hitl_assignments (
+    id SERIAL PRIMARY KEY,
+    interaction_id VARCHAR(255) NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
+    role VARCHAR(100) DEFAULT 'reviewer',
+    assigned_at TIMESTAMP DEFAULT NOW(),
+    notified BOOLEAN DEFAULT FALSE,
+
+    FOREIGN KEY (interaction_id) REFERENCES hitl_interactions(interaction_id) ON DELETE CASCADE
+);
+
+-- HITL Indexes
+CREATE INDEX IF NOT EXISTS idx_hitl_execution ON hitl_interactions(execution_id);
+CREATE INDEX IF NOT EXISTS idx_hitl_pipeline ON hitl_interactions(pipeline_id);
+CREATE INDEX IF NOT EXISTS idx_hitl_status ON hitl_interactions(status);
+CREATE INDEX IF NOT EXISTS idx_hitl_expires ON hitl_interactions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_hitl_created ON hitl_interactions(created_at);
+CREATE INDEX IF NOT EXISTS idx_hitl_assignments_user ON hitl_assignments(user_id);
+CREATE INDEX IF NOT EXISTS idx_hitl_assignments_interaction ON hitl_assignments(interaction_id);

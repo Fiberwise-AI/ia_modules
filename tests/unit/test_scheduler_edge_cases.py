@@ -2,6 +2,7 @@
 Edge case tests for scheduler/core.py to improve coverage
 """
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
 from datetime import datetime, timedelta
 from ia_modules.scheduler.core import (

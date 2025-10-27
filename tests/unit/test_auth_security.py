@@ -3,6 +3,7 @@ Tests for auth.security module
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.auth.security import (
     hash_password,
     verify_password,

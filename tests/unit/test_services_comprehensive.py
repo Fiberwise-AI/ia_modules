@@ -10,6 +10,7 @@ from datetime import datetime
 import json
 
 from ia_modules.pipeline.services import ServiceRegistry, CentralLoggingService, LogEntry
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestLogEntry:

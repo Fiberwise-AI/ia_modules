@@ -15,6 +15,7 @@ from ia_modules.pipeline.graph_pipeline_runner import (
 from ia_modules.pipeline.services import ServiceRegistry
 from ia_modules.pipeline.core import Step
 from typing import Dict, Any
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class ConditionalStep(Step):

@@ -411,6 +411,11 @@ class MultiStakeholderStep(HumanInputStep):
 class TimeBasedDecisionStep(HumanInputStep):
     """Step with time-sensitive decision making"""
 
+    def __init__(self, name: str, config: Optional[Dict[str, Any]] = None):
+        """Initialize with task tracking"""
+        super().__init__(name, config)
+        self._timeout_tasks = []
+
     async def run(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute time-based decision step"""
         decision_timeout = self.config.get("decision_timeout", 300)  # 5 minutes
@@ -418,10 +423,11 @@ class TimeBasedDecisionStep(HumanInputStep):
 
         interaction_id = str(uuid.uuid4())
 
-        # Start timeout handler
-        asyncio.create_task(
+        # Start timeout handler and keep reference
+        task = asyncio.create_task(
             self._handle_timeout(interaction_id, default_action, decision_timeout)
         )
+        self._timeout_tasks.append(task)
 
         # Save state with shorter timeout
         state_manager = get_state_manager()
@@ -467,22 +473,36 @@ class TimeBasedDecisionStep(HumanInputStep):
 
     async def _handle_timeout(self, interaction_id: str, default_action: str, timeout: int):
         """Handle decision timeout"""
-        await asyncio.sleep(timeout)
+        try:
+            await asyncio.sleep(timeout)
 
-        # Check if decision was made
-        state_manager = get_state_manager()
-        state = await state_manager.get_state(interaction_id)
+            # Check if decision was made
+            state_manager = get_state_manager()
+            state = await state_manager.get_state(interaction_id)
 
-        if state and state["status"] == "pending":
-            # Apply default action
-            await state_manager.complete_state(
-                interaction_id,
-                {
-                    "decision": default_action,
-                    "timeout_applied": True,
-                    "timeout_at": datetime.now().isoformat()
-                }
-            )
+            if state and state["status"] == "pending":
+                # Apply default action
+                await state_manager.complete_state(
+                    interaction_id,
+                    {
+                        "decision": default_action,
+                        "timeout_applied": True,
+                        "timeout_at": datetime.now().isoformat()
+                    }
+                )
+        except asyncio.CancelledError:
+            # Task was cancelled, clean exit
+            pass
+
+    async def cleanup(self):
+        """Cancel any pending timeout tasks"""
+        for task in self._timeout_tasks:
+            if not task.done():
+                task.cancel()
+        # Wait for all tasks to complete cancellation
+        if self._timeout_tasks:
+            await asyncio.gather(*self._timeout_tasks, return_exceptions=True)
+        self._timeout_tasks.clear()
 
 
 class HITLResumeManager:

@@ -18,6 +18,7 @@ from ia_modules.patterns import (
     PruningStrategy,
 )
 from ia_modules.pipeline.llm_provider_service import (
+from ia_modules.pipeline.test_utils import create_test_execution_context
     LLMProviderService,
     LLMProvider,
 )

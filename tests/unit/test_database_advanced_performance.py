@@ -13,6 +13,7 @@ Additional performance tests covering:
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 import time
 import gc
 import sys

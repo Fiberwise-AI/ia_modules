@@ -2,6 +2,7 @@
 Edge case tests for benchmarking/profilers.py to reach 100% coverage
 """
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
 from unittest.mock import MagicMock, patch, PropertyMock
 

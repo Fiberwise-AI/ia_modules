@@ -8,6 +8,7 @@ and parallel execution capabilities for agentic workflows.
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 from ia_modules.pipeline.graph_pipeline_runner import (
+from ia_modules.pipeline.test_utils import create_test_execution_context
     GraphPipelineRunner,
     AgentStepWrapper,
     PipelineConfig

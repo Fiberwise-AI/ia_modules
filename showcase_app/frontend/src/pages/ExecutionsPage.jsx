@@ -1,12 +1,14 @@
 import React, { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { executionAPI } from '../services/api'
-import { CheckCircle, XCircle, Clock, Play, Pause, ChevronDown, ChevronRight, AlertCircle, ExternalLink } from 'lucide-react'
+import { executionAPI, hitlAPI } from '../services/api'
+import { CheckCircle, XCircle, Clock, Play, Pause, ChevronDown, ChevronRight, AlertCircle, ExternalLink, Bell } from 'lucide-react'
 import { useMetricsWebSocket } from '../hooks/useWebSocket'
+import HITLInteractionModal from '../components/hitl/HITLInteractionModal'
 
 export default function ExecutionsPage() {
   const queryClient = useQueryClient()
+  const [selectedHITLInteraction, setSelectedHITLInteraction] = useState(null)
 
   const { data: executions, isLoading } = useQuery({
     queryKey: ['executions'],
@@ -17,13 +19,40 @@ export default function ExecutionsPage() {
     refetchInterval: false, // Disabled - using WebSocket instead
   })
 
+  // Fetch all pending HITL interactions
+  const { data: hitlInteractions = [] } = useQuery({
+    queryKey: ['hitl-interactions'],
+    queryFn: async () => {
+      const response = await hitlAPI.getPending()
+      return response.data
+    },
+    refetchInterval: 5000, // Poll every 5 seconds
+  })
+
   // Use WebSocket for real-time updates
   const handleWebSocketUpdate = useCallback((data) => {
     // Invalidate executions list when updates come in
     queryClient.invalidateQueries(['executions'])
+    queryClient.invalidateQueries(['hitl-interactions'])
   }, [queryClient])
 
   const { isConnected } = useMetricsWebSocket(handleWebSocketUpdate)
+
+  // Map execution IDs to their pending interactions
+  const executionHITLMap = hitlInteractions.reduce((acc, interaction) => {
+    if (!acc[interaction.execution_id]) {
+      acc[interaction.execution_id] = []
+    }
+    acc[interaction.execution_id].push(interaction)
+    return acc
+  }, {})
+
+  const handleHITLResponse = async () => {
+    // Refetch after HITL response
+    await queryClient.invalidateQueries(['hitl-interactions'])
+    await queryClient.invalidateQueries(['executions'])
+    setSelectedHITLInteraction(null)
+  }
 
   if (isLoading) {
     return (
@@ -69,7 +98,12 @@ export default function ExecutionsPage() {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {executions?.map((execution) => (
-              <ExecutionRow key={execution.job_id} execution={execution} />
+              <ExecutionRow
+                key={execution.job_id}
+                execution={execution}
+                hitlInteractions={executionHITLMap[execution.job_id] || []}
+                onHITLClick={setSelectedHITLInteraction}
+              />
             ))}
           </tbody>
         </table>
@@ -80,13 +114,23 @@ export default function ExecutionsPage() {
           </div>
         )}
       </div>
+
+      {/* HITL Interaction Modal */}
+      {selectedHITLInteraction && (
+        <HITLInteractionModal
+          interaction={selectedHITLInteraction}
+          onClose={() => setSelectedHITLInteraction(null)}
+          onSubmit={handleHITLResponse}
+        />
+      )}
     </div>
   )
 }
 
-function ExecutionRow({ execution }) {
+function ExecutionRow({ execution, hitlInteractions, onHITLClick }) {
   const navigate = useNavigate()
   const [expanded, setExpanded] = useState(false)
+  const hasPendingApproval = hitlInteractions.length > 0
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -97,6 +141,7 @@ function ExecutionRow({ execution }) {
       case 'running':
         return <Play className="text-blue-500" size={20} />
       case 'paused':
+      case 'waiting_for_human':
         return <Pause className="text-yellow-500" size={20} />
       default:
         return <Clock className="text-gray-500" size={20} />
@@ -104,19 +149,33 @@ function ExecutionRow({ execution }) {
   }
 
   const getStatusBadge = (status) => {
+    // If waiting for human and has pending approval, show special badge
+    if ((status === 'waiting_for_human' || status === 'paused') && hasPendingApproval) {
+      return (
+        <button
+          onClick={() => onHITLClick(hitlInteractions[0])}
+          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors cursor-pointer"
+        >
+          <Bell className="text-yellow-600 mr-1" size={16} />
+          <span className="ml-1">Pending Approval</span>
+        </button>
+      )
+    }
+
     const colors = {
       completed: 'bg-green-100 text-green-800',
       failed: 'bg-red-100 text-red-800',
       running: 'bg-blue-100 text-blue-800',
       paused: 'bg-yellow-100 text-yellow-800',
+      waiting_for_human: 'bg-yellow-100 text-yellow-800',
       pending: 'bg-gray-100 text-gray-800',
       cancelled: 'bg-gray-100 text-gray-800',
     }
 
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[status]}`}>
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[status] || 'bg-gray-100 text-gray-800'}`}>
         {getStatusIcon(status)}
-        <span className="ml-1">{status}</span>
+        <span className="ml-1">{status.replace('_', ' ')}</span>
       </span>
     )
   }
@@ -134,7 +193,7 @@ function ExecutionRow({ execution }) {
 
   return (
     <>
-      <tr className="hover:bg-gray-50">
+      <tr className={`hover:bg-gray-50 ${hasPendingApproval ? 'bg-yellow-50' : ''}`}>
         <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => setExpanded(!expanded)}>
           {expanded ? (
             <ChevronDown className="text-gray-400" size={16} />
@@ -179,7 +238,7 @@ function ExecutionRow({ execution }) {
       {expanded && (
         <tr>
           <td colSpan="7" className="px-6 py-4 bg-gray-50">
-            <ExecutionDetails execution={execution} />
+            <ExecutionDetails execution={execution} hitlInteractions={hitlInteractions} onHITLClick={onHITLClick} />
           </td>
         </tr>
       )}
@@ -187,9 +246,38 @@ function ExecutionRow({ execution }) {
   )
 }
 
-function ExecutionDetails({ execution }) {
+function ExecutionDetails({ execution, hitlInteractions, onHITLClick }) {
   return (
     <div className="space-y-4">
+      {/* Pending Approval Notice */}
+      {hitlInteractions.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-3">
+              <Bell className="text-yellow-600 mt-0.5" size={20} />
+              <div>
+                <h4 className="font-semibold text-yellow-900">Awaiting Human Input</h4>
+                <p className="text-sm text-yellow-700 mt-1">
+                  This pipeline is paused waiting for {hitlInteractions.length} human review{hitlInteractions.length > 1 ? 's' : ''}
+                </p>
+                <div className="mt-2 text-sm text-yellow-800">
+                  <strong>Step:</strong> {hitlInteractions[0].step_name}
+                </div>
+                <div className="text-sm text-yellow-800">
+                  <strong>Prompt:</strong> {hitlInteractions[0].prompt}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => onHITLClick(hitlInteractions[0])}
+              className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 font-semibold text-sm"
+            >
+              Review Now
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Full IDs */}
       <div className="grid grid-cols-2 gap-4">
         <div>

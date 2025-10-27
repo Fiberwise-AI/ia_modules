@@ -33,7 +33,7 @@ class CheckpointService:
             List of checkpoint dictionaries
         """
         if not self.checkpointer:
-            logger.warning("No checkpointer available")
+            logger.warning("No checkpointer available for checkpoint operations")
             return []
 
         try:
@@ -43,20 +43,24 @@ class CheckpointService:
             # Format for API response
             formatted = []
             for cp in checkpoints:
-                formatted.append({
-                    "id": cp.get("checkpoint_id") or cp.get("id"),
-                    "job_id": job_id,
-                    "step_name": cp.get("step_name"),
-                    "created_at": cp.get("created_at") or cp.get("timestamp"),
-                    "state_size": len(str(cp.get("state", {}))) if cp.get("state") else 0,
-                    "metadata": cp.get("metadata", {})
-                })
+                try:
+                    formatted.append({
+                        "id": cp.get("checkpoint_id") or cp.get("id"),
+                        "job_id": job_id,
+                        "step_name": cp.get("step_name"),
+                        "created_at": cp.get("created_at") or cp.get("timestamp"),
+                        "state_size": len(str(cp.get("state", {}))) if cp.get("state") else 0,
+                        "metadata": cp.get("metadata", {})
+                    })
+                except Exception as e:
+                    logger.warning(f"Error formatting checkpoint: {e}")
+                    continue
             
             logger.info(f"Retrieved {len(formatted)} checkpoints for job {job_id}")
             return formatted
 
         except Exception as e:
-            logger.error(f"Error listing checkpoints: {e}", exc_info=True)
+            logger.error(f"Error listing checkpoints for job {job_id}: {e}", exc_info=True)
             return []
 
     async def get_checkpoint(self, checkpoint_id: str) -> Optional[Dict[str, Any]]:

@@ -1,0 +1,549 @@
+{
+  "input": {
+    "user_input": "Tell me about neural networks",
+    "input_guardrails_result": {
+      "action": "allow",
+      "content": "Tell me about neural networks",
+      "results": [
+        {
+          "rail_id": "ea01f4ac-3c31-4deb-9897-b64cf4116c0b",
+          "rail_type": "input",
+          "action": "allow",
+          "original_content": "Tell me about neural networks",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 08:31:43.839547"
+        },
+        {
+          "rail_id": "5639256e-0a3d-4474-850c-36a200b53ca3",
+          "rail_type": "input",
+          "action": "allow",
+          "original_content": "Tell me about neural networks",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 08:31:43.839577"
+        },
+        {
+          "rail_id": "e021a2fe-0aed-487a-92e5-e33074783df7",
+          "rail_type": "input",
+          "action": "allow",
+          "original_content": "Tell me about neural networks",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 08:31:43.840104"
+        }
+      ],
+      "triggered_count": 0
+    },
+    "input_guardrails": "[Circular Reference]",
+    "llm_response": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+    "llm_metadata": {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 500,
+        "total_tokens": 512
+      },
+      "timestamp": "2025-10-26T08:31:55.110892"
+    },
+    "llm_processing": "[Circular Reference]",
+    "output_guardrails_result": {
+      "action": "modify",
+      "content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+      "results": [
+        {
+          "rail_id": "631ce616-94d1-4b45-a0f3-070560fd27b3",
+          "rail_type": "output",
+          "action": "allow",
+          "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 08:31:55.111465"
+        },
+        {
+          "rail_id": "afbf65ea-bc28-4d22-8324-e547b513aa37",
+          "rail_type": "output",
+          "action": "allow",
+          "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 08:31:55.111497"
+        },
+        {
+          "rail_id": "328c88c6-491c-431b-91f2-c549c7afd903",
+          "rail_type": "output",
+          "action": "modify",
+          "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+          "modified_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+          "triggered": true,
+          "reason": "Output exceeded 500 characters",
+          "confidence": 1.0,
+          "metadata": {
+            "original_length": 2444,
+            "truncated_length": 500
+          },
+          "timestamp": "2025-10-26 08:31:55.111512"
+        }
+      ],
+      "triggered_count": 1
+    },
+    "output_guardrails": "[Circular Reference]"
+  },
+  "steps": [
+    {
+      "step_name": "input_guardrails",
+      "step_index": 0,
+      "result": {
+        "user_input": "Tell me about neural networks",
+        "input_guardrails_result": {
+          "action": "allow",
+          "content": "Tell me about neural networks",
+          "results": [
+            {
+              "rail_id": "ea01f4ac-3c31-4deb-9897-b64cf4116c0b",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Tell me about neural networks",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:43.839547"
+            },
+            {
+              "rail_id": "5639256e-0a3d-4474-850c-36a200b53ca3",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Tell me about neural networks",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:43.839577"
+            },
+            {
+              "rail_id": "e021a2fe-0aed-487a-92e5-e33074783df7",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Tell me about neural networks",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:43.840104"
+            }
+          ],
+          "triggered_count": 0
+        },
+        "input_guardrails": "[Circular Reference]",
+        "llm_response": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+        "llm_metadata": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "usage": {
+            "prompt_tokens": 12,
+            "completion_tokens": 500,
+            "total_tokens": 512
+          },
+          "timestamp": "2025-10-26T08:31:55.110892"
+        },
+        "llm_processing": "[Circular Reference]",
+        "output_guardrails_result": {
+          "action": "modify",
+          "content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+          "results": [
+            {
+              "rail_id": "631ce616-94d1-4b45-a0f3-070560fd27b3",
+              "rail_type": "output",
+              "action": "allow",
+              "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:55.111465"
+            },
+            {
+              "rail_id": "afbf65ea-bc28-4d22-8324-e547b513aa37",
+              "rail_type": "output",
+              "action": "allow",
+              "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:55.111497"
+            },
+            {
+              "rail_id": "328c88c6-491c-431b-91f2-c549c7afd903",
+              "rail_type": "output",
+              "action": "modify",
+              "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+              "modified_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+              "triggered": true,
+              "reason": "Output exceeded 500 characters",
+              "confidence": 1.0,
+              "metadata": {
+                "original_length": 2444,
+                "truncated_length": 500
+              },
+              "timestamp": "2025-10-26 08:31:55.111512"
+            }
+          ],
+          "triggered_count": 1
+        },
+        "output_guardrails": "[Circular Reference]"
+      },
+      "status": "completed"
+    },
+    {
+      "step_name": "llm_processing",
+      "step_index": 1,
+      "result": {
+        "user_input": "Tell me about neural networks",
+        "input_guardrails_result": {
+          "action": "allow",
+          "content": "Tell me about neural networks",
+          "results": [
+            {
+              "rail_id": "ea01f4ac-3c31-4deb-9897-b64cf4116c0b",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Tell me about neural networks",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:43.839547"
+            },
+            {
+              "rail_id": "5639256e-0a3d-4474-850c-36a200b53ca3",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Tell me about neural networks",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:43.839577"
+            },
+            {
+              "rail_id": "e021a2fe-0aed-487a-92e5-e33074783df7",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Tell me about neural networks",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:43.840104"
+            }
+          ],
+          "triggered_count": 0
+        },
+        "input_guardrails": "[Circular Reference]",
+        "llm_response": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+        "llm_metadata": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "usage": {
+            "prompt_tokens": 12,
+            "completion_tokens": 500,
+            "total_tokens": 512
+          },
+          "timestamp": "2025-10-26T08:31:55.110892"
+        },
+        "llm_processing": "[Circular Reference]",
+        "output_guardrails_result": {
+          "action": "modify",
+          "content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+          "results": [
+            {
+              "rail_id": "631ce616-94d1-4b45-a0f3-070560fd27b3",
+              "rail_type": "output",
+              "action": "allow",
+              "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:55.111465"
+            },
+            {
+              "rail_id": "afbf65ea-bc28-4d22-8324-e547b513aa37",
+              "rail_type": "output",
+              "action": "allow",
+              "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:55.111497"
+            },
+            {
+              "rail_id": "328c88c6-491c-431b-91f2-c549c7afd903",
+              "rail_type": "output",
+              "action": "modify",
+              "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+              "modified_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+              "triggered": true,
+              "reason": "Output exceeded 500 characters",
+              "confidence": 1.0,
+              "metadata": {
+                "original_length": 2444,
+                "truncated_length": 500
+              },
+              "timestamp": "2025-10-26 08:31:55.111512"
+            }
+          ],
+          "triggered_count": 1
+        },
+        "output_guardrails": "[Circular Reference]"
+      },
+      "status": "completed"
+    },
+    {
+      "step_name": "output_guardrails",
+      "step_index": 2,
+      "result": {
+        "user_input": "Tell me about neural networks",
+        "input_guardrails_result": {
+          "action": "allow",
+          "content": "Tell me about neural networks",
+          "results": [
+            {
+              "rail_id": "ea01f4ac-3c31-4deb-9897-b64cf4116c0b",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Tell me about neural networks",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:43.839547"
+            },
+            {
+              "rail_id": "5639256e-0a3d-4474-850c-36a200b53ca3",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Tell me about neural networks",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:43.839577"
+            },
+            {
+              "rail_id": "e021a2fe-0aed-487a-92e5-e33074783df7",
+              "rail_type": "input",
+              "action": "allow",
+              "original_content": "Tell me about neural networks",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:43.840104"
+            }
+          ],
+          "triggered_count": 0
+        },
+        "input_guardrails": "[Circular Reference]",
+        "llm_response": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+        "llm_metadata": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "usage": {
+            "prompt_tokens": 12,
+            "completion_tokens": 500,
+            "total_tokens": 512
+          },
+          "timestamp": "2025-10-26T08:31:55.110892"
+        },
+        "llm_processing": "[Circular Reference]",
+        "output_guardrails_result": {
+          "action": "modify",
+          "content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+          "results": [
+            {
+              "rail_id": "631ce616-94d1-4b45-a0f3-070560fd27b3",
+              "rail_type": "output",
+              "action": "allow",
+              "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:55.111465"
+            },
+            {
+              "rail_id": "afbf65ea-bc28-4d22-8324-e547b513aa37",
+              "rail_type": "output",
+              "action": "allow",
+              "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+              "modified_content": null,
+              "triggered": false,
+              "reason": null,
+              "confidence": 1.0,
+              "metadata": {},
+              "timestamp": "2025-10-26 08:31:55.111497"
+            },
+            {
+              "rail_id": "328c88c6-491c-431b-91f2-c549c7afd903",
+              "rail_type": "output",
+              "action": "modify",
+              "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+              "modified_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+              "triggered": true,
+              "reason": "Output exceeded 500 characters",
+              "confidence": 1.0,
+              "metadata": {
+                "original_length": 2444,
+                "truncated_length": 500
+              },
+              "timestamp": "2025-10-26 08:31:55.111512"
+            }
+          ],
+          "triggered_count": 1
+        },
+        "output_guardrails": "[Circular Reference]"
+      },
+      "status": "completed"
+    }
+  ],
+  "output": {
+    "user_input": "Tell me about neural networks",
+    "input_guardrails_result": {
+      "action": "allow",
+      "content": "Tell me about neural networks",
+      "results": [
+        {
+          "rail_id": "ea01f4ac-3c31-4deb-9897-b64cf4116c0b",
+          "rail_type": "input",
+          "action": "allow",
+          "original_content": "Tell me about neural networks",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 08:31:43.839547"
+        },
+        {
+          "rail_id": "5639256e-0a3d-4474-850c-36a200b53ca3",
+          "rail_type": "input",
+          "action": "allow",
+          "original_content": "Tell me about neural networks",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 08:31:43.839577"
+        },
+        {
+          "rail_id": "e021a2fe-0aed-487a-92e5-e33074783df7",
+          "rail_type": "input",
+          "action": "allow",
+          "original_content": "Tell me about neural networks",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 08:31:43.840104"
+        }
+      ],
+      "triggered_count": 0
+    },
+    "input_guardrails": "[Circular Reference]",
+    "llm_response": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+    "llm_metadata": {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 500,
+        "total_tokens": 512
+      },
+      "timestamp": "2025-10-26T08:31:55.110892"
+    },
+    "llm_processing": "[Circular Reference]",
+    "output_guardrails_result": {
+      "action": "modify",
+      "content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+      "results": [
+        {
+          "rail_id": "631ce616-94d1-4b45-a0f3-070560fd27b3",
+          "rail_type": "output",
+          "action": "allow",
+          "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 08:31:55.111465"
+        },
+        {
+          "rail_id": "afbf65ea-bc28-4d22-8324-e547b513aa37",
+          "rail_type": "output",
+          "action": "allow",
+          "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+          "modified_content": null,
+          "triggered": false,
+          "reason": null,
+          "confidence": 1.0,
+          "metadata": {},
+          "timestamp": "2025-10-26 08:31:55.111497"
+        },
+        {
+          "rail_id": "328c88c6-491c-431b-91f2-c549c7afd903",
+          "rail_type": "output",
+          "action": "modify",
+          "original_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation to its inputs and passes the result through a non-linear activation function.\n   - **Layers**: Neurons are organized into layers. A typical neural network has an input layer, one or more hidden layers, and an output layer.\n   - **Weights and Biases**: Connections between neurons have associated weights that are adjusted during training. Each neuron also has a bias term that is added to the weighted sum of inputs.\n\n2. **Types of Neural Networks**:\n   - **Feedforward Neural Networks (FNNs)**: Information moves in one direction, from input to output, without cycles. They are the simplest type of artificial neural network.\n   - **Convolutional Neural Networks (CNNs)**: Primarily used for image processing, CNNs have convolutional layers that automatically detect spatial hierarchies and patterns.\n   - **Recurrent Neural Networks (RNNs)**: Designed for sequential data, RNNs can pass information through sequences, making them suitable for tasks like language modeling and time series prediction.\n   - **Long Short-Term Memory Networks (LSTMs)**: A type of RNN that can learn long-term dependencies, overcoming the vanishing gradient problem.\n   - **Generative Adversarial Networks (GANs)**: Consist of two networks, a generator and a discriminator, that compete with each other to create realistic data samples.\n\n3. **Training**:\n   - **Backpropagation**: A common method for training neural networks, it involves computing the gradient of the loss function with respect to the weights by the chain rule, and updating the weights to minimize the loss.\n   - **Gradient Descent**: An optimization algorithm used to minimize the loss function. Variants include stochastic gradient descent (SGD) and adaptive methods like Adam.\n\n4. **Applications**: Neural networks have been successfully applied in various fields, such as:\n   - Image and speech recognition\n   - Natural language processing\n   - Autonomous vehicles\n   - Healthcare diagnostics",
+          "modified_content": "Neural networks are a subset of machine learning models that are inspired by the structure and function of the human brain. They are composed of interconnected layers of nodes, or \"neurons,\" which work together to process input data, recognize patterns, and generate outputs. Here's an overview of key concepts related to neural networks:\n\n1. **Structure**:\n   - **Neurons**: Basic units that receive input, process it, and pass on the output. Each neuron typically applies a linear transformation...",
+          "triggered": true,
+          "reason": "Output exceeded 500 characters",
+          "confidence": 1.0,
+          "metadata": {
+            "original_length": 2444,
+            "truncated_length": 500
+          },
+          "timestamp": "2025-10-26 08:31:55.111512"
+        }
+      ],
+      "triggered_count": 1
+    },
+    "output_guardrails": "[Circular Reference]"
+  }
+}

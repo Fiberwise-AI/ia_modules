@@ -5,9 +5,32 @@ Core Pipeline Implementation
 from typing import Dict, Any, List, Optional
 import asyncio
 import logging
+from dataclasses import dataclass, field
 
 from ia_modules.pipeline.services import ServiceRegistry
 from ia_modules.telemetry.integration import get_telemetry
+
+
+@dataclass
+class ExecutionContext:
+    """
+    Execution-specific context data (isolated per execution).
+
+    Separates execution-scoped data from infrastructure services in ServiceRegistry.
+    Each pipeline execution gets its own ExecutionContext instance.
+
+    Attributes:
+        execution_id: Unique identifier for this execution
+        pipeline_id: ID of the pipeline being executed
+        user_id: Optional user identifier
+        thread_id: Optional thread/conversation identifier
+        metadata: Additional execution metadata
+    """
+    execution_id: str
+    pipeline_id: Optional[str] = None
+    user_id: Optional[str] = None
+    thread_id: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 class TemplateParameterResolver:
@@ -305,7 +328,13 @@ class Pipeline:
 
         # Telemetry integration
         self.enable_telemetry = enable_telemetry
-        self.telemetry = get_telemetry(enabled=enable_telemetry) if enable_telemetry else None
+        # Use telemetry from services if available, otherwise create new instance
+        if enable_telemetry:
+            self.telemetry = services.get('telemetry') if services else None
+            if not self.telemetry:
+                self.telemetry = get_telemetry(enabled=True)
+        else:
+            self.telemetry = None
 
         # Loop detection and execution
         self.loop_detector = None
@@ -350,22 +379,30 @@ class Pipeline:
             return self.loop_detector.detect_loops()
         return []
 
-    async def run(self, input_data: Dict[str, Any], thread_id: Optional[str] = None) -> Dict[str, Any]:
+    async def run(
+        self,
+        input_data: Dict[str, Any],
+        execution_context: ExecutionContext,
+        thread_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Run the pipeline with given input data.
 
         Args:
             input_data: Input data for the pipeline
+            execution_context: Execution context with execution_id and metadata (REQUIRED)
             thread_id: Thread ID for checkpointing (optional, required if checkpointer enabled)
 
         Returns:
             Pipeline execution results
 
         Example:
+            >>> from ia_modules.pipeline.core import ExecutionContext
             >>> pipeline = Pipeline(...)
-            >>> result = await pipeline.run({'data': 'value'}, thread_id='user-123')
+            >>> ctx = ExecutionContext(execution_id='job-123', pipeline_id='pipe-456')
+            >>> result = await pipeline.run({'data': 'value'}, ctx)
         """
-        self.logger.info(f"Starting pipeline execution")
+        self.logger.info(f"Starting pipeline execution for {execution_context.execution_id}")
 
         # Initialize results tracking
         results = {
@@ -380,9 +417,9 @@ class Pipeline:
         # Execute with telemetry if enabled
         if self.enable_telemetry and self.telemetry:
             with self.telemetry.trace_pipeline(self.name, input_data) as pipeline_ctx:
-                return await self._execute_pipeline(input_data, results, current_data, pipeline_ctx, thread_id)
+                return await self._execute_pipeline(input_data, results, current_data, pipeline_ctx, execution_context, thread_id)
         else:
-            return await self._execute_pipeline(input_data, results, current_data, None, thread_id)
+            return await self._execute_pipeline(input_data, results, current_data, None, execution_context, thread_id)
 
     async def resume(self, thread_id: str, checkpoint_id: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -496,6 +533,7 @@ class Pipeline:
         results: Dict[str, Any],
         current_data: Dict[str, Any],
         pipeline_ctx,
+        execution_context: ExecutionContext,
         thread_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Internal pipeline execution with telemetry context and checkpointing"""
@@ -535,11 +573,10 @@ class Pipeline:
                 # Track step execution start if tracker available
                 step_execution_id = None
                 tracker = self.services.get('execution_tracker') if self.services else None
-                execution_id = self.services.get('execution_id') if self.services else None
-                
-                if tracker and execution_id:
+
+                if tracker:
                     step_execution_id = await tracker.start_step_execution(
-                        execution_id=execution_id,
+                        execution_id=execution_context.execution_id,
                         step_id=current_step_name,
                         step_name=current_step_name,
                         step_type="task",
@@ -579,6 +616,67 @@ class Pipeline:
                 # Re-raise error if step failed
                 if step_error:
                     raise step_error
+
+                # Check for HITL (Human-in-the-Loop) pause requirement
+                if isinstance(step_result, dict) and step_result.get('status') == 'human_input_required':
+                    self.logger.info(f"Step {current_step_name} requires human input - pausing execution")
+
+                    # Save execution state for resume
+                    # Build pipeline config from current state
+                    pipeline_config_for_resume = {
+                        'name': self.name,
+                        'flow': self.flow
+                    }
+
+                    hitl_state = {
+                        'pipeline_name': self.name,
+                        'pipeline_config': pipeline_config_for_resume,
+                        'current_step': current_step_name,
+                        'step_index': step_index,
+                        'current_data': current_data,
+                        'input_data': input_data,
+                        'completed_steps': results['steps'],
+                        'execution_context': {
+                            'execution_id': execution_context.execution_id,
+                            'pipeline_id': execution_context.pipeline_id,
+                            'user_id': execution_context.user_id,
+                            'thread_id': execution_context.thread_id,
+                            'metadata': execution_context.metadata
+                        }
+                    }
+
+                    # Create HITL interaction if HITLManager available
+                    hitl_manager = self.services.get('hitl_manager') if self.services else None
+                    interaction_id = None
+                    if hitl_manager:
+                        interaction_id = await hitl_manager.create_interaction(
+                            execution_id=execution_context.execution_id,
+                            pipeline_id=execution_context.pipeline_id or self.name,
+                            step_id=current_step_name,
+                            step_name=current_step_name,
+                            prompt=step_result.get('prompt', 'Human input required'),
+                            ui_schema=step_result.get('ui_schema'),
+                            context_data=hitl_state,  # Pass full execution state as context
+                            timeout_seconds=step_result.get('timeout_seconds', 3600),
+                            channels=step_result.get('channels', ['web']),  # Which channels: web, email, slack, discord, sms
+                            assigned_users=step_result.get('assigned_users', [])  # Which users to assign
+                        )
+                        self.logger.info(f"Created HITL interaction: {interaction_id}")
+
+                    # Mark execution as waiting for human input
+                    if tracker:
+                        from ia_modules.pipeline.execution_tracker import ExecutionStatus
+                        await tracker.update_execution_status(
+                            execution_id=execution_context.execution_id,
+                            status=ExecutionStatus.WAITING_FOR_HUMAN
+                        )
+
+                    # Return partial results with waiting status
+                    results["status"] = "waiting_for_human"
+                    results["waiting_step"] = current_step_name
+                    results["interaction_id"] = interaction_id
+                    results["output"] = step_result
+                    return results
 
                 # Store result for this step
                 results["steps"].append({

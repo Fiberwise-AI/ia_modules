@@ -5,6 +5,7 @@ Tests plugin base classes, registry, loader, and decorators.
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
 from pathlib import Path
 from ia_modules.plugins.base import (

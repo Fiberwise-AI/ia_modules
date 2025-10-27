@@ -22,6 +22,7 @@ from ia_modules.pipeline.pipeline_models import (
     row_to_execution,
     row_to_execution_summary
 )
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestPipelineConfiguration:

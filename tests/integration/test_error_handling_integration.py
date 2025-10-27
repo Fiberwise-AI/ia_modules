@@ -7,6 +7,7 @@ import asyncio
 from typing import Dict, Any
 
 from ia_modules.pipeline.core import Step, Pipeline
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.pipeline.services import ServiceRegistry
 from ia_modules.pipeline.errors import (
     NetworkError,
@@ -220,7 +221,7 @@ class TestErrorHandlingIntegration:
             services=ServiceRegistry()
         )
 
-        result = await pipeline.run({"input": "test"})
+        result = await pipeline.run({"input": "test"}, create_test_execution_context())
 
         # Flaky step should have succeeded after retries
         flaky_step_result = next(s for s in result["steps"] if s["step_name"] == "flaky")
@@ -257,7 +258,7 @@ class TestErrorHandlingIntegration:
             services=ServiceRegistry()
         )
 
-        result = await pipeline.run({"input": "test"})
+        result = await pipeline.run({"input": "test"}, create_test_execution_context())
 
         # Fallback step should have used fallback
         fallback_step_result = next(s for s in result["steps"] if s["step_name"] == "fallback")
@@ -311,7 +312,7 @@ class TestErrorHandlingIntegration:
             services=ServiceRegistry()
         )
 
-        result = await pipeline.run({"input": "test"})
+        result = await pipeline.run({"input": "test"}, create_test_execution_context())
 
         # Retry step succeeded
         retry_step_result = next(s for s in result["steps"] if s["step_name"] == "retry")

@@ -3,6 +3,7 @@ Edge case tests for memory/core.py to improve coverage
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from datetime import datetime, timezone
 from ia_modules.memory.core import Message, MessageRole
 

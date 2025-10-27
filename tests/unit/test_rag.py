@@ -4,6 +4,7 @@ Unit tests for RAG system.
 Tests Document and VectorStore.
 """
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.rag.core import Document, VectorStore, MemoryVectorStore
 
 

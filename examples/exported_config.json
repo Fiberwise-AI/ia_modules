@@ -1,0 +1,47 @@
+{
+  "guardrails_config": {
+    "llm_config": {},
+    "input_rails": [],
+    "output_rails": [],
+    "dialog_rails": [],
+    "retrieval_rails": [],
+    "execution_rails": [],
+    "streaming": false,
+    "parallel_execution": true,
+    "fail_fast": false,
+    "log_all_interactions": true,
+    "alert_on_blocks": true
+  },
+  "rails": [
+    {
+      "class": "JailbreakDetectionRail",
+      "config": {
+        "name": "jailbreak",
+        "type": "input",
+        "enabled": true,
+        "priority": 0
+      },
+      "params": {}
+    },
+    {
+      "class": "ToxicityDetectionRail",
+      "config": {
+        "name": "toxicity",
+        "type": "input",
+        "enabled": true,
+        "priority": 0
+      },
+      "params": {}
+    },
+    {
+      "class": "LengthLimitRail",
+      "config": {
+        "name": "length",
+        "type": "output",
+        "enabled": true,
+        "priority": 0
+      },
+      "params": {}
+    }
+  ]
+}

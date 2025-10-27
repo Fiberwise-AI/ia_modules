@@ -6,6 +6,7 @@ import asyncio
 from datetime import datetime, timedelta
 
 from ia_modules.pipeline.loop_detector import LoopDetector, Loop
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.pipeline.loop_executor import LoopExecutionContext, LoopAwareExecutor
 
 

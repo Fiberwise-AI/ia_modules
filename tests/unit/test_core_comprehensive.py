@@ -17,6 +17,7 @@ from ia_modules.pipeline.core import (
 )
 from ia_modules.pipeline.services import ServiceRegistry
 from ia_modules.pipeline.errors import PipelineError, ErrorCategory, ErrorSeverity
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class MockStep(Step):
@@ -427,7 +428,7 @@ class TestPipelineRun:
 
         pipeline = Pipeline("test", steps, flow, services, enable_telemetry=False)
 
-        result = await pipeline.run({"input": "data"})
+        result = await pipeline.run({"input": "data"}, create_test_execution_context())
 
         # Verify basic structure
         assert "input" in result
@@ -450,7 +451,7 @@ class TestPipelineRun:
 
         pipeline = Pipeline("test", steps, flow, services, enable_telemetry=False)
 
-        result = await pipeline.run({"input": "data"})
+        result = await pipeline.run({"input": "data"}, create_test_execution_context())
 
         assert len(result["steps"]) == 2
         assert result["steps"][0]["step_name"] == "step1"
@@ -466,7 +467,7 @@ class TestPipelineRun:
         pipeline = Pipeline("test", steps, flow, services, enable_telemetry=False)
 
         with pytest.raises(ValueError, match="No start step"):
-            await pipeline.run({"input": "data"})
+            await pipeline.run({"input": "data"}, create_test_execution_context())
 
 
 class TestPipelineResume:

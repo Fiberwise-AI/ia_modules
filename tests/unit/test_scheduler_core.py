@@ -4,6 +4,7 @@ Unit tests for Scheduler system functionality.
 Tests the Scheduler class, CronTrigger, IntervalTrigger, and EventTrigger.
 """
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
 from datetime import datetime, timedelta
 from ia_modules.scheduler.core import (

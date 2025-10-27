@@ -9,6 +9,7 @@ Tests core benchmarking functionality including:
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
 import time
 from ia_modules.benchmarking.framework import (

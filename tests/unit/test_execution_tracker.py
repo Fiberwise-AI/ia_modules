@@ -13,6 +13,7 @@ from ia_modules.pipeline.execution_tracker import (
     ExecutionRecord,
     StepExecutionRecord
 )
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class MockDatabaseManager:

@@ -20,6 +20,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestUnifiedExecutionEngine:

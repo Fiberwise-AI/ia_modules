@@ -13,6 +13,14 @@ from .chain_of_thought import ChainOfThoughtStep, CoTConfig
 from .self_consistency import SelfConsistencyStep, SelfConsistencyConfig, VotingStrategy
 from .react_agent import ReActAgent, ReActConfig, AgentState
 from .tree_of_thoughts import TreeOfThoughtsStep, ToTConfig, PruningStrategy, ToTNode
+from .constitutional_ai import (
+    ConstitutionalAIStep,
+    ConstitutionalConfig,
+    Principle,
+    PrincipleCategory,
+    CritiqueResult,
+    apply_constitutional_ai
+)
 
 __all__ = [
     'ChainOfThoughtStep',
@@ -27,4 +35,10 @@ __all__ = [
     'ToTConfig',
     'PruningStrategy',
     'ToTNode',
+    'ConstitutionalAIStep',
+    'ConstitutionalConfig',
+    'Principle',
+    'PrincipleCategory',
+    'CritiqueResult',
+    'apply_constitutional_ai',
 ]

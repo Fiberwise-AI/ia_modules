@@ -1,0 +1,56 @@
+{
+    "name": "Simple HITL Getting Started",
+    "description": "Simple 3-step pipeline demonstrating human-in-the-loop pause and resume",
+    "version": "1.0.0",
+    "steps": [
+        {
+            "id": "step1_prepare",
+            "name": "Prepare Data",
+            "step_class": "PrepareDataStep",
+            "module": "tests.pipelines.simple_hitl_pipeline.steps.simple_hitl_steps",
+            "config": {
+                "message": "Preparing data for review"
+            }
+        },
+        {
+            "id": "step2_human_review",
+            "name": "Human Review",
+            "step_class": "SimpleHumanReviewStep",
+            "module": "tests.pipelines.simple_hitl_pipeline.steps.simple_hitl_steps",
+            "config": {
+                "timeout_seconds": 300,
+                "prompt": "Please review the prepared data and approve or reject",
+                "channels": ["web", "email", "slack"],
+                "assigned_users": ["manager@company.com", "reviewer@company.com"]
+            }
+        },
+        {
+            "id": "step3_finalize",
+            "name": "Finalize",
+            "step_class": "FinalizeStep",
+            "module": "tests.pipelines.simple_hitl_pipeline.steps.simple_hitl_steps",
+            "config": {
+                "message": "Finalizing based on human decision"
+            }
+        }
+    ],
+    "flow": {
+        "start_at": "step1_prepare",
+        "paths": [
+            {
+                "from": "step1_prepare",
+                "to": "step2_human_review",
+                "condition": {
+                    "type": "always"
+                }
+            },
+            {
+                "from": "step2_human_review",
+                "to": "step3_finalize",
+                "condition": {
+                    "type": "always"
+                }
+            }
+        ]
+    }
+}

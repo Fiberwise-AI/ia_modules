@@ -1,6 +1,7 @@
 """Comprehensive tests for reliability.mode_enforcer module"""
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.reliability.mode_enforcer import (
     AgentMode,
     ModeViolation,

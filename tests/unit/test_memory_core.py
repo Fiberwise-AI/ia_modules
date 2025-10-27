@@ -4,6 +4,7 @@ Unit tests for Memory system core functionality.
 Tests the Message dataclass, MessageRole enum, and ConversationMemory interfaces.
 """
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from datetime import datetime
 from ia_modules.memory.core import Message, MessageRole, ConversationMemory
 from ia_modules.memory.memory_backend import MemoryConversationMemory

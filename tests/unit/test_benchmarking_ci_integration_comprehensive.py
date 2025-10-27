@@ -2,6 +2,7 @@
 Comprehensive tests for benchmarking/ci_integration.py
 """
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 import json
 import tempfile
 from pathlib import Path

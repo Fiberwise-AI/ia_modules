@@ -8,6 +8,7 @@ from unittest.mock import Mock
 import pytest
 
 from ia_modules.pipeline.core import Step, Pipeline
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.pipeline.runner import create_pipeline_from_json
 from ia_modules.pipeline.services import ServiceRegistry
 
@@ -50,7 +51,7 @@ async def test_pipeline_integration():
     
     # Create and run pipeline
     pipeline = create_pipeline_from_json(pipeline_config, services)
-    result = await pipeline.run({"input": "test_data"})
+    result = await pipeline.run({"input": "test_data"}, create_test_execution_context())
     
     assert result is not None
     assert isinstance(result, dict)
@@ -102,7 +103,7 @@ async def test_complex_pipeline_integration():
     
     # Create and run pipeline
     pipeline = create_pipeline_from_json(pipeline_config, services)
-    result = await pipeline.run({"input": "test_data"})
+    result = await pipeline.run({"input": "test_data"}, create_test_execution_context())
     
     assert result is not None
     assert isinstance(result, dict)

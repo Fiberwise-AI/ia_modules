@@ -3,6 +3,7 @@ Tests for telemetry exporters
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.telemetry import (
     MetricsCollector,
     PrometheusExporter,

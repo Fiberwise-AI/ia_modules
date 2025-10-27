@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom'
-import { Home, BarChart3, Play, FileCode, Github, Edit, Sparkles, Network, Moon, Sun, HelpCircle, Menu, X, Database } from 'lucide-react'
+import { Home, BarChart3, Play, FileCode, Github, Edit, Sparkles, Network, Moon, Sun, HelpCircle, Menu, X, Database, Globe } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import axios from 'axios'
 import HomePage from './pages/HomePage'
@@ -10,6 +10,7 @@ import ExecutionsPage from './pages/ExecutionsPage'
 import ExecutionDetailPage from './pages/ExecutionDetailPage'
 import PipelineEditorPage from './pages/PipelineEditorPage'
 import PatternsPage from './pages/PatternsPage'
+import WebScrapingPage from './pages/WebScrapingPage'
 import MultiAgentDashboard from './components/MultiAgent/MultiAgentDashboard'
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary'
 import ThemeProvider, { useTheme } from './components/ThemeProvider/ThemeProvider'
@@ -154,6 +155,7 @@ function AppContent() {
           <NavLink to="/editor" icon={<Edit size={20} />} text="Editor" sidebarOpen={sidebarOpen} onClick={() => setMobileMenuOpen(false)} />
           <NavLink to="/executions" icon={<Play size={20} />} text="Executions" sidebarOpen={sidebarOpen} onClick={() => setMobileMenuOpen(false)} />
           <NavLink to="/patterns" icon={<Sparkles size={20} />} text="Patterns" sidebarOpen={sidebarOpen} onClick={() => setMobileMenuOpen(false)} />
+          <NavLink to="/web-scraping" icon={<Globe size={20} />} text="Web Scraping" sidebarOpen={sidebarOpen} onClick={() => setMobileMenuOpen(false)} />
           <NavLink to="/multi-agent" icon={<Network size={20} />} text="Multi-Agent" sidebarOpen={sidebarOpen} onClick={() => setMobileMenuOpen(false)} />
           <NavLink to="/metrics" icon={<BarChart3 size={20} />} text="Metrics" sidebarOpen={sidebarOpen} onClick={() => setMobileMenuOpen(false)} />
         </nav>
@@ -227,9 +229,11 @@ function AppContent() {
             <Route path="/" element={<HomePage />} />
             <Route path="/pipelines" element={<PipelinesPage />} />
             <Route path="/editor" element={<PipelineEditorPage />} />
+            <Route path="/editor/:pipelineId" element={<PipelineEditorPage />} />
             <Route path="/executions" element={<ExecutionsPage />} />
             <Route path="/executions/:jobId" element={<ExecutionDetailPage />} />
             <Route path="/patterns" element={<PatternsPage />} />
+            <Route path="/web-scraping" element={<WebScrapingPage />} />
             <Route path="/multi-agent" element={<MultiAgentDashboard />} />
             <Route path="/metrics" element={<MetricsPage />} />
           </Routes>

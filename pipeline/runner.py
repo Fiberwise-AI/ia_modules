@@ -15,7 +15,7 @@ from .services import ServiceRegistry
 
 
 def load_step_class(module_path: str, class_name: str):
-    """Dynamically import step class"""
+    """Dynamically import step class from filesystem (synchronous)"""
     try:
         module = importlib.import_module(module_path)
         return getattr(module, class_name)
@@ -25,14 +25,74 @@ def load_step_class(module_path: str, class_name: str):
         raise AttributeError(f"Module '{module_path}' has no class '{class_name}': {e}")
 
 
+async def load_step_class_async(
+    module_path: str,
+    class_name: str,
+    db_provider=None,
+    pipeline_id: Optional[str] = None
+):
+    """Async version that tries database first, then falls back to filesystem
+
+    Args:
+        module_path: Python module path (e.g., "tests.pipelines.simple_pipeline.steps.step1")
+        class_name: Name of the step class (e.g., "Step1")
+        db_provider: Optional database provider for loading from database
+        pipeline_id: Optional pipeline ID for loading pipeline-specific version
+
+    Returns:
+        Step class ready to be instantiated
+    """
+    if db_provider:
+        from .db_step_loader import DatabaseStepLoader
+        loader = DatabaseStepLoader(db_provider)
+        return await loader.load_step_class(module_path, class_name, pipeline_id)
+
+    # Fallback to sync filesystem loading
+    return load_step_class(module_path, class_name)
+
+
 def create_step_from_json(step_def: Dict[str, Any], context: Dict[str, Any] = None) -> Step:
-    """Create step instance from JSON definition"""
+    """Create step instance from JSON definition (synchronous, filesystem only)"""
     # Resolve template parameters in step configuration
     resolved_config = step_def.get('config', {})
     if context:
         resolved_config = TemplateParameterResolver.resolve_parameters(resolved_config, context)
 
     step_class = load_step_class(step_def['module'], step_def.get('step_class', step_def.get('class', '')))
+    step_name = step_def.get('id', step_def.get('name', 'Unknown'))
+    return step_class(step_name, resolved_config)
+
+
+async def create_step_from_json_async(
+    step_def: Dict[str, Any],
+    context: Dict[str, Any] = None,
+    db_provider=None,
+    pipeline_id: Optional[str] = None
+) -> Step:
+    """Async version of create_step_from_json with database support
+
+    Args:
+        step_def: Step definition from pipeline JSON
+        context: Context for template parameter resolution
+        db_provider: Optional database provider for loading from database
+        pipeline_id: Optional pipeline ID for loading pipeline-specific version
+
+    Returns:
+        Instantiated Step object
+    """
+    # Resolve template parameters in step configuration
+    resolved_config = step_def.get('config', {})
+    if context:
+        resolved_config = TemplateParameterResolver.resolve_parameters(resolved_config, context)
+
+    # Use async loader if db_provider available
+    step_class = await load_step_class_async(
+        step_def['module'],
+        step_def.get('step_class', step_def.get('class', '')),
+        db_provider,
+        pipeline_id
+    )
+
     step_name = step_def.get('id', step_def.get('name', 'Unknown'))
     return step_class(step_name, resolved_config)
 
@@ -66,14 +126,18 @@ def create_pipeline_from_json(pipeline_config: Dict[str, Any], services: Optiona
     flow = pipeline_config.get('flow', {})
     loop_config = pipeline_config.get('loop_config', None)
 
+    # Require explicit ServiceRegistry - no silent fallback
+    if not services:
+        raise ValueError("ServiceRegistry is required for pipeline execution. Pass a ServiceRegistry instance to create_pipeline_from_json().")
+
     # Get checkpointer from services if available
-    checkpointer = services.get('checkpointer') if services else None
+    checkpointer = services.get('checkpointer')
 
     return Pipeline(
         pipeline_name,
         steps,
         flow,
-        services or ServiceRegistry(),
+        services,
         loop_config=loop_config,
         checkpointer=checkpointer
     )

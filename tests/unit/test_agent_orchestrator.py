@@ -4,6 +4,7 @@ Unit tests for agent orchestrator.
 Tests AgentOrchestrator with graph execution, feedback loops, and conditional branching.
 """
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.agents.core import AgentRole, BaseAgent
 from ia_modules.agents.state import StateManager
 from ia_modules.agents.orchestrator import AgentOrchestrator, Edge

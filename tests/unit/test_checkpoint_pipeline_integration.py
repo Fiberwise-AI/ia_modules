@@ -4,6 +4,7 @@ Tests for Pipeline integration with checkpointing
 
 import pytest
 from ia_modules.pipeline.core import Pipeline, Step
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.pipeline.services import ServiceRegistry
 from ia_modules.checkpoint import MemoryCheckpointer
 
@@ -32,7 +33,7 @@ class TestPipelineCheckpointBasic:
         steps = [DummyStep('step1', {}), DummyStep('step2', {})]
         pipeline = Pipeline('test', steps, flow, ServiceRegistry())
 
-        result = await pipeline.run({'input': 'data'})
+        result = await pipeline.run({'input': 'data'}, create_test_execution_context())
 
         assert result['output']['input'] == 'data'
         assert 'step1' in result['output']
@@ -54,7 +55,7 @@ class TestPipelineCheckpointBasic:
         steps = [DummyStep('step1', {}), DummyStep('step2', {})]
         pipeline = Pipeline('test', steps, flow, ServiceRegistry(), checkpointer=checkpointer)
 
-        result = await pipeline.run({'input': 'data'}, thread_id='test-thread')
+        result = await pipeline.run({'input': 'data'}, create_test_execution_context(), thread_id='test-thread')
 
         # Check result
         assert result['output']['input'] == 'data'
@@ -83,7 +84,7 @@ class TestPipelineCheckpointBasic:
         steps = [DummyStep('step1', {}), DummyStep('step2', {})]
         pipeline = Pipeline('test', steps, flow, ServiceRegistry(), checkpointer=checkpointer)
 
-        await pipeline.run({'input': 'data'}, thread_id='test-thread')
+        await pipeline.run({'input': 'data'}, create_test_execution_context(), thread_id='test-thread')
 
         # Load latest checkpoint
         checkpoint = await checkpointer.load_checkpoint('test-thread')
@@ -122,7 +123,7 @@ class TestPipelineResume:
         pipeline = Pipeline('test', steps, flow, ServiceRegistry(), checkpointer=checkpointer)
 
         # Run pipeline but it will complete
-        await pipeline.run({'input': 'data'}, thread_id='test-thread')
+        await pipeline.run({'input': 'data'}, create_test_execution_context(), thread_id='test-thread')
 
         # Get checkpoint after step1
         checkpoints = await checkpointer.list_checkpoints('test-thread')
@@ -160,7 +161,7 @@ class TestPipelineResume:
         pipeline = Pipeline('test', steps, flow, ServiceRegistry(), checkpointer=checkpointer)
 
         # Run pipeline to completion
-        await pipeline.run({'input': 'data'}, thread_id='test-thread')
+        await pipeline.run({'input': 'data'}, create_test_execution_context(), thread_id='test-thread')
 
         # Resume from latest (should be already complete)
         result = await pipeline.resume('test-thread')
@@ -209,10 +210,10 @@ class TestPipelineCheckpointThreadIsolation:
         pipeline = Pipeline('test', steps, flow, ServiceRegistry(), checkpointer=checkpointer)
 
         # Run for thread1
-        await pipeline.run({'thread': 1}, thread_id='thread1')
+        await pipeline.run({'thread': 1}, create_test_execution_context(), thread_id='thread1')
 
         # Run for thread2
-        await pipeline.run({'thread': 2}, thread_id='thread2')
+        await pipeline.run({'thread': 2}, create_test_execution_context(), thread_id='thread2')
 
         # Load checkpoints
         cp1 = await checkpointer.load_checkpoint('thread1')
@@ -243,7 +244,7 @@ class TestPipelineCheckpointMetadata:
         steps = [DummyStep('step1', {}), DummyStep('step2', {})]
         pipeline = Pipeline('test', steps, flow, ServiceRegistry(), checkpointer=checkpointer)
 
-        await pipeline.run({'input': 'data'}, thread_id='test-thread')
+        await pipeline.run({'input': 'data'}, create_test_execution_context(), thread_id='test-thread')
 
         checkpoint = await checkpointer.load_checkpoint('test-thread')
 
@@ -268,7 +269,7 @@ class TestPipelineCheckpointMetadata:
         pipeline = Pipeline('test', steps, flow, ServiceRegistry(), checkpointer=checkpointer)
 
         # Initial run
-        await pipeline.run({'input': 'data'}, thread_id='test-thread')
+        await pipeline.run({'input': 'data'}, create_test_execution_context(), thread_id='test-thread')
 
         # Get step1 checkpoint
         checkpoints = await checkpointer.list_checkpoints('test-thread')
@@ -299,7 +300,7 @@ class TestPipelineCheckpointBackwardCompatibility:
         pipeline = Pipeline('test', steps, flow, ServiceRegistry(), checkpointer=checkpointer)
 
         # Run without thread_id
-        result = await pipeline.run({'input': 'data'})
+        result = await pipeline.run({'input': 'data'}, create_test_execution_context())
 
         # Should complete normally
         assert result['output'] is not None

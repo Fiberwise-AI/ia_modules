@@ -33,7 +33,7 @@ class TelemetryService:
             List of span dictionaries with execution details
         """
         if not self.tracer:
-            logger.warning("No tracer available")
+            logger.warning("No tracer available for telemetry")
             return []
 
         try:
@@ -43,11 +43,15 @@ class TelemetryService:
             # Filter spans for this job_id (check attributes)
             job_spans = []
             for span in all_spans:
-                span_dict = self._span_to_dict(span)
-                
-                # Check if span belongs to this job
-                if span_dict.get("attributes", {}).get("job_id") == job_id:
-                    job_spans.append(span_dict)
+                try:
+                    span_dict = self._span_to_dict(span)
+                    
+                    # Check if span belongs to this job
+                    if span_dict.get("attributes", {}).get("job_id") == job_id:
+                        job_spans.append(span_dict)
+                except Exception as e:
+                    logger.warning(f"Error processing span: {e}")
+                    continue
             
             # Sort by start time
             job_spans.sort(key=lambda s: s.get("start_time", ""))
@@ -56,7 +60,7 @@ class TelemetryService:
             return job_spans
 
         except Exception as e:
-            logger.error(f"Error retrieving spans: {e}", exc_info=True)
+            logger.error(f"Error retrieving spans for job {job_id}: {e}", exc_info=True)
             return []
 
     async def get_execution_metrics(self, job_id: str) -> Dict[str, Any]:

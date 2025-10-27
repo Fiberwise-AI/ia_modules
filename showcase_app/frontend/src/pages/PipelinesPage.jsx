@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { pipelinesAPI, executionAPI } from '../services/api'
-import { Play, FileCode, Tag, Calendar, X, Inbox } from 'lucide-react'
+import { Play, FileCode, Tag, Calendar, X, Inbox, Edit } from 'lucide-react'
 import { LoadingSpinner, ButtonSpinner } from '../components/ui/spinner'
 import { SkeletonCard } from '../components/ui/skeleton'
 import { EmptyState } from '../components/ui/empty-state'
@@ -151,6 +151,13 @@ export default function PipelinesPage() {
           <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Pipelines</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and execute your pipelines</p>
         </div>
+        <button
+          onClick={() => navigate('/editor')}
+          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+        >
+          <FileCode size={16} />
+          New Pipeline
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -159,6 +166,7 @@ export default function PipelinesPage() {
             key={pipeline.id}
             pipeline={pipeline}
             onExecute={() => handleExecute(pipeline)}
+            onEdit={() => navigate(`/editor/${pipeline.id}`)}
             isExecuting={executeMutation.isPending}
           />
         ))}
@@ -227,7 +235,7 @@ export default function PipelinesPage() {
   )
 }
 
-function PipelineCard({ pipeline, onExecute, isExecuting }) {
+function PipelineCard({ pipeline, onExecute, onEdit, isExecuting }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg dark:hover:shadow-2xl transition p-6 border border-gray-200 dark:border-gray-700">
       <div className="flex items-start justify-between mb-4">
@@ -258,6 +266,13 @@ function PipelineCard({ pipeline, onExecute, isExecuting }) {
       </div>
 
       <div className="flex items-center space-x-2">
+        <button
+          onClick={onEdit}
+          className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition flex items-center gap-2"
+        >
+          <Edit size={16} />
+          Edit
+        </button>
         <button
           onClick={onExecute}
           disabled={isExecuting}

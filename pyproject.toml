@@ -39,6 +39,7 @@ dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",
+    "python-dotenv>=1.0.0",
 ]
 redis = [
     "redis>=5.0.0",
@@ -72,6 +73,27 @@ cli = [
 profiling = [
     "psutil>=5.9.0",
 ]
+# Advanced AI features
+guardrails = [
+    "openai>=1.0.0",
+]
+rag-advanced = [
+    "openai>=1.0.0",
+    "numpy>=1.24.0",
+    "scikit-learn>=1.3.0",
+]
+agents-advanced = [
+    "openai>=1.0.0",
+    "anthropic>=0.18.0",
+    "numpy>=1.24.0",
+    "scikit-learn>=1.3.0",
+]
+ai-advanced = [
+    "openai>=1.0.0",
+    "anthropic>=0.18.0",
+    "numpy>=1.24.0",
+    "scikit-learn>=1.3.0",
+]
 all = [
     "redis>=5.0.0",
     "psycopg2-binary>=2.9.0",
@@ -87,13 +109,18 @@ all = [
     "opentelemetry-exporter-prometheus>=0.41b0",
     "opentelemetry-instrumentation>=0.41b0",
     "prometheus-client>=0.19.0",
+    # Advanced AI features
+    "openai>=1.0.0",
+    "anthropic>=0.18.0",
+    "numpy>=1.24.0",
+    "scikit-learn>=1.3.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/ia_modules"
+Homepage = "https://github.com/Fiberwise-AI/ia_modules"
 Documentation = "https://ia-modules.readthedocs.io"
-Repository = "https://github.com/yourusername/ia_modules"
-Issues = "https://github.com/yourusername/ia_modules/issues"
+Repository = "https://github.com/Fiberwise-AI/ia_modules"
+Issues = "https://github.com/Fiberwise-AI/ia_modules/issues"
 
 [project.scripts]
 ia-modules = "ia_modules.cli.main:main"

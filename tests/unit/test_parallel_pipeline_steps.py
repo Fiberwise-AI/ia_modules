@@ -3,6 +3,7 @@ Unit tests for parallel pipeline steps to ensure proper data flow
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from tests.pipelines.parallel_pipeline.steps.results_merger import ResultsMergerStep
 from tests.pipelines.parallel_pipeline.steps.completed_stats_collector import CompletedStatsCollectorStep
 

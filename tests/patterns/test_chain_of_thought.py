@@ -3,6 +3,7 @@ Tests for Chain-of-Thought pattern.
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.patterns import ChainOfThoughtStep, CoTConfig
 
 

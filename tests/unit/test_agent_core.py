@@ -4,6 +4,7 @@ Unit tests for agent core functionality.
 Tests AgentRole and BaseAgent.
 """
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.agents.core import AgentRole, BaseAgent
 from ia_modules.agents.state import StateManager
 

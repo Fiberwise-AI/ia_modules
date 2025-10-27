@@ -1,0 +1,117 @@
+{
+  "guardrails_config": {
+    "enabled": true,
+    "fail_fast": true
+  },
+  "rails": [
+    {
+      "class": "JailbreakDetectionRail",
+      "config": {
+        "name": "jailbreak_detection",
+        "type": "input",
+        "enabled": true,
+        "priority": 100
+      },
+      "params": {}
+    },
+    {
+      "class": "ToxicityDetectionRail",
+      "config": {
+        "name": "toxicity_detection",
+        "type": "input",
+        "enabled": true,
+        "priority": 90
+      },
+      "params": {}
+    },
+    {
+      "class": "PIIDetectionRail",
+      "config": {
+        "name": "pii_detection",
+        "type": "input",
+        "enabled": true,
+        "priority": 80
+      },
+      "params": {
+        "redact": true
+      }
+    },
+    {
+      "class": "DisclaimerRail",
+      "config": {
+        "name": "disclaimer",
+        "type": "output",
+        "enabled": true,
+        "priority": 100
+      },
+      "params": {
+        "disclaimer_text": "Disclaimer: This is AI-generated content for informational purposes only."
+      }
+    },
+    {
+      "class": "LengthLimitRail",
+      "config": {
+        "name": "length_limit",
+        "type": "output",
+        "enabled": true,
+        "priority": 90
+      },
+      "params": {
+        "max_length": 500
+      }
+    },
+    {
+      "class": "ContextLengthRail",
+      "config": {
+        "name": "context_length",
+        "type": "dialog",
+        "enabled": true,
+        "priority": 100
+      },
+      "params": {
+        "max_turns": 10,
+        "max_tokens": 4000
+      }
+    },
+    {
+      "class": "TopicAdherenceRail",
+      "config": {
+        "name": "topic_adherence",
+        "type": "dialog",
+        "enabled": false,
+        "priority": 80
+      },
+      "params": {
+        "allowed_topics": ["technology", "programming", "AI"],
+        "strict_mode": false
+      }
+    },
+    {
+      "class": "ToolValidationRail",
+      "config": {
+        "name": "tool_validation",
+        "type": "execution",
+        "enabled": true,
+        "priority": 100
+      },
+      "params": {
+        "allowed_tools": ["search", "calculator", "weather"],
+        "blocked_tools": ["delete_database", "send_money"],
+        "require_confirmation": ["send_email"]
+      }
+    },
+    {
+      "class": "CodeExecutionSafetyRail",
+      "config": {
+        "name": "code_safety",
+        "type": "execution",
+        "enabled": true,
+        "priority": 95
+      },
+      "params": {
+        "allow_file_read": true,
+        "allow_network": false
+      }
+    }
+  ]
+}

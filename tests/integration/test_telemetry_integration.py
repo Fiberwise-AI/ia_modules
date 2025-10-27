@@ -7,6 +7,7 @@ import asyncio
 from typing import Dict, Any
 
 from ia_modules.pipeline.core import Step, Pipeline
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.pipeline.services import ServiceRegistry
 from ia_modules.telemetry import (
     PipelineTelemetry,
@@ -147,7 +148,7 @@ class TestPipelineTelemetryIntegration:
 
         # Run pipeline and expect failure
         with pytest.raises(Exception):
-            await pipeline.run({"input": 1})
+            await pipeline.run({"input": 1}, create_test_execution_context())
 
         # Get spans
         spans = telemetry.get_spans()
@@ -171,7 +172,7 @@ class TestPipelineTelemetryIntegration:
     async def test_nested_span_hierarchy(self, simple_pipeline, telemetry):
         """Test that spans are properly nested"""
         # Run pipeline
-        await simple_pipeline.run({"input": 1})
+        await simple_pipeline.run({"input": 1}, create_test_execution_context())
 
         # Get all spans
         spans = telemetry.get_spans()
@@ -292,7 +293,7 @@ class TestPrometheusExport:
     async def test_prometheus_export_after_pipeline(self, simple_pipeline, telemetry):
         """Test exporting telemetry to Prometheus format"""
         # Run pipeline
-        await simple_pipeline.run({"input": 5})
+        await simple_pipeline.run({"input": 5}, create_test_execution_context())
 
         # Export to Prometheus
         exporter = PrometheusExporter(prefix="test")
@@ -311,7 +312,7 @@ class TestPrometheusExport:
     async def test_prometheus_labels(self, simple_pipeline, telemetry):
         """Test that Prometheus export includes labels"""
         # Run pipeline
-        await simple_pipeline.run({"input": 3})
+        await simple_pipeline.run({"input": 3}, create_test_execution_context())
 
         # Export to Prometheus
         exporter = PrometheusExporter(prefix="app")
@@ -351,7 +352,7 @@ class TestTelemetryDisabled:
         )
 
         # Should run normally
-        result = await pipeline.run({"input": 10})
+        result = await pipeline.run({"input": 10}, create_test_execution_context())
         assert result["output"]["result"] == 20
 
 

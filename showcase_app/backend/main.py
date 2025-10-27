@@ -19,6 +19,7 @@ from pathlib import Path
 
 from ia_modules.database.manager import DatabaseManager
 from ia_modules.reliability.decision_trail import DecisionTrailBuilder
+from ia_modules.pipeline.importer import PipelineImportService
 
 from api.pipelines import router as pipelines_router
 from api.execution import router as execution_router
@@ -32,6 +33,14 @@ from api.telemetry import router as telemetry_router
 from api.memory import router as memory_router
 from api.patterns import router as patterns_router
 from api.multi_agent import router as multi_agent_router
+from api.constitutional_ai_api import router as constitutional_ai_router
+from api.advanced_memory_api import router as advanced_memory_router
+from api.multimodal_api import router as multimodal_router
+from api.agents_api import router as agents_router
+from api.prompt_optimization_api import router as prompt_optimization_router
+from api.advanced_tools_api import router as advanced_tools_router
+from api.step_modules import router as step_modules_router
+from api.hitl import router as hitl_router
 from services.container import ServiceContainer
 from services.metrics_service import MetricsService
 from services.pipeline_service import PipelineService
@@ -114,6 +123,12 @@ async def lifespan(app: FastAPI):
     )
 
     logger.info("✓ Services initialized successfully")
+
+    # Import test pipelines on startup
+    tests_dir = Path(__file__).parent.parent.parent / "tests" / "pipelines"
+    importer = PipelineImportService(services.db_manager, str(tests_dir))
+    import_results = await importer.import_all_pipelines()
+    logger.info(f"✓ Pipeline import: {import_results['imported']} imported, {import_results['updated']} updated, {import_results['skipped']} skipped")
 
     # Store services on app state
     app.state.services = services
@@ -215,6 +230,7 @@ async def root():
 
 # Include routers
 app.include_router(pipelines_router, prefix="/api/pipelines", tags=["Pipelines"])
+app.include_router(step_modules_router, tags=["Step Modules"])
 app.include_router(execution_router, prefix="/api/execute", tags=["Execution"])
 app.include_router(metrics_router, prefix="/api/metrics", tags=["Metrics"])
 app.include_router(checkpoints_router, prefix="/api/checkpoints", tags=["Checkpoints"])
@@ -226,6 +242,15 @@ app.include_router(memory_router, prefix="/api/memory", tags=["Memory"])
 app.include_router(patterns_router, tags=["Patterns"])
 app.include_router(multi_agent_router, tags=["Multi-Agent"])
 app.include_router(websocket_router, prefix="/ws", tags=["WebSocket"])
+app.include_router(hitl_router, prefix="/api/hitl", tags=["Human-in-the-Loop"])
+
+# Advanced AI Features
+app.include_router(constitutional_ai_router, prefix="/api/constitutional-ai", tags=["Constitutional AI"])
+app.include_router(advanced_memory_router, prefix="/api/advanced-memory", tags=["Advanced Memory"])
+app.include_router(multimodal_router, prefix="/api/multimodal", tags=["Multimodal"])
+app.include_router(agents_router, prefix="/api/agents", tags=["Agents"])
+app.include_router(prompt_optimization_router, prefix="/api/prompt-optimization", tags=["Prompt Optimization"])
+app.include_router(advanced_tools_router, prefix="/api/tools", tags=["Advanced Tools"])
 
 
 # Global exception handler
@@ -282,6 +307,11 @@ def get_replay_service() -> ReplayService:
 def get_decision_trail_service() -> DecisionTrailService:
     """Get decision trail service instance"""
     return app.state.services.decision_trail_service
+
+
+def get_db_manager() -> DatabaseManager:
+    """Get database manager instance"""
+    return app.state.services.db_manager
 
 
 if __name__ == "__main__":

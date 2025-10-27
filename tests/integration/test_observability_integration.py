@@ -10,6 +10,7 @@ Run with: pytest -m observability
 import os
 import time
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 import requests
 import json
 from datetime import datetime

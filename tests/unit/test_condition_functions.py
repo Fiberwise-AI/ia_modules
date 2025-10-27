@@ -21,6 +21,7 @@ from ia_modules.pipeline.condition_functions import (
     feature_flag_condition
 )
 from ia_modules.pipeline.routing import RoutingContext
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 def test_business_hours_condition():

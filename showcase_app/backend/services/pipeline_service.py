@@ -13,13 +13,14 @@ from ia_modules.telemetry.tracing import SimpleTracer
 from ia_modules.checkpoint import SQLCheckpointer
 from ia_modules.reliability.metrics import ReliabilityMetrics
 from ia_modules.reliability.sql_metric_storage import SQLMetricStorage
-from datetime import datetime, timezone
+from ia_modules.database.manager import DatabaseManager
 from typing import Dict, Any, Optional, List
 import asyncio
 import uuid
 import logging
 import json
 from pathlib import Path
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,9 @@ class PipelineService:
         self.pipelines: Dict[str, Dict[str, Any]] = {}
         self.executions: Dict[str, Dict[str, Any]] = {}
 
+        # Set pipelines base path
+        self.pipelines_base_path = Path(__file__).parent.parent.parent / 'tests' / 'pipelines'
+
         # Use database execution tracker
         self.tracker = ExecutionTracker(db_manager)
         logger.info("Using database execution tracker")
@@ -43,6 +47,9 @@ class PipelineService:
         self.services = ServiceRegistry()
         if db_manager:
             self.services.register('database', db_manager)
+
+        # Register execution tracker in services
+        self.services.register('execution_tracker', self.tracker)
 
         # Setup telemetry to capture step execution details
         self.tracer = SimpleTracer()
@@ -66,13 +73,17 @@ class PipelineService:
             self.services.register('reliability_metrics', self.reliability_metrics)
             logger.info("Reliability metrics initialized with SQL storage")
 
+        # Setup HITL manager
+        if db_manager:
+            from ia_modules.pipeline.hitl_manager import HITLManager
+            self.hitl_manager = HITLManager(db_manager)
+            self.services.register('hitl_manager', self.hitl_manager)
+            logger.info("HITL manager initialized")
+
         # Load example pipeline JSON files from tests
         self.pipeline_dir = Path(__file__).parent.parent.parent.parent / "tests" / "pipelines"
 
-        # Load real test pipelines from the framework
-        self.load_test_pipelines()
-
-        logger.info(f"Pipeline service initialized with {len(self.pipelines)} pipelines")
+        logger.info(f"Pipeline service initialized")
 
     async def _save_execution_to_db(self, execution: Dict[str, Any]):
         """Save execution to PostgreSQL with error handling"""
@@ -228,7 +239,7 @@ class PipelineService:
             return []
 
     def load_test_pipelines(self):
-        """Load ACTUAL test pipelines from ia_modules/tests/pipelines/"""
+        """Load ACTUAL test pipelines from ia_modules/tests/pipelines/ and save to database"""
         test_pipeline_dirs = [
             "simple_pipeline",
             "conditional_pipeline",
@@ -245,6 +256,20 @@ class PipelineService:
                         config = json.load(f)
 
                     pipeline_id = str(uuid.uuid4())
+                    pipeline_slug = config.get("name", pipeline_name).lower().replace(" ", "_").replace("-", "_")
+                    
+                    # Save to database
+                    self._save_pipeline_to_db(
+                        pipeline_id=pipeline_id,
+                        slug=pipeline_slug,
+                        name=config.get("name", pipeline_name),
+                        description=config.get("description", ""),
+                        pipeline_json=config,
+                        file_path=str(pipeline_path),
+                        is_system=True
+                    )
+                    
+                    # Also keep in memory for backward compatibility
                     self.pipelines[pipeline_id] = {
                         "id": pipeline_id,
                         "name": config.get("name", pipeline_name),
@@ -254,11 +279,56 @@ class PipelineService:
                         "created_at": datetime.now(timezone.utc).isoformat(),
                         "updated_at": datetime.now(timezone.utc).isoformat()
                     }
-                    logger.info(f"Loaded test pipeline: {config.get('name')}")
+                    logger.info(f"Loaded and saved test pipeline: {config.get('name')}")
                 except Exception as e:
                     logger.warning(f"Failed to load pipeline {pipeline_name}: {e}")
             else:
                 logger.warning(f"Pipeline file not found: {pipeline_path}")
+
+    def _save_pipeline_to_db(self, pipeline_id: str, slug: str, name: str, description: str, 
+                           pipeline_json: Dict[str, Any], file_path: str, is_system: bool = False):
+        """Save pipeline to database"""
+        if not self.db_manager:
+            logger.warning("No database manager available, skipping database save")
+            return
+            
+        try:
+            # Check if pipeline already exists
+            check_query = "SELECT id FROM pipelines WHERE id = :id OR slug = :slug"
+            check_params = {"id": pipeline_id, "slug": slug}
+            
+            existing = self.db_manager.fetch_one(check_query, check_params)
+            
+            if existing:
+                logger.info(f"Pipeline {name} already exists in database, skipping import")
+                return
+            
+            # Pipeline doesn't exist, insert it
+            insert_query = """
+                INSERT INTO pipelines (id, slug, name, description, pipeline_json, file_path, is_system, is_active)
+                VALUES (:id, :slug, :name, :description, :pipeline_json, :file_path, :is_system, :is_active)
+            """
+
+            params = {
+                "id": pipeline_id,
+                "slug": slug,
+                "name": name,
+                "description": description,
+                "pipeline_json": json.dumps(pipeline_json),
+                "file_path": file_path,
+                "is_system": is_system,
+                "is_active": True
+            }
+            
+            result = self.db_manager.execute(insert_query, params)
+            
+            if result:
+                logger.info(f"Saved pipeline {name} to database")
+            else:
+                logger.error(f"Failed to save pipeline {name} to database")
+                
+        except Exception as e:
+            logger.error(f"Error saving pipeline {name} to database: {e}")
 
     def _get_pipeline_tags(self, config: Dict[str, Any]) -> List[str]:
         """Extract tags from pipeline config"""
@@ -283,12 +353,92 @@ class PipelineService:
         return tags
 
     async def get_pipeline(self, pipeline_id: str) -> Optional[Dict[str, Any]]:
-        """Get pipeline by ID"""
-        return self.pipelines.get(pipeline_id)
+        """Get pipeline by ID from database"""
+        # First check memory cache
+        if pipeline_id in self.pipelines:
+            return self.pipelines[pipeline_id]
+        
+        # If not in cache, load from database
+        if self.db_manager:
+            try:
+                query = """
+                    SELECT id, slug, name, description, pipeline_json, file_path, is_system, created_at, updated_at
+                    FROM pipelines 
+                    WHERE id = :id AND is_active = true
+                """
+                
+                import asyncio
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(None, self.db_manager.fetch_one, query, {"id": pipeline_id})
+                
+                if result:
+                    config = json.loads(result["pipeline_json"])
+                    pipeline_data = {
+                        "id": result["id"],
+                        "name": result["name"],
+                        "description": result["description"],
+                        "config": config,
+                        "tags": self._get_pipeline_tags(config),
+                        "created_at": result["created_at"],
+                        "updated_at": result["updated_at"],
+                        "file_path": result["file_path"],
+                        "is_system": result["is_system"]
+                    }
+                    
+                    # Cache in memory for future use
+                    self.pipelines[pipeline_id] = pipeline_data
+                    return pipeline_data
+                    
+            except Exception as e:
+                logger.error(f"Error loading pipeline {pipeline_id} from database: {e}")
+        
+        return None
 
     async def list_pipelines(self) -> List[Dict[str, Any]]:
-        """List all pipelines"""
-        return list(self.pipelines.values())
+        """List all active pipelines from database"""
+        pipelines = []
+        
+        # Load from database if available
+        if self.db_manager:
+            try:
+                query = """
+                    SELECT id, slug, name, description, pipeline_json, file_path, is_system, created_at, updated_at
+                    FROM pipelines 
+                    WHERE is_active = true
+                    ORDER BY name
+                """
+                
+                import asyncio
+                loop = asyncio.get_event_loop()
+                results = await loop.run_in_executor(None, self.db_manager.fetch_all, query)
+                
+                for result in results:
+                    config = json.loads(result["pipeline_json"])
+                    pipeline_data = {
+                        "id": result["id"],
+                        "name": result["name"],
+                        "description": result["description"],
+                        "config": config,
+                        "tags": self._get_pipeline_tags(config),
+                        "created_at": result["created_at"],
+                        "updated_at": result["updated_at"],
+                        "file_path": result["file_path"],
+                        "is_system": result["is_system"]
+                    }
+                    
+                    # Cache in memory
+                    self.pipelines[result["id"]] = pipeline_data
+                    pipelines.append(pipeline_data)
+                    
+            except Exception as e:
+                logger.error(f"Error loading pipelines from database: {e}")
+                # Fall back to memory cache
+                pipelines = list(self.pipelines.values())
+        else:
+            # Fall back to memory cache
+            pipelines = list(self.pipelines.values())
+        
+        return pipelines
 
     async def execute_pipeline(
         self,
@@ -406,26 +556,51 @@ class PipelineService:
                                 step["duration_ms"] = data.get("duration_ms")
                             break
 
-            self.services.register('execution_id', job_id)
-            self.services.register('execution_tracker', self.tracker)
-            
+            # Create execution context with the job_id
+            from ia_modules.pipeline.core import ExecutionContext
+            execution_context = ExecutionContext(
+                execution_id=job_id,
+                pipeline_id=execution["pipeline_id"]
+            )
+
+            # Use shared services
             graph_runner = GraphPipelineRunner(self.services)
-            
-            result = await graph_runner.run_pipeline_from_json(pipeline_config, input_data)
 
-            execution["output_data"] = result.get("output", result) if isinstance(result, dict) else result
+            result = await graph_runner.run_pipeline_from_json(
+                pipeline_config,
+                input_data,
+                execution_context=execution_context
+            )
+
+            execution["output_data"] = result.get("output", result)
             execution["steps"] = result.get("steps", [])
-            execution["status"] = "completed"
-            execution["progress"] = 1.0
 
-            # Notify WebSocket: Execution completed
-            await ws_manager.broadcast_execution(job_id, {
-                "type": "execution_completed",
-                "job_id": job_id,
-                "status": "completed",
-                "output_data": execution["output_data"],
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            })
+            # Check if pipeline is waiting for human input
+            if result.get("status") == "waiting_for_human":
+                execution["status"] = "waiting_for_human"
+                execution["progress"] = len(result.get("steps", [])) / max(len(pipeline_config.get("steps", [])), 1)
+
+                # Notify WebSocket: Execution paused for human input
+                await ws_manager.broadcast_execution(job_id, {
+                    "type": "execution_paused",
+                    "job_id": job_id,
+                    "status": "waiting_for_human",
+                    "waiting_step": result.get("waiting_step"),
+                    "interaction_id": result.get("interaction_id"),
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+            else:
+                execution["status"] = "completed"
+                execution["progress"] = 1.0
+
+                # Notify WebSocket: Execution completed
+                await ws_manager.broadcast_execution(job_id, {
+                    "type": "execution_completed",
+                    "job_id": job_id,
+                    "status": "completed",
+                    "output_data": execution["output_data"],
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
 
             # Extract token usage from result or telemetry
             total_tokens = result.get("total_tokens") if isinstance(result, dict) else None
@@ -457,9 +632,24 @@ class PipelineService:
 
             # Update execution tracker
             if self.tracker:
+                # Count actual step executions from database
+                step_records = await self.tracker.get_execution_steps(job_id)
+                completed_steps = len([s for s in step_records if s.status.value == 'completed'])
+                failed_steps = len([s for s in step_records if s.status.value == 'failed'])
+
+                # Determine final status
+                if execution["status"] == "waiting_for_human":
+                    final_status = ExecutionStatus.WAITING_FOR_HUMAN
+                elif execution["status"] == "completed":
+                    final_status = ExecutionStatus.COMPLETED
+                else:
+                    final_status = ExecutionStatus.FAILED
+
                 await self.tracker.update_execution_status(
                     execution_id=job_id,
-                    status=ExecutionStatus.COMPLETED if execution["status"] == "completed" else ExecutionStatus.FAILED,
+                    status=final_status,
+                    completed_steps=completed_steps,
+                    failed_steps=failed_steps,
                     output_data=execution.get("output_data"),
                     error_message=execution.get("error")
                 )
@@ -582,9 +772,14 @@ class PipelineService:
                     "status": record.status.value,
                     "started_at": record.started_at,
                     "completed_at": record.completed_at,
+                    "execution_time_ms": record.execution_time_ms,
+                    "total_steps": record.total_steps,
+                    "completed_steps": record.completed_steps,
+                    "failed_steps": record.failed_steps,
                     "input_data": record.input_data,
                     "output_data": record.output_data,
-                    "error": record.error_message,
+                    "error_message": record.error_message,
+                    "error": record.error_message,  # Keep for backwards compatibility
                     "progress": 1.0 if record.status == ExecutionStatus.COMPLETED else 0.5,
                     "steps": steps,
                     "current_step": steps[-1]["step_name"] if steps else None
@@ -725,3 +920,161 @@ class PipelineService:
         except Exception as e:
             logger.error(f"Failed to delete checkpoint: {e}")
             return False
+
+    async def resume_from_hitl(
+        self,
+        execution_id: str,
+        interaction_id: str,
+        human_input: Dict[str, Any]
+    ):
+        """
+        Resume a pipeline execution that was paused for HITL interaction.
+
+        Args:
+            execution_id: The execution ID that was paused
+            interaction_id: The HITL interaction ID
+            human_input: The human's response data
+
+        This will continue the pipeline from where it paused, injecting the human
+        input into the waiting step and continuing execution.
+        """
+        logger.info(f"Resuming execution {execution_id} from HITL interaction {interaction_id}")
+
+        # Get the execution record to find which pipeline and step was waiting
+        execution_record = await self.tracker.get_execution(execution_id)
+        if not execution_record:
+            raise ValueError(f"Execution {execution_id} not found")
+
+        pipeline_id = execution_record.pipeline_id
+
+        # Load the pipeline from database
+        pipeline_record = self.db_manager.fetch_one(
+            "SELECT pipeline_json FROM pipelines WHERE id = :id",
+            {"id": pipeline_id}
+        )
+
+        if not pipeline_record:
+            raise ValueError(f"Pipeline {pipeline_id} not found in database")
+
+        config = json.loads(pipeline_record['pipeline_json']) if isinstance(pipeline_record['pipeline_json'], str) else pipeline_record['pipeline_json']
+
+        # Get the saved execution state from HITL interaction
+        from ia_modules.pipeline.hitl_manager import HITLManager
+        hitl_manager = HITLManager(self.db_manager)
+        execution_state = await hitl_manager.get_execution_state(interaction_id)
+
+        if not execution_state:
+            raise ValueError(f"No execution state found for interaction {interaction_id}")
+
+        logger.info(f"Restoring execution from step {execution_state['current_step']}")
+
+        # Restore execution context
+        exec_ctx_data = execution_state['execution_context']
+        from ia_modules.pipeline.core import ExecutionContext
+        execution_context = ExecutionContext(
+            execution_id=exec_ctx_data['execution_id'],
+            pipeline_id=exec_ctx_data['pipeline_id'],
+            user_id=exec_ctx_data.get('user_id'),
+            thread_id=exec_ctx_data.get('thread_id'),
+            metadata=exec_ctx_data.get('metadata', {})
+        )
+
+        # Merge human input into current_data for the next step
+        current_data = execution_state['current_data'].copy()
+        current_data.update(human_input)
+
+        # Create a new runner with the services (includes db, tracker, hitl_manager)
+        runner = GraphPipelineRunner(self.services)
+
+        # Use the config loaded from database instead of execution_state's partial config
+        config_dict = config
+
+        # Find the next step after the HITL step
+        hitl_step_name = execution_state['current_step']
+        flow_paths = config_dict.get('flow', {}).get('paths', [])
+
+        next_step = None
+        for path in flow_paths:
+            if path.get('from') == hitl_step_name:
+                next_step = path.get('to')
+                break
+
+        if not next_step:
+            logger.info(f"No next step after HITL step {hitl_step_name} - execution complete")
+            # Mark execution as completed
+            from ia_modules.pipeline.execution_tracker import ExecutionStatus
+            await self.tracker.update_execution_status(
+                execution_id=execution_id,
+                status=ExecutionStatus.COMPLETED
+            )
+            return
+
+        # Create a continuation config starting from next_step
+        continuation_config = config_dict.copy()
+        continuation_config['flow']['start_at'] = next_step
+
+        # Execute the continuation
+        logger.info(f"Continuing execution from step {next_step} with human input")
+
+        try:
+            result = await runner.run_pipeline_from_json(
+                pipeline_config=continuation_config,
+                input_data=current_data,
+                execution_context=execution_context,
+                use_enhanced_features=True
+            )
+
+            # Check if this continuation also paused for HITL
+            if result.get('status') == 'waiting_for_human':
+                logger.info(f"Execution paused again at step {result.get('waiting_step')}")
+                # Broadcast pause via WebSocket
+                from ia_modules.showcase_app.backend.api.websockets import ws_manager
+                await ws_manager.broadcast_execution(execution_id, {
+                    "type": "execution_paused",
+                    "job_id": execution_id,
+                    "status": "waiting_for_human",
+                    "waiting_step": result.get("waiting_step"),
+                    "interaction_id": result.get("interaction_id"),
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+            else:
+                # Mark execution as completed or failed
+                from ia_modules.pipeline.execution_tracker import ExecutionStatus
+                final_status = ExecutionStatus.COMPLETED if result.get('status') != 'failed' else ExecutionStatus.FAILED
+                await self.tracker.update_execution_status(
+                    execution_id=execution_id,
+                    status=final_status
+                )
+
+                # Broadcast completion via WebSocket
+                from ia_modules.showcase_app.backend.api.websockets import ws_manager
+                await ws_manager.broadcast_execution(execution_id, {
+                    "type": "execution_completed" if final_status == ExecutionStatus.COMPLETED else "execution_failed",
+                    "job_id": execution_id,
+                    "status": "completed" if final_status == ExecutionStatus.COMPLETED else "failed",
+                    "output_data": result.get("output"),
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+
+                logger.info(f"Execution {execution_id} completed after HITL resume")
+
+        except Exception as e:
+            logger.error(f"Error during HITL resume: {e}")
+            from ia_modules.pipeline.execution_tracker import ExecutionStatus
+            await self.tracker.update_execution_status(
+                execution_id=execution_id,
+                status=ExecutionStatus.FAILED,
+                error_message=str(e)
+            )
+
+            # Broadcast failure via WebSocket
+            from ia_modules.showcase_app.backend.api.websockets import ws_manager
+            await ws_manager.broadcast_execution(execution_id, {
+                "type": "execution_failed",
+                "job_id": execution_id,
+                "status": "failed",
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+
+            raise

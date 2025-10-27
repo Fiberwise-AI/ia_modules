@@ -5,6 +5,7 @@ Tests workflow creation, execution, hooks, persistence, and error handling.
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
 import json
 import tempfile

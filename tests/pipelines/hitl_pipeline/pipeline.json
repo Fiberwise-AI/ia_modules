@@ -76,15 +76,15 @@
         "start_at": "initial_processing",
         "paths": [
             {
-                "from_step": "initial_processing",
-                "to_step": "quality_assessment",
+                "from": "initial_processing",
+                "to": "quality_assessment",
                 "condition": {
                     "type": "always"
                 }
             },
             {
-                "from_step": "quality_assessment", 
-                "to_step": "human_review_pause",
+                "from": "quality_assessment",
+                "to": "human_review_pause",
                 "condition": {
                     "type": "expression",
                     "config": {
@@ -95,32 +95,32 @@
                 }
             },
             {
-                "from_step": "quality_assessment",
-                "to_step": "final_processing",
+                "from": "quality_assessment",
+                "to": "final_processing",
                 "condition": {
                     "type": "expression",
                     "config": {
-                        "source": "result.requires_human_review", 
+                        "source": "result.requires_human_review",
                         "operator": "equals",
                         "value": false
                     }
                 }
             },
             {
-                "from_step": "human_review_pause",
-                "to_step": "manual_enhancement",
+                "from": "human_review_pause",
+                "to": "manual_enhancement",
                 "condition": {
                     "type": "expression",
                     "config": {
                         "source": "result.decision",
-                        "operator": "equals", 
+                        "operator": "equals",
                         "value": "request_enhancement"
                     }
                 }
             },
             {
-                "from_step": "human_review_pause",
-                "to_step": "collaborative_decision",
+                "from": "human_review_pause",
+                "to": "collaborative_decision",
                 "condition": {
                     "type": "expression",
                     "config": {
@@ -131,8 +131,8 @@
                 }
             },
             {
-                "from_step": "human_review_pause",
-                "to_step": "final_processing", 
+                "from": "human_review_pause",
+                "to": "final_processing",
                 "condition": {
                     "type": "expression",
                     "config": {
@@ -143,15 +143,15 @@
                 }
             },
             {
-                "from_step": "manual_enhancement",
-                "to_step": "final_processing",
+                "from": "manual_enhancement",
+                "to": "final_processing",
                 "condition": {
                     "type": "always"
                 }
             },
             {
-                "from_step": "collaborative_decision",
-                "to_step": "final_processing",
+                "from": "collaborative_decision",
+                "to": "final_processing",
                 "condition": {
                     "type": "always"
                 }

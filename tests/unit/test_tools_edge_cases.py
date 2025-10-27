@@ -2,6 +2,7 @@
 Edge case tests for tools/core.py to improve coverage
 """
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from typing import List, Dict, Any
 from ia_modules.tools.core import (
     ToolDefinition,

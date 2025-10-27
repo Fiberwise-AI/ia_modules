@@ -32,36 +32,19 @@ class PipelineImportService:
         else:
             self.pipelines_dir = Path(pipelines_dir)
 
-    async def clear_all_imported_pipelines(self) -> int:
-        """Clear all imported pipelines (non-system) from database"""
-        logger.info("Clearing all imported pipelines from database")
-
-        query = "DELETE FROM pipelines WHERE is_system = 0"
-        result = await self.db_provider.execute_async(query)
-
-        if not result.success:
-            logger.error(f"Failed to clear pipelines: {result}")
-            return 0
-
-        # Get count of deleted rows (if available)
-        deleted_count = getattr(result, 'rows_affected', 0)
-        logger.info(f"Cleared {deleted_count} imported pipelines")
-        return deleted_count
-
-    async def import_all_pipelines(self, clear_existing: bool = False) -> Dict[str, Any]:
+    async def import_all_pipelines(self) -> Dict[str, Any]:
         """Import all pipeline JSON files from the pipelines directory"""
         logger.info(f"Starting pipeline import from: {self.pipelines_dir}")
 
-        # Clear existing pipelines if requested
-        if clear_existing:
-            await self.clear_all_imported_pipelines()
-
         if not self.pipelines_dir.exists():
             logger.warning(f"Pipelines directory does not exist: {self.pipelines_dir}")
-            return {"imported": 0, "skipped": 0, "errors": 0}
+            return {"imported": 0, "updated": 0, "skipped": 0, "errors": 0}
 
-        json_files = list(self.pipelines_dir.glob("*.json"))
-        logger.info(f"Found {len(json_files)} JSON files to process")
+        # Scan for pipeline.json files recursively
+        json_files = list(self.pipelines_dir.glob("**/pipeline.json"))
+        logger.info(f"Found {len(json_files)} pipeline.json files to process")
+        for jf in json_files:
+            logger.info(f"  FILE: {jf}")
 
         results = {
             "imported": 0,
@@ -94,7 +77,7 @@ class PipelineImportService:
         return results
 
     async def _import_pipeline_file(self, file_path: Path) -> Dict[str, Any]:
-        """Import a single pipeline JSON file"""
+        """Import a single pipeline JSON file and its step modules"""
         logger.debug(f"Processing pipeline file: {file_path.name}")
 
         # Load and validate JSON
@@ -109,8 +92,9 @@ class PipelineImportService:
         if not name:
             raise ValueError("Pipeline must have a 'name' field")
 
-        # Generate slug from filename (without extension)
-        slug = file_path.stem
+        # Generate slug from parent directory name (the directory containing pipeline.json)
+        slug = file_path.parent.name
+        logger.info(f"IMPORTING: file={file_path} slug={slug}")
 
         # Calculate content hash for change detection
         content_hash = self._calculate_content_hash(pipeline_data)
@@ -119,33 +103,20 @@ class PipelineImportService:
         existing = await self._get_existing_pipeline(slug)
 
         if existing:
-            # Check if content has changed
+            # Skip if unchanged
             if existing['content_hash'] == content_hash:
-                logger.debug(f"Pipeline {slug} unchanged, skipping")
                 return {"action": "skipped", "pipeline_id": existing['id'], "slug": slug}
 
-            # Update existing pipeline
+            # Update if changed
             await self._update_pipeline(existing['id'], pipeline_data, content_hash, str(file_path.relative_to(self.pipelines_dir)))
-            logger.info(f"Updated pipeline: {slug}")
             return {"action": "updated", "pipeline_id": existing['id'], "slug": slug}
 
         # Create new pipeline
         pipeline_id = await self._create_pipeline(slug, pipeline_data, content_hash, str(file_path.relative_to(self.pipelines_dir)))
+        # Import step modules for new pipeline
+        await self._import_step_modules(file_path, pipeline_id, pipeline_data)
         logger.info(f"Imported new pipeline: {slug} ({pipeline_id})")
         return {"action": "imported", "pipeline_id": pipeline_id, "slug": slug}
-
-    def _generate_slug(self, name: str, file_path: str) -> str:
-        """Generate a unique slug from name and file path"""
-        clean_name = name.lower().replace(' ', '-').replace('_', '-')
-        clean_name = ''.join(c for c in clean_name if c.isalnum() or c == '-')
-        while '--' in clean_name:
-            clean_name = clean_name.replace('--', '-')
-        clean_name = clean_name.strip('-')
-
-        path_hash = hashlib.md5(file_path.encode()).hexdigest()[:6]
-        slug = f"{clean_name}-{path_hash}"
-
-        return slug
 
     def _calculate_content_hash(self, pipeline_data: Dict[str, Any]) -> str:
         """Calculate hash of pipeline content for change detection"""
@@ -156,13 +127,17 @@ class PipelineImportService:
         """Check if pipeline already exists by slug"""
         query = """
         SELECT id, content_hash FROM pipelines
-        WHERE slug = :slug AND is_system = 0
+        WHERE slug = :slug
         """
+        result = self.db_provider.fetch_one(query, {'slug': slug})
 
-        result = await self.db_provider.fetch_one(query, {'slug': slug})
-        if result and result.data:
-            row = result.data[0] if isinstance(result.data, list) else result.data
-            return dict(row)
+        if result:
+            if isinstance(result, dict):
+                return result
+            elif hasattr(result, 'data') and result.data:
+                row = result.data[0] if isinstance(result.data, list) else result.data
+                return dict(row)
+
         return None
 
     async def _create_pipeline(self, slug: str, pipeline_data: Dict[str, Any], content_hash: str, file_path: str) -> str:
@@ -179,7 +154,7 @@ class PipelineImportService:
         INSERT INTO pipelines (
             id, slug, name, description, version, pipeline_json,
             file_path, content_hash, is_system
-        ) VALUES (:id, :slug, :name, :description, :version, :pipeline_json, :file_path, :content_hash, 0)
+        ) VALUES (:id, :slug, :name, :description, :version, :pipeline_json, :file_path, :content_hash, :is_system)
         """
 
         result = await self.db_provider.execute_async(
@@ -192,11 +167,16 @@ class PipelineImportService:
                 'version': version,
                 'pipeline_json': pipeline_json,
                 'file_path': file_path,
-                'content_hash': content_hash
+                'content_hash': content_hash,
+                'is_system': False
             }
         )
 
-        if not result.success:
+        # Handle both list and object responses
+        if isinstance(result, list):
+            # List response is considered success
+            pass
+        elif not hasattr(result, 'success') or not result.success:
             raise Exception(f"Failed to create pipeline: {result}")
 
         return pipeline_id
@@ -228,7 +208,11 @@ class PipelineImportService:
             }
         )
 
-        if not result.success:
+        # Handle both list and object responses
+        if isinstance(result, list):
+            # List response is considered success
+            pass
+        elif not hasattr(result, 'success') or not result.success:
             raise Exception(f"Failed to update pipeline: {result}")
 
     async def get_pipeline_by_slug(self, slug: str) -> Optional[Dict[str, Any]]:
@@ -240,8 +224,8 @@ class PipelineImportService:
         WHERE slug = :slug AND is_active = 1
         """
 
-        result = await self.db_provider.fetch_one(query, {'slug': slug})
-        if result and result.data:
+        result = self.db_provider.fetch_one(query, {'slug': slug})
+        if result and hasattr(result, 'data') and result.data:
             row = result.data[0] if isinstance(result.data, list) else result.data
             pipeline_data = dict(row)
             pipeline_data['pipeline_config'] = json.loads(pipeline_data['pipeline_json'])
@@ -254,12 +238,12 @@ class PipelineImportService:
         SELECT id, slug, name, description, version, file_path,
                created_at, updated_at
         FROM pipelines
-        WHERE is_system = 0 AND is_active = 1
+        WHERE is_system = :is_system AND is_active = :is_active
         ORDER BY name
         """
 
-        result = await self.db_provider.fetch_all(query)
-        if result and result.success and result.data:
+        result = self.db_provider.fetch_all(query, {'is_system': False, 'is_active': True})
+        if result and hasattr(result, 'success') and result.success and result.data:
             return [dict(row) for row in result.data]
         return []
 
@@ -289,3 +273,189 @@ class PipelineImportService:
         except Exception as e:
             logger.error(f"Pipeline validation error: {e}")
             return False
+
+    async def _import_step_modules(self, pipeline_file: Path, pipeline_id: str, pipeline_data: Dict[str, Any]):
+        """Import Python step modules for a pipeline
+
+        Scans the steps/ directory adjacent to the pipeline JSON file and imports
+        all Python files into the database.
+
+        Args:
+            pipeline_file: Path to pipeline.json file
+            pipeline_id: ID of the pipeline in database
+            pipeline_data: Parsed pipeline JSON data
+        """
+        import uuid
+
+        pipeline_dir = pipeline_file.parent
+        steps_dir = pipeline_dir / "steps"
+
+        if not steps_dir.exists() or not steps_dir.is_dir():
+            logger.debug(f"No steps directory found for pipeline: {pipeline_file}")
+            return
+
+        # Get all Python files in steps directory
+        step_files = list(steps_dir.glob("*.py"))
+        logger.info(f"Found {len(step_files)} step files to import for pipeline {pipeline_id}")
+
+        imported_count = 0
+        for step_file in step_files:
+            # Skip __init__.py and __pycache__
+            if step_file.name.startswith("__"):
+                continue
+
+            try:
+                # Read source code
+                source_code = step_file.read_text(encoding='utf-8')
+
+                # Find matching step definition in pipeline JSON
+                step_info = self._find_step_info_for_file(pipeline_data, step_file)
+
+                if not step_info:
+                    logger.warning(f"No matching step found in pipeline JSON for {step_file.name}, skipping")
+                    continue
+
+                # Calculate content hash
+                content_hash = hashlib.md5(source_code.encode()).hexdigest()
+
+                # Store in database
+                await self._create_or_update_step_module(
+                    pipeline_id=pipeline_id,
+                    step_id=step_info['step_id'],
+                    module_path=step_info['module_path'],
+                    class_name=step_info['class_name'],
+                    source_code=source_code,
+                    file_path=str(step_file.relative_to(pipeline_dir)),
+                    content_hash=content_hash
+                )
+                imported_count += 1
+
+            except Exception as e:
+                logger.error(f"Failed to import step module {step_file.name}: {e}")
+
+        logger.info(f"Imported {imported_count} step modules for pipeline {pipeline_id}")
+
+    def _find_step_info_for_file(self, pipeline_data: Dict[str, Any], step_file: Path) -> Optional[Dict[str, Any]]:
+        """Find step information from pipeline JSON that matches a step file
+
+        Args:
+            pipeline_data: Parsed pipeline JSON
+            step_file: Path to step Python file
+
+        Returns:
+            Dict with step_id, module_path, class_name or None if not found
+        """
+        steps = pipeline_data.get('steps', [])
+
+        for step in steps:
+            module_path = step.get('module', '')
+            class_name = step.get('step_class', '')
+
+            # Extract the filename from module path
+            # e.g., "tests.pipelines.simple_pipeline.steps.step1" -> "step1"
+            if module_path:
+                module_parts = module_path.split('.')
+                module_filename = module_parts[-1] if module_parts else ''
+
+                # Check if this matches our file
+                if module_filename == step_file.stem:
+                    return {
+                        'step_id': step.get('id', ''),
+                        'module_path': module_path,
+                        'class_name': class_name
+                    }
+
+        return None
+
+    async def _create_or_update_step_module(
+        self,
+        pipeline_id: str,
+        step_id: str,
+        module_path: str,
+        class_name: str,
+        source_code: str,
+        file_path: str,
+        content_hash: str
+    ):
+        """Create or update a step module in the database
+
+        Args:
+            pipeline_id: ID of the pipeline
+            step_id: ID of the step
+            module_path: Python module path
+            class_name: Name of the step class
+            source_code: Python source code
+            file_path: Original file path relative to pipeline directory
+            content_hash: MD5 hash of source code
+        """
+        import uuid
+
+        # Check if step module already exists
+        query_check = """
+        SELECT id, content_hash FROM pipeline_step_modules
+        WHERE pipeline_id = :pipeline_id AND step_id = :step_id
+        """
+
+        result = self.db_provider.fetch_one(query_check, {
+            'pipeline_id': pipeline_id,
+            'step_id': step_id
+        })
+
+        if result and hasattr(result, 'data') and result.data:
+            # Update existing
+            row = result.data[0] if isinstance(result.data, list) else result.data
+            existing_hash = row['content_hash']
+
+            if existing_hash == content_hash:
+                logger.debug(f"Step module {step_id} unchanged, skipping")
+                return
+
+            query_update = """
+            UPDATE pipeline_step_modules
+            SET module_path = :module_path,
+                class_name = :class_name,
+                source_code = :source_code,
+                file_path = :file_path,
+                content_hash = :content_hash,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE pipeline_id = :pipeline_id AND step_id = :step_id
+            """
+
+            await self.db_provider.execute_async(query_update, {
+                'module_path': module_path,
+                'class_name': class_name,
+                'source_code': source_code,
+                'file_path': file_path,
+                'content_hash': content_hash,
+                'pipeline_id': pipeline_id,
+                'step_id': step_id
+            })
+
+            logger.info(f"Updated step module: {step_id} ({class_name})")
+        else:
+            # Create new
+            module_id = str(uuid.uuid4())
+
+            query_insert = """
+            INSERT INTO pipeline_step_modules (
+                id, pipeline_id, step_id, module_path, class_name,
+                source_code, file_path, content_hash, is_active
+            ) VALUES (
+                :id, :pipeline_id, :step_id, :module_path, :class_name,
+                :source_code, :file_path, :content_hash, :is_active
+            )
+            """
+
+            await self.db_provider.execute_async(query_insert, {
+                'id': module_id,
+                'pipeline_id': pipeline_id,
+                'step_id': step_id,
+                'module_path': module_path,
+                'class_name': class_name,
+                'source_code': source_code,
+                'file_path': file_path,
+                'content_hash': content_hash,
+                'is_active': True
+            })
+
+            logger.info(f"Created step module: {step_id} ({class_name})")

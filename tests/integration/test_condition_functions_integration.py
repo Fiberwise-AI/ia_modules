@@ -9,6 +9,7 @@ from unittest.mock import Mock
 import pytest
 
 from ia_modules.pipeline.condition_functions import (
+from ia_modules.pipeline.test_utils import create_test_execution_context
     business_hours_condition,
     data_quality_condition,
     threshold_condition,

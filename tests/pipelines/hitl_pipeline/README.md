@@ -114,13 +114,20 @@ Configurable parameters for:
 
 ## Running the HITL Test Pipeline
 
+**Note**: Run commands from the `ia_modules` directory or use full paths from project root.
+
 ### Basic Test
 ```bash
+# From ia_modules directory:
 python tests/pipeline_runner.py tests/pipelines/hitl_pipeline/pipeline.json
+
+# Or from project root:
+python ia_modules/tests/pipeline_runner.py ia_modules/tests/pipelines/hitl_pipeline/pipeline.json
 ```
 
 ### With Custom Content
 ```bash
+# From ia_modules directory:
 python tests/pipeline_runner.py tests/pipelines/hitl_pipeline/pipeline.json --input '{
   "content": "This is test content that needs human review and potential enhancement."
 }'
@@ -131,15 +138,17 @@ python tests/pipeline_runner.py tests/pipelines/hitl_pipeline/pipeline.json --in
 #### High Quality (Auto-Approval Path)
 ```bash
 # Simulates content that passes automated quality checks
+# From ia_modules directory:
 python tests/pipeline_runner.py tests/pipelines/hitl_pipeline/pipeline.json --input '{
   "content": "High quality content that meets all automated requirements and standards.",
   "simulated_quality": 0.9
 }'
 ```
 
-#### Medium Quality (Human Review Path)  
+#### Medium Quality (Human Review Path)
 ```bash
 # Triggers human review step
+# From ia_modules directory:
 python tests/pipeline_runner.py tests/pipelines/hitl_pipeline/pipeline.json --input '{
   "content": "Medium quality content that needs human review.",
   "simulated_quality": 0.75
@@ -149,6 +158,7 @@ python tests/pipeline_runner.py tests/pipelines/hitl_pipeline/pipeline.json --in
 #### Low Quality (Enhancement Path)
 ```bash
 # Triggers enhancement and collaborative decision paths
+# From ia_modules directory:
 python tests/pipeline_runner.py tests/pipelines/hitl_pipeline/pipeline.json --input '{
   "content": "Low quality content requiring improvement.",
   "simulated_quality": 0.6

@@ -80,32 +80,39 @@ class StepUpdate(BaseModel):
 
 class MetricsReport(BaseModel):
     """Reliability metrics report"""
-    sr: float = Field(description="Success Rate")
+    svr: float = Field(description="Success Rate")
     cr: float = Field(description="Compensation Rate")
     pc: float = Field(description="Pass Confidence")
     hir: float = Field(description="Human Intervention Rate")
-    ma: float = Field(description="Model Accuracy")
+    ma: Optional[float] = Field(None, description="Model Accuracy")
     tcl: Optional[float] = Field(None, description="Tool Call Latency (ms)")
     wct: Optional[float] = Field(None, description="Workflow Completion Time (ms)")
+    mtte: Optional[float] = Field(None, description="Mean Time To Error (hours)")
+    rsr: Optional[float] = Field(None, description="Retry Success Rate")
+    eqs: Optional[float] = Field(None, description="Explanation Quality Score")
+    tpw: Optional[float] = Field(None, description="Tokens Per Workflow")
+    cpsw: Optional[float] = Field(None, description="Cost Per Successful Workflow")
+    total_workflows: int
     total_steps: int
-    successful_steps: int
-    failed_steps: int
-    timestamp: datetime
+    timestamp: str
 
 
 class SLOCompliance(BaseModel):
     """SLO compliance status"""
-    sr_compliant: bool
-    sr_current: float
-    sr_target: float
+    svr_compliant: bool
+    svr_current: Optional[float]
+    svr_target: float
     cr_compliant: bool
-    cr_current: float
+    cr_current: Optional[float]
     cr_target: float
     hir_compliant: bool
-    hir_current: float
+    hir_current: Optional[float]
     hir_target: float
+    ma_compliant: bool
+    ma_current: Optional[float]
+    ma_target: float
     overall_compliant: bool
-    timestamp: datetime
+    timestamp: str
 
 
 class EventLog(BaseModel):

@@ -8,6 +8,7 @@ from unittest.mock import Mock
 import pytest
 
 from ia_modules.pipeline.services import ServiceRegistry, CentralLoggingService
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 def test_central_logging_service():

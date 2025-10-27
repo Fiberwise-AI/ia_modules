@@ -13,6 +13,7 @@ import pytest
 import time
 import asyncio
 from ia_modules.pipeline.core import Pipeline, Step
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.pipeline.services import ServiceRegistry
 
 
@@ -88,7 +89,7 @@ class TestPipelineThroughput:
         start = time.time()
 
         for i in range(iterations):
-            result = await pipeline.run({"value": i})
+            result = await pipeline.run({"value": i}, create_test_execution_context())
             # Steps is now a list, check it has entries
             assert len(result.get("steps", [])) > 0
 
@@ -111,7 +112,7 @@ class TestPipelineThroughput:
         start = time.time()
 
         # Execute pipelines concurrently
-        tasks = [pipeline.run({"value": i}) for i in range(iterations)]
+        tasks = [pipeline.run({"value": i}, create_test_execution_context()) for i in range(iterations)]
         results = await asyncio.gather(*tasks)
 
         elapsed = time.time() - start
@@ -138,7 +139,7 @@ class TestPipelineLatency:
 
         for i in range(iterations):
             start = time.time()
-            await pipeline.run({"value": i})
+            await pipeline.run({"value": i}, create_test_execution_context())
             latencies.append((time.time() - start) * 1000)  # Convert to ms
 
         latencies.sort()
@@ -167,12 +168,12 @@ class TestPipelineLatency:
 
         # Fast pipeline
         start = time.time()
-        await fast_pipeline.run({"value": 1})
+        await fast_pipeline.run({"value": 1}, create_test_execution_context())
         fast_time = time.time() - start
 
         # Slow pipeline
         start = time.time()
-        await slow_pipeline.run({"value": 1})
+        await slow_pipeline.run({"value": 1}, create_test_execution_context())
         slow_time = time.time() - start
 
         print(f"\nFast pipeline: {fast_time*1000:.2f}ms")
@@ -199,7 +200,7 @@ class TestDataProcessing:
             data = list(range(size))
 
             start = time.time()
-            result = await pipeline.run({"data": data})
+            result = await pipeline.run({"data": data}, create_test_execution_context())
             elapsed = time.time() - start
 
             # Find processor step result
@@ -225,7 +226,7 @@ class TestDataProcessing:
 
         start = time.time()
         for _ in range(iterations):
-            result = await pipeline.run({"data": data})
+            result = await pipeline.run({"data": data}, create_test_execution_context())
             # Steps is now a list, just check it exists
             assert len(result.get("steps", [])) > 0
 
@@ -254,7 +255,7 @@ class TestScalability:
             start = time.time()
 
             tasks = [
-                pipeline.run({"value": i})
+                pipeline.run({"value": i}, create_test_execution_context())
                 for i in range(concurrency)
             ]
             results = await asyncio.gather(*tasks)
@@ -279,7 +280,7 @@ class TestScalability:
             start = time.time()
 
             for i in range(iterations):
-                await pipeline.run({"value": i})
+                await pipeline.run({"value": i}, create_test_execution_context())
 
             elapsed = time.time() - start
             avg_time = (elapsed / iterations) * 1000

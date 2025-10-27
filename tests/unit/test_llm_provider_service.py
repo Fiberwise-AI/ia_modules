@@ -12,6 +12,7 @@ from ia_modules.pipeline.llm_provider_service import (
     LLMResponse,
     LLMProviderService
 )
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestLLMProvider:

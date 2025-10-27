@@ -9,6 +9,7 @@ import json
 import pytest
 
 from ia_modules.pipeline.runner import (
+from ia_modules.pipeline.test_utils import create_test_execution_context
     load_step_class,
     create_step_from_json,
     create_pipeline_from_json
@@ -138,7 +139,7 @@ async def test_full_pipeline_integration():
         pipeline = create_pipeline_from_json(pipeline_config, services)
         
         # Test execution
-        result = await pipeline.run({"input": "test_data"})
+        result = await pipeline.run({"input": "test_data"}, create_test_execution_context())
         
         assert result is not None
         assert isinstance(result, dict)

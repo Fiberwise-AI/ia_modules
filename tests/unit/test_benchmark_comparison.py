@@ -5,6 +5,7 @@ Tests comparison tools for detecting performance changes.
 """
 
 import pytest
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.benchmarking.framework import BenchmarkResult
 from ia_modules.benchmarking.comparison import (
     BenchmarkComparator,

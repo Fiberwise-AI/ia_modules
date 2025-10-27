@@ -9,6 +9,7 @@ import json
 import pytest
 
 from ia_modules.pipeline.importer import PipelineImportService
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 def test_pipeline_import_service_creation():

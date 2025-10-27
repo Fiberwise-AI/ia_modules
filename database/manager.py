@@ -146,36 +146,51 @@ class DatabaseManager:
 
             elif self.config.database_type == DatabaseType.MSSQL:
                 import pyodbc
-                from urllib.parse import urlparse
+                from urllib.parse import urlparse, parse_qs
 
-                # Parse connection string or build from components
-                if 'Driver' in self.database_url or 'DRIVER' in self.database_url:
-                    # Full connection string provided
+                # Check if this is a raw ODBC connection string (starts with DRIVER={...})
+                if self.database_url.startswith('DRIVER=') or self.database_url.startswith('Driver='):
+                    # Raw ODBC connection string provided
                     self._connection = pyodbc.connect(self.database_url)
                 else:
-                    # Parse the database URL
+                    # Parse the database URL (SQLAlchemy format: mssql+pyodbc://user:pass@host:port/db?driver=...)
                     parsed = urlparse(self.database_url)
+                    query_params = parse_qs(parsed.query) if parsed.query else {}
 
-                    # Detect available driver (prefer 17 over 18, as 18 has TLS issues)
-                    available_drivers = pyodbc.drivers()
+                    # Get driver from query params or auto-detect
                     driver = None
-                    for preferred in ['ODBC Driver 17 for SQL Server', 'ODBC Driver 18 for SQL Server', 'SQL Server']:
-                        if preferred in available_drivers:
-                            driver = preferred
-                            break
+                    if 'driver' in query_params:
+                        driver = query_params['driver'][0]
+                    else:
+                        # Detect available driver (prefer 17 over 18, as 18 has TLS issues)
+                        available_drivers = pyodbc.drivers()
+                        for preferred in ['ODBC Driver 17 for SQL Server', 'ODBC Driver 18 for SQL Server', 'SQL Server']:
+                            if preferred in available_drivers:
+                                driver = preferred
+                                break
 
                     if not driver:
                         raise RuntimeError("No MSSQL ODBC driver found. Install ODBC Driver 17 or 18 for SQL Server")
 
-                    conn_str = (
-                        f"DRIVER={{{driver}}};"
-                        f"SERVER={self.config.host or parsed.hostname or 'localhost'},{self.config.port or parsed.port or 1433};"
-                        f"DATABASE={self.config.database_name or parsed.path.lstrip('/') or 'master'};"
-                        f"UID={self.config.username or parsed.username};"
-                        f"PWD={self.config.password or parsed.password};"
-                        f"TrustServerCertificate=yes;"
-                        f"Encrypt=yes"
-                    )
+                    # Build ODBC connection string
+                    conn_str_parts = [
+                        f"DRIVER={{{driver}}}",
+                        f"SERVER={self.config.host or parsed.hostname or 'localhost'},{self.config.port or parsed.port or 1433}",
+                        f"DATABASE={self.config.database_name or parsed.path.lstrip('/') or 'master'}",
+                        f"UID={self.config.username or parsed.username}",
+                        f"PWD={self.config.password or parsed.password}"
+                    ]
+
+                    # Add additional query params (like TrustServerCertificate)
+                    for key, values in query_params.items():
+                        if key.lower() != 'driver':  # Skip driver, already added
+                            conn_str_parts.append(f"{key}={values[0]}")
+
+                    # If TrustServerCertificate not provided, add it by default
+                    if 'TrustServerCertificate' not in query_params and 'trustservercertificate' not in query_params:
+                        conn_str_parts.append("TrustServerCertificate=yes")
+
+                    conn_str = ";".join(conn_str_parts)
                     self._connection = pyodbc.connect(conn_str)
 
                 self._connection.autocommit = False
@@ -504,24 +519,68 @@ class DatabaseManager:
             new_query = query
             for key in params.keys():
                 new_query = new_query.replace(f":{key}", f"%({key})s")
-            return new_query, params
+
+            # Convert booleans to integers if column type is INTEGER
+            # PostgreSQL is strict about types - bool can't go into INTEGER columns
+            converted_params = {}
+            for key, value in params.items():
+                if isinstance(value, bool):
+                    converted_params[key] = 1 if value else 0
+                else:
+                    converted_params[key] = value
+
+            return new_query, converted_params
 
         elif self.config.database_type == DatabaseType.MYSQL:
             # MySQL uses %s with positional tuple
-            new_query = query
+            # IMPORTANT: Build param_list in order of appearance in query, not dict iteration order
+            import re
+
+            # Find all :param_name patterns in query in order of appearance
+            param_pattern = r':(\w+)'
+            param_names_in_order = re.findall(param_pattern, query)
+
+            # Build param list in query order
             param_list = []
-            for key, value in params.items():
-                new_query = new_query.replace(f":{key}", "%s", 1)
-                param_list.append(value)
+            for param_name in param_names_in_order:
+                if param_name not in params:
+                    raise ValueError(f"Parameter :{param_name} used in query but not provided in params")
+                value = params[param_name]
+                # Convert booleans to integers for MySQL INTEGER columns
+                if isinstance(value, bool):
+                    param_list.append(1 if value else 0)
+                else:
+                    param_list.append(value)
+
+            # Replace all :param_name with %s in one pass
+            new_query = re.sub(param_pattern, '%s', query)
+
             return new_query, tuple(param_list)
 
         elif self.config.database_type in [DatabaseType.SQLITE, DatabaseType.MSSQL]:
             # SQLite and MSSQL use ? with positional tuple
-            new_query = query
+            # IMPORTANT: Build param_list in order of appearance in query, not dict iteration order
+            import re
+
+            # Find all :param_name patterns in query in order of appearance
+            param_pattern = r':(\w+)'
+            param_names_in_order = re.findall(param_pattern, query)
+
+            # Build param list in query order
             param_list = []
-            for key, value in params.items():
-                new_query = new_query.replace(f":{key}", "?", 1)
-                param_list.append(value)
+            for param_name in param_names_in_order:
+                if param_name not in params:
+                    raise ValueError(f"Parameter :{param_name} used in query but not provided in params")
+                value = params[param_name]
+                # Convert booleans to integers for SQLite
+                if self.config.database_type == DatabaseType.SQLITE and isinstance(value, bool):
+                    param_list.append(1 if value else 0)
+                else:
+                    param_list.append(value)
+
+            # Replace all :param_name with ? in one pass
+            new_query = re.sub(param_pattern, '?', query)
+
             return new_query, tuple(param_list)
 
         else:
@@ -588,7 +647,17 @@ class DatabaseManager:
             if query_upper.startswith('SELECT') or query_upper.startswith('SHOW') or query_upper.startswith('DESCRIBE'):
                 # Fetch results for SELECT queries
                 rows = cursor.fetchall()
-                return [dict(row) for row in rows] if rows else []
+                if not rows:
+                    return []
+
+                # Convert rows to dicts
+                # For pyodbc (MSSQL), need to use cursor.description to get column names
+                if self.config.database_type == DatabaseType.MSSQL:
+                    columns = [column[0] for column in cursor.description]
+                    return [dict(zip(columns, row)) for row in rows]
+                else:
+                    # SQLite and MySQL return dict-like rows
+                    return [dict(row) for row in rows]
             else:
                 # For INSERT/UPDATE/DELETE, just commit
                 self._connection.commit()

@@ -4,19 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { executionAPI, pipelinesAPI } from '../services/api'
 import { useExecutionWebSocket } from '../hooks/useWebSocket'
 import axios from 'axios'
-
-import ExecutionHeader from '../components/execution/ExecutionHeader'
-import ExecutionStatusCard from '../components/execution/ExecutionStatusCard'
-import ExecutionError from '../components/execution/ExecutionError'
-import PipelineGraphSection from '../components/execution/PipelineGraphSection'
-import StepDetailsList from '../components/execution/StepDetailsList'
-import DataViewer from '../components/execution/DataViewer'
-import ExecutionTimeline from '../components/execution/ExecutionTimeline'
-import SpanTimeline from '../components/telemetry/SpanTimeline'
-import CheckpointList from '../components/checkpoint/CheckpointList'
-import ConversationHistory from '../components/memory/ConversationHistory'
-import ReplayComparison from '../components/replay/ReplayComparison'
-import DecisionTimeline from '../components/decision/DecisionTimeline'
+import DragDropContainer from '../components/common/DragDropContainer'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5555'
 
@@ -80,55 +68,43 @@ export default function ExecutionDetailPage() {
     )
   }
 
+  const handleTemplateImport = (templateItems, templateName) => {
+    console.log('Imported template:', templateName, templateItems)
+    // Could show a toast or update the page title
+  }
+
   return (
-    <div className="space-y-6">
-      <ExecutionHeader onBack={() => navigate('/executions')} />
+    <DragDropContainer
+      onLayoutChange={(layout) => console.log('Layout changed:', layout)}
+      onTemplateImport={handleTemplateImport}
+      layoutKey="execution-detail-layout"
+      execution={execution}
+      pipeline={pipeline}
+      jobId={jobId}
+      telemetryData={telemetryData}
+    >
+      {/* Pass execution data to all components that need it */}
+      <div id="execution-header" data-component="ExecutionHeader" data-props={{ onBack: () => navigate('/executions') }} />
+      <div id="execution-status" data-component="ExecutionStatusCard" data-props={{ execution }} />
+      <div id="execution-error" data-component="ExecutionError" data-props={{ error: execution.error }} />
+      <div id="execution-timeline" data-component="ExecutionTimeline" data-props={{ execution }} />
+      <div id="pipeline-graph" data-component="PipelineGraphSection" data-props={{ pipeline, execution }} />
 
-      <ExecutionStatusCard execution={execution} />
-
-      <ExecutionError error={execution.error} />
-
-      {/* Execution Timeline - Gantt Chart */}
-      <ExecutionTimeline execution={execution} />
-
-      <PipelineGraphSection pipeline={pipeline} execution={execution} />
-
-      {/* Telemetry Spans Timeline */}
       {telemetryData?.timeline && telemetryData.timeline.length > 0 && (
-        <SpanTimeline jobId={jobId} spans={telemetryData.timeline} />
+        <div id="span-timeline" data-component="SpanTimeline" data-props={{ jobId, spans: telemetryData.timeline }} />
       )}
 
-      {/* Checkpoints */}
-      <CheckpointList jobId={jobId} />
-
-      {/* Memory / Conversation History */}
-      <div className="bg-white rounded-lg shadow-md border border-gray-200">
-        <ConversationHistory sessionId={jobId} />
-      </div>
-
-      {/* Replay Comparison */}
-      <div className="bg-white rounded-lg shadow-md border border-gray-200">
-        <ReplayComparison jobId={jobId} />
-      </div>
-
-      {/* Decision Trail */}
-      <div className="bg-white rounded-lg shadow-md border border-gray-200">
-        <DecisionTimeline jobId={jobId} />
-      </div>
-
-      <StepDetailsList steps={execution.steps} />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <DataViewer
-          title="Input Data"
-          data={execution.input_data}
-        />
-        <DataViewer
-          title="Final Output"
-          data={execution.output_data}
-          maxHeight="max-h-96 overflow-y-auto"
-        />
-      </div>
-    </div>
+      <div id="checkpoints" data-component="CheckpointList" data-props={{ jobId }} />
+      <div id="conversation-history" data-component="ConversationHistory" data-props={{ sessionId: jobId }} />
+      <div id="replay-comparison" data-component="ReplayComparison" data-props={{ jobId }} />
+      <div id="decision-timeline" data-component="DecisionTimeline" data-props={{ jobId }} />
+      <div id="step-details" data-component="StepDetailsList" data-props={{ steps: execution.steps }} />
+      <div id="input-data-viewer" data-component="DataViewer" data-props={{ title: "Input Data", data: execution.input_data }} />
+      <div id="output-data-viewer" data-component="DataViewer" data-props={{
+        title: "Final Output",
+        data: execution.output_data,
+        maxHeight: "max-h-96 overflow-y-auto"
+      }} />
+    </DragDropContainer>
   )
 }

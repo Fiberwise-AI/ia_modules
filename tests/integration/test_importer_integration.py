@@ -11,6 +11,7 @@ from unittest.mock import Mock
 import pytest
 
 from ia_modules.pipeline.importer import PipelineImportService
+from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 @pytest.mark.asyncio

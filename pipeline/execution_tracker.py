@@ -26,6 +26,7 @@ class ExecutionStatus(Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    WAITING_FOR_HUMAN = "waiting_for_human"
 
 
 class StepStatus(Enum):
@@ -582,8 +583,8 @@ class ExecutionTracker:
             'total_steps': execution.total_steps,
             'completed_steps': execution.completed_steps,
             'failed_steps': execution.failed_steps,
-            'input_data': json.dumps(execution.input_data) if execution.input_data else None,
-            'output_data': json.dumps(execution.output_data) if execution.output_data else None,
+            'input_data': self._safe_json_dumps(execution.input_data),
+            'output_data': self._safe_json_dumps(execution.output_data),
             'error_message': execution.error_message,
             'execution_time_ms': execution.execution_time_ms,
             'metadata_json': json.dumps(execution.metadata) if execution.metadata else None
@@ -617,7 +618,7 @@ class ExecutionTracker:
             'completed_at': execution.completed_at,
             'completed_steps': execution.completed_steps,
             'failed_steps': execution.failed_steps,
-            'output_data': json.dumps(execution.output_data) if execution.output_data else None,
+            'output_data': self._safe_json_dumps(execution.output_data),
             'error_message': execution.error_message,
             'execution_time_ms': execution.execution_time_ms,
             'metadata_json': json.dumps(execution.metadata) if execution.metadata else None
@@ -651,8 +652,8 @@ class ExecutionTracker:
             'status': step_execution.status.value,
             'started_at': step_execution.started_at,
             'completed_at': step_execution.completed_at,
-            'input_data': json.dumps(step_execution.input_data) if step_execution.input_data else None,
-            'output_data': json.dumps(step_execution.output_data) if step_execution.output_data else None,
+            'input_data': self._safe_json_dumps(step_execution.input_data),
+            'output_data': self._safe_json_dumps(step_execution.output_data),
             'error_message': step_execution.error_message,
             'execution_time_ms': step_execution.execution_time_ms,
             'retry_count': step_execution.retry_count,
@@ -680,7 +681,7 @@ class ExecutionTracker:
             'step_execution_id': step_execution.step_execution_id,
             'status': step_execution.status.value,
             'completed_at': step_execution.completed_at,
-            'output_data': json.dumps(step_execution.output_data) if step_execution.output_data else None,
+            'output_data': self._safe_json_dumps(step_execution.output_data),
             'error_message': step_execution.error_message,
             'execution_time_ms': step_execution.execution_time_ms,
             'retry_count': step_execution.retry_count,
@@ -801,6 +802,17 @@ class ExecutionTracker:
         # Remove disconnected connections
         for websocket in disconnected:
             self.remove_websocket_connection(websocket)
+
+    def _safe_json_dumps(self, data: Any) -> Optional[str]:
+        """Safely serialize data to JSON"""
+        if data is None:
+            return None
+        try:
+            return json.dumps(data)
+        except (TypeError, ValueError) as e:
+            logger.error(f"JSON serialization error: {e}. Data type: {type(data)}")
+            # Return error info instead of crashing
+            return json.dumps({"_serialization_error": str(e)[:500], "_data_type": str(type(data))})
 
 
 # Global execution tracker instance
