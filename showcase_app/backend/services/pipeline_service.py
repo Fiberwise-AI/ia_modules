@@ -581,26 +581,32 @@ class PipelineService:
                 execution["progress"] = len(result.get("steps", [])) / max(len(pipeline_config.get("steps", [])), 1)
 
                 # Notify WebSocket: Execution paused for human input
-                await ws_manager.broadcast_execution(job_id, {
+                pause_message = {
                     "type": "execution_paused",
                     "job_id": job_id,
+                    "pipeline_id": execution["pipeline_id"],
                     "status": "waiting_for_human",
                     "waiting_step": result.get("waiting_step"),
                     "interaction_id": result.get("interaction_id"),
                     "timestamp": datetime.now(timezone.utc).isoformat()
-                })
+                }
+                await ws_manager.broadcast_execution(job_id, pause_message)
+                await ws_manager.broadcast_pipeline(execution["pipeline_id"], pause_message)
             else:
                 execution["status"] = "completed"
                 execution["progress"] = 1.0
 
                 # Notify WebSocket: Execution completed
-                await ws_manager.broadcast_execution(job_id, {
+                complete_message = {
                     "type": "execution_completed",
                     "job_id": job_id,
+                    "pipeline_id": execution["pipeline_id"],
                     "status": "completed",
                     "output_data": execution["output_data"],
                     "timestamp": datetime.now(timezone.utc).isoformat()
-                })
+                }
+                await ws_manager.broadcast_execution(job_id, complete_message)
+                await ws_manager.broadcast_pipeline(execution["pipeline_id"], complete_message)
 
             # Extract token usage from result or telemetry
             total_tokens = result.get("total_tokens") if isinstance(result, dict) else None
@@ -615,13 +621,16 @@ class PipelineService:
             execution["error"] = str(e)
             
             # Notify WebSocket: Execution failed
-            await ws_manager.broadcast_execution(job_id, {
+            failed_message = {
                 "type": "execution_failed",
                 "job_id": job_id,
+                "pipeline_id": execution["pipeline_id"],
                 "status": "failed",
                 "error": str(e),
                 "timestamp": datetime.now(timezone.utc).isoformat()
-            })
+            }
+            await ws_manager.broadcast_execution(job_id, failed_message)
+            await ws_manager.broadcast_pipeline(execution["pipeline_id"], failed_message)
             
             total_tokens = None
             estimated_cost = None
@@ -1007,6 +1016,18 @@ class PipelineService:
                 execution_id=execution_id,
                 status=ExecutionStatus.COMPLETED
             )
+
+            # Broadcast completion via WebSocket
+            from ia_modules.showcase_app.backend.api.websockets import ws_manager
+            complete_message = {
+                "type": "execution_completed",
+                "job_id": execution_id,
+                "pipeline_id": pipeline_id,
+                "status": "completed",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            await ws_manager.broadcast_execution(execution_id, complete_message)
+            await ws_manager.broadcast_pipeline(pipeline_id, complete_message)
             return
 
         # Create a continuation config starting from next_step
@@ -1029,14 +1050,17 @@ class PipelineService:
                 logger.info(f"Execution paused again at step {result.get('waiting_step')}")
                 # Broadcast pause via WebSocket
                 from ia_modules.showcase_app.backend.api.websockets import ws_manager
-                await ws_manager.broadcast_execution(execution_id, {
+                pause_message = {
                     "type": "execution_paused",
                     "job_id": execution_id,
+                    "pipeline_id": pipeline_id,
                     "status": "waiting_for_human",
                     "waiting_step": result.get("waiting_step"),
                     "interaction_id": result.get("interaction_id"),
                     "timestamp": datetime.now(timezone.utc).isoformat()
-                })
+                }
+                await ws_manager.broadcast_execution(execution_id, pause_message)
+                await ws_manager.broadcast_pipeline(pipeline_id, pause_message)
             else:
                 # Mark execution as completed or failed
                 from ia_modules.pipeline.execution_tracker import ExecutionStatus
@@ -1048,13 +1072,16 @@ class PipelineService:
 
                 # Broadcast completion via WebSocket
                 from ia_modules.showcase_app.backend.api.websockets import ws_manager
-                await ws_manager.broadcast_execution(execution_id, {
+                complete_message = {
                     "type": "execution_completed" if final_status == ExecutionStatus.COMPLETED else "execution_failed",
                     "job_id": execution_id,
+                    "pipeline_id": pipeline_id,
                     "status": "completed" if final_status == ExecutionStatus.COMPLETED else "failed",
                     "output_data": result.get("output"),
                     "timestamp": datetime.now(timezone.utc).isoformat()
-                })
+                }
+                await ws_manager.broadcast_execution(execution_id, complete_message)
+                await ws_manager.broadcast_pipeline(pipeline_id, complete_message)
 
                 logger.info(f"Execution {execution_id} completed after HITL resume")
 
@@ -1069,12 +1096,15 @@ class PipelineService:
 
             # Broadcast failure via WebSocket
             from ia_modules.showcase_app.backend.api.websockets import ws_manager
-            await ws_manager.broadcast_execution(execution_id, {
+            failed_message = {
                 "type": "execution_failed",
                 "job_id": execution_id,
+                "pipeline_id": pipeline_id,
                 "status": "failed",
                 "error": str(e),
                 "timestamp": datetime.now(timezone.utc).isoformat()
-            })
+            }
+            await ws_manager.broadcast_execution(execution_id, failed_message)
+            await ws_manager.broadcast_pipeline(pipeline_id, failed_message)
 
             raise

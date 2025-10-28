@@ -23,6 +23,7 @@ class ConnectionManager:
     def __init__(self):
         self.metrics_connections: Set[WebSocket] = set()
         self.execution_connections: Dict[str, Set[WebSocket]] = {}
+        self.pipeline_connections: Dict[str, Set[WebSocket]] = {}  # pipeline_id -> connections
         self.hitl_connections: Dict[str, Set[WebSocket]] = {}  # user_id -> connections
 
     async def connect_metrics(self, websocket: WebSocket):
@@ -91,6 +92,44 @@ class ConnectionManager:
         # Clean up disconnected
         for connection in disconnected:
             self.execution_connections[job_id].discard(connection)
+
+    async def connect_pipeline(self, pipeline_id: str, websocket: WebSocket):
+        """Connect to pipeline stream"""
+        await websocket.accept()
+
+        if pipeline_id not in self.pipeline_connections:
+            self.pipeline_connections[pipeline_id] = set()
+
+        self.pipeline_connections[pipeline_id].add(websocket)
+        logger.info(f"Pipeline WebSocket connected for pipeline {pipeline_id}")
+
+    def disconnect_pipeline(self, pipeline_id: str, websocket: WebSocket):
+        """Disconnect from pipeline stream"""
+        if pipeline_id in self.pipeline_connections:
+            self.pipeline_connections[pipeline_id].discard(websocket)
+
+            if not self.pipeline_connections[pipeline_id]:
+                del self.pipeline_connections[pipeline_id]
+
+        logger.info(f"Pipeline WebSocket disconnected for pipeline {pipeline_id}")
+
+    async def broadcast_pipeline(self, pipeline_id: str, message: dict):
+        """Broadcast to pipeline connections for specific pipeline"""
+        if pipeline_id not in self.pipeline_connections:
+            return
+
+        disconnected = set()
+
+        for connection in self.pipeline_connections[pipeline_id]:
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                logger.error(f"Error sending to pipeline WebSocket: {e}")
+                disconnected.add(connection)
+
+        # Clean up disconnected
+        for connection in disconnected:
+            self.pipeline_connections[pipeline_id].discard(connection)
 
     async def connect_hitl(self, user_id: str, websocket: WebSocket):
         """Connect to HITL notifications stream for a specific user"""
@@ -239,6 +278,46 @@ async def metrics_broadcaster():
         except Exception as e:
             logger.error(f"Error in metrics broadcaster: {e}", exc_info=True)
             await asyncio.sleep(5)
+
+
+@router.websocket("/pipeline/{pipeline_id}")
+async def websocket_pipeline_endpoint(websocket: WebSocket, pipeline_id: str):
+    """WebSocket endpoint for real-time pipeline execution updates"""
+    await manager.connect_pipeline(pipeline_id, websocket)
+
+    try:
+        # Send initial message
+        await websocket.send_json({
+            "type": "connected",
+            "pipeline_id": pipeline_id,
+            "message": f"Connected to pipeline stream for pipeline {pipeline_id}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+
+        # Keep connection alive
+        while True:
+            try:
+                data = await asyncio.wait_for(
+                    websocket.receive_text(),
+                    timeout=30.0
+                )
+
+                await websocket.send_json({
+                    "type": "pong",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+
+            except asyncio.TimeoutError:
+                await websocket.send_json({
+                    "type": "keepalive",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+
+    except WebSocketDisconnect:
+        manager.disconnect_pipeline(pipeline_id, websocket)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}", exc_info=True)
+        manager.disconnect_pipeline(pipeline_id, websocket)
 
 
 @router.websocket("/hitl/{user_id}")

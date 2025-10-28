@@ -68,7 +68,7 @@ export default function PipelineEditorPage() {
   const [selectedExecution, setSelectedExecution] = useState(null);
   const [selectedHITLInteraction, setSelectedHITLInteraction] = useState(null);
 
-  const { data: executions } = useQuery({
+  const { data: executions = [] } = useQuery({
     queryKey: ['executions', pipelineId],
     queryFn: async () => {
       if (!pipelineId) return [];
@@ -76,6 +76,7 @@ export default function PipelineEditorPage() {
       return response.data.filter(e => e.pipeline_id === pipelineId);
     },
     enabled: !!pipelineId,
+    refetchInterval: 2000, // Refetch every 2 seconds for real-time updates
   });
 
   // Fetch pending HITL interactions for this pipeline
@@ -136,6 +137,25 @@ export default function PipelineEditorPage() {
     // Sync code value when pipeline config changes from visual editor
     setCodeValue(JSON.stringify(pipelineConfig, null, 2));
   }, [pipelineConfig]);
+
+  // WebSocket listener for execution updates
+  useEffect(() => {
+    if (!pipelineId) return;
+
+    const ws = new WebSocket(`${import.meta.env.VITE_WS_URL || 'ws://localhost:5555'}/ws/pipeline/${pipelineId}`);
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      // Invalidate executions query to refetch data
+      if (data.type === 'execution_completed' || data.type === 'execution_failed' || data.type === 'execution_paused') {
+        queryClient.invalidateQueries(['executions', pipelineId]);
+        queryClient.invalidateQueries(['hitl-interactions', pipelineId]);
+      }
+    };
+
+    return () => ws.close();
+  }, [pipelineId, queryClient]);
 
   const handleVisualChange = (newConfig) => {
     setPipelineConfig(newConfig);
