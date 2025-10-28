@@ -1,18 +1,18 @@
 # IA Modules Feature Matrix
 
-Complete feature overview for v0.0.3.
+Feature overview for v0.0.3. Features marked "Production" are tested and working.
 
 ## Core Pipeline Features
 
 | Feature | Status | Description | Documentation |
 |---------|--------|-------------|---------------|
-| **Graph-Based Pipeline** | ✅ Production | Define workflows as directed graphs with conditional routing | [API Reference](API_REFERENCE.md#pipeline) |
-| **Cyclic Graph Support** | ✅ Production | Support for loops and iterative workflows with cycle detection | [Week 1 Summary](../archive/WEEK1_COMPLETION_SUMMARY.md) |
-| **Conditional Routing** | ✅ Production | Dynamic step routing based on execution results | [Getting Started](GETTING_STARTED.md#conditional-routing) |
-| **Parallel Execution** | ✅ Production | Execute multiple pipeline branches concurrently | [Getting Started](GETTING_STARTED.md#parallel-execution) |
-| **JSON Pipeline Definition** | ✅ Production | Define pipelines declaratively in JSON format | [Pipeline System](../archive/PIPELINE_SYSTEM.md) |
-| **Dynamic Step Loading** | ✅ Production | Load step implementations dynamically from modules | [API Reference](API_REFERENCE.md#steps) |
-| **Context Management** | ✅ Production | Thread-safe context for data sharing between steps | [API Reference](API_REFERENCE.md#context) |
+| **Graph-Based Pipeline** | ✅ Production | Define workflows as directed graphs with conditional routing | [Pipeline Architecture](PIPELINE_ARCHITECTURE.md) |
+| **Cyclic Graph Support** | ✅ Production | Support for loops and iterative workflows with cycle detection | [Pipeline Architecture](PIPELINE_ARCHITECTURE.md) |
+| **Conditional Routing** | ✅ Production | Dynamic step routing based on execution results | [Getting Started](GETTING_STARTED.md) |
+| **Parallel Execution** | ✅ Production | Execute multiple pipeline branches concurrently | [Getting Started](GETTING_STARTED.md) |
+| **JSON Pipeline Definition** | ✅ Production | Define pipelines declaratively in JSON format | [Getting Started](GETTING_STARTED.md) |
+| **Dynamic Step Loading** | ✅ Production | Load step implementations dynamically from modules | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Context Management** | ✅ Production | Thread-safe context for data sharing between steps | [Execution Architecture](EXECUTION_ARCHITECTURE.md) |
 
 ## Reliability & Observability (EARF-Compliant)
 
@@ -45,59 +45,59 @@ Complete feature overview for v0.0.3.
 
 | Feature | Status | Description | Documentation |
 |---------|--------|-------------|---------------|
-| **Automatic Checkpointing** | ✅ Production | Save pipeline state at each step | [Getting Started](GETTING_STARTED.md#checkpointing) |
-| **Resume from Checkpoint** | ✅ Production | Resume failed pipelines from last checkpoint | [API Reference](API_REFERENCE.md#checkpointing) |
-| **Thread Management** | ✅ Production | Organize checkpoints by workflow threads | [API Reference](API_REFERENCE.md#threads) |
-| **State Serialization** | ✅ Production | Serialize arbitrary Python objects in checkpoints | [API Reference](API_REFERENCE.md#serialization) |
-| **SQLite Storage** | ✅ Production | Persistent checkpoint storage with SQLite | [API Reference](API_REFERENCE.md#checkpoint-storage) |
+| **Automatic Checkpointing** | ✅ Production | Save pipeline state at each step | [Getting Started](GETTING_STARTED.md) |
+| **Resume from Checkpoint** | ✅ Production | Resume failed pipelines from last checkpoint | [Getting Started](GETTING_STARTED.md) |
+| **Thread Management** | ✅ Production | Organize checkpoints by workflow threads | [Execution Architecture](EXECUTION_ARCHITECTURE.md) |
+| **State Serialization** | ✅ Production | Serialize arbitrary Python objects in checkpoints | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **SQLite Storage** | ✅ Production | Persistent checkpoint storage with SQLite | [Developer Guide](DEVELOPER_GUIDE.md) |
 
 ## Memory & State Management
 
 | Feature | Status | Description | Documentation |
 |---------|--------|-------------|---------------|
-| **Conversation Memory** | ✅ Production | Track conversation history across pipeline runs | [API Reference](API_REFERENCE.md#memory) |
-| **Session Management** | ✅ Production | Group related conversations into sessions | [API Reference](API_REFERENCE.md#sessions) |
-| **Vector Search** | ✅ Production | Semantic search over conversation history | [API Reference](API_REFERENCE.md#vector-search) |
-| **Memory Summarization** | ✅ Production | Automatic summarization of long conversations | [API Reference](API_REFERENCE.md#summarization) |
-| **SQLite Storage** | ✅ Production | Persistent memory storage | [API Reference](API_REFERENCE.md#memory-storage) |
+| **Conversation Memory** | ✅ Production | Track conversation history across pipeline runs | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Session Management** | ✅ Production | Group related conversations into sessions | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Vector Search** | ✅ Production | Semantic search over conversation history | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Memory Summarization** | ✅ Production | Automatic summarization of long conversations | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **SQLite Storage** | ✅ Production | Persistent memory storage | [Developer Guide](DEVELOPER_GUIDE.md) |
 
 ## Scheduling & Automation
 
 | Feature | Status | Description | Documentation |
 |---------|--------|-------------|---------------|
-| **Cron Scheduling** | ✅ Production | Schedule pipelines with cron expressions | [API Reference](API_REFERENCE.md#scheduling) |
-| **Job Management** | ✅ Production | Create, update, delete scheduled jobs | [API Reference](API_REFERENCE.md#jobs) |
-| **Async Execution** | ✅ Production | Non-blocking scheduled pipeline execution | [API Reference](API_REFERENCE.md#async-jobs) |
-| **Job History** | ✅ Production | Track execution history for scheduled jobs | [API Reference](API_REFERENCE.md#job-history) |
+| **Cron Scheduling** | ✅ Production | Schedule pipelines with cron expressions | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Job Management** | ✅ Production | Create, update, delete scheduled jobs | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Async Execution** | ✅ Production | Non-blocking scheduled pipeline execution | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Job History** | ✅ Production | Track execution history for scheduled jobs | [Developer Guide](DEVELOPER_GUIDE.md) |
 
 ## Multi-Agent Orchestration
 
 | Feature | Status | Description | Documentation |
 |---------|--------|-------------|---------------|
-| **Agent Orchestrator** | ✅ Production | Coordinate multiple AI agents | [API Reference](API_REFERENCE.md#agents) |
-| **Sequential Workflows** | ✅ Production | Execute agents in sequence | [Getting Started](GETTING_STARTED.md#multi-agent) |
-| **Parallel Workflows** | ✅ Production | Execute agents concurrently | [Getting Started](GETTING_STARTING.md#multi-agent) |
-| **Hierarchical Agents** | ✅ Production | Parent-child agent relationships | [API Reference](API_REFERENCE.md#hierarchical-agents) |
-| **Agent State Sharing** | ✅ Production | Share state between agents in workflows | [API Reference](API_REFERENCE.md#agent-state) |
+| **Agent Orchestrator** | ✅ Production | Coordinate multiple AI agents | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Sequential Workflows** | ✅ Production | Execute agents in sequence | [Getting Started](GETTING_STARTED.md) |
+| **Parallel Workflows** | ✅ Production | Execute agents concurrently | [Getting Started](GETTING_STARTED.md) |
+| **Hierarchical Agents** | ✅ Production | Parent-child agent relationships | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Agent State Sharing** | ✅ Production | Share state between agents in workflows | [Developer Guide](DEVELOPER_GUIDE.md) |
 
 ## Grounding & Validation
 
 | Feature | Status | Description | Documentation |
 |---------|--------|-------------|---------------|
-| **Schema Validation** | ✅ Production | Validate data against Pydantic schemas | [API Reference](API_REFERENCE.md#validation) |
-| **Type Checking** | ✅ Production | Runtime type validation for step inputs/outputs | [API Reference](API_REFERENCE.md#type-checking) |
-| **Citation Tracking** | ✅ Production | Track sources and citations for agent outputs | [API Reference](API_REFERENCE.md#citations) |
-| **Fact Verification** | ✅ Production | Verify agent claims against knowledge base | [API Reference](API_REFERENCE.md#verification) |
-| **Grounding Metrics** | ✅ Production | Measure grounding quality and citation coverage | [API Reference](API_REFERENCE.md#grounding-metrics) |
+| **Schema Validation** | ✅ Production | Validate data against Pydantic schemas | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Type Checking** | ✅ Production | Runtime type validation for step inputs/outputs | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Citation Tracking** | ✅ Production | Track sources and citations for agent outputs | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Fact Verification** | ✅ Production | Verify agent claims against knowledge base | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Grounding Metrics** | ✅ Production | Measure grounding quality and citation coverage | [Reliability Guide](RELIABILITY_USAGE_GUIDE.md) |
 
 ## Developer Tools
 
 | Feature | Status | Description | Documentation |
 |---------|--------|-------------|---------------|
 | **CLI Tool** | ✅ Production | Command-line interface for pipeline management | [CLI Documentation](CLI_TOOL_DOCUMENTATION.md) |
-| **Pipeline Validation** | ✅ Production | Validate pipeline definitions before execution | [CLI Documentation](CLI_TOOL_DOCUMENTATION.md#validate) |
-| **Pipeline Visualization** | ✅ Production | Generate graph visualizations of pipelines | [CLI Documentation](CLI_TOOL_DOCUMENTATION.md#visualize) |
-| **Benchmarking Framework** | ✅ Production | Compare pipeline performance and accuracy | [API Reference](API_REFERENCE.md#benchmarking) |
+| **Pipeline Validation** | ✅ Production | Validate pipeline definitions before execution | [CLI Documentation](CLI_TOOL_DOCUMENTATION.md) |
+| **Pipeline Visualization** | ✅ Production | Generate graph visualizations of pipelines | [CLI Documentation](CLI_TOOL_DOCUMENTATION.md) |
+| **Benchmarking Framework** | ✅ Production | Compare pipeline performance and accuracy | [Developer Guide](DEVELOPER_GUIDE.md) |
 | **Plugin System** | ✅ Production | Extend IA Modules with custom plugins | [Plugin Documentation](PLUGIN_SYSTEM_DOCUMENTATION.md) |
 
 ### CLI Commands
@@ -115,31 +115,32 @@ ia-modules benchmark <config.json>     # Run benchmarks
 
 | Feature | Status | Description | Documentation |
 |---------|--------|-------------|---------------|
-| **Performance Benchmarks** | ✅ Production | Measure execution time and resource usage | [API Reference](API_REFERENCE.md#benchmarking) |
-| **Accuracy Benchmarks** | ✅ Production | Compare model outputs against ground truth | [API Reference](API_REFERENCE.md#accuracy) |
-| **Comparison Framework** | ✅ Production | Compare multiple pipeline versions | [API Reference](API_REFERENCE.md#comparison) |
-| **Statistical Analysis** | ✅ Production | Calculate mean, median, p95, p99 metrics | [API Reference](API_REFERENCE.md#statistics) |
-| **HTML Reports** | ✅ Production | Generate formatted benchmark reports | [API Reference](API_REFERENCE.md#reports) |
+| **Performance Benchmarks** | ✅ Production | Measure execution time and resource usage | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Accuracy Benchmarks** | ✅ Production | Compare model outputs against ground truth | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Comparison Framework** | ✅ Production | Compare multiple pipeline versions | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Statistical Analysis** | ✅ Production | Calculate mean, median, p95, p99 metrics | [Reliability Guide](RELIABILITY_USAGE_GUIDE.md) |
+| **HTML Reports** | ✅ Production | Generate formatted benchmark reports | [Developer Guide](DEVELOPER_GUIDE.md) |
 
 ## Plugin System
 
 | Feature | Status | Description | Documentation |
 |---------|--------|-------------|---------------|
 | **Plugin Discovery** | ✅ Production | Automatic plugin discovery and loading | [Plugin Documentation](PLUGIN_SYSTEM_DOCUMENTATION.md) |
-| **Hook System** | ✅ Production | Register callbacks for pipeline events | [Plugin Documentation](PLUGIN_SYSTEM_DOCUMENTATION.md#hooks) |
-| **Step Plugins** | ✅ Production | Add custom pipeline steps via plugins | [Plugin Documentation](PLUGIN_SYSTEM_DOCUMENTATION.md#steps) |
-| **Storage Plugins** | ✅ Production | Custom storage backends for metrics/checkpoints | [Plugin Documentation](PLUGIN_SYSTEM_DOCUMENTATION.md#storage) |
-| **Plugin Configuration** | ✅ Production | Configure plugins via JSON | [Plugin Documentation](PLUGIN_SYSTEM_DOCUMENTATION.md#config) |
+| **Hook System** | ✅ Production | Register callbacks for pipeline events | [Plugin Documentation](PLUGIN_SYSTEM_DOCUMENTATION.md) |
+| **Step Plugins** | ✅ Production | Add custom pipeline steps via plugins | [Plugin Documentation](PLUGIN_SYSTEM_DOCUMENTATION.md) |
+| **Storage Plugins** | ✅ Production | Custom storage backends for metrics/checkpoints | [Plugin Documentation](PLUGIN_SYSTEM_DOCUMENTATION.md) |
+| **Plugin Configuration** | ✅ Production | Configure plugins via JSON | [Plugin Documentation](PLUGIN_SYSTEM_DOCUMENTATION.md) |
 
 ## Database Support
 
+Via nexusql package:
+
 | Feature | Status | Backend | Notes |
 |---------|--------|---------|-------|
-| **PostgreSQL** | ✅ Production | SQL | Full support for reliability metrics |
-| **MySQL** | ✅ Production | SQL | Full support for reliability metrics |
-| **SQLite** | ✅ Production | SQL | Default for development and testing |
-| **DuckDB** | ✅ Production | SQL | Analytics-optimized storage |
-| **Redis** | ✅ Production | NoSQL | Optional, for high-performance caching |
+| **PostgreSQL** | ✅ Production | SQL | Via nexusql |
+| **MySQL** | ✅ Production | SQL | Via nexusql |
+| **SQLite** | ✅ Production | SQL | Default, via nexusql |
+| **DuckDB** | ✅ Production | SQL | Via nexusql |
 
 ## Python Version Support
 
@@ -172,64 +173,15 @@ IA Modules v0.0.3 is fully compliant with the Enterprise Agent Reliability Frame
 
 ## Test Coverage
 
-| Module | Tests | Pass Rate | Notes |
-|--------|-------|-----------|-------|
-| Pipeline Core | 98 tests | 100% | All core pipeline features |
-| Checkpointing | 45 tests | 100% | State management and recovery |
-| Memory | 52 tests | 100% | Conversation memory |
-| Scheduling | 38 tests | 100% | Job scheduling |
-| Multi-Agent | 67 tests | 100% | Agent orchestration |
-| Grounding | 82 tests | 100% | Validation and verification |
-| Reliability | 256 tests | 100% | All reliability modules |
-| **Total** | **650 tests** | **99.1%** | 644 passing, 6 skipped (Redis optional) |
+| Module | Tests | Notes |
+|--------|-------|-------|
+| **Total** | **2,852 tests** | 13 collection errors in security/performance modules |
 
-## Comparison with Other Frameworks
 
-| Feature | IA Modules | LangChain | LangGraph |
-|---------|------------|-----------|-----------|
-| Graph-based pipelines | ✅ | Partial | ✅ |
-| Cyclic graphs | ✅ | ❌ | ✅ |
-| EARF compliance | ✅ | ❌ | ❌ |
-| Reliability metrics | ✅ | ❌ | ❌ |
-| Checkpointing | ✅ | ❌ | ✅ |
-| Multi-agent | ✅ | ✅ | ✅ |
-| CLI tools | ✅ | Partial | ❌ |
-| Benchmarking | ✅ | ❌ | ❌ |
-| Plugin system | ✅ | ✅ | ❌ |
-| SQL storage | ✅ | ❌ | Partial |
-
-See [COMPARISON_LANGCHAIN_LANGGRAPH.md](COMPARISON_LANGCHAIN_LANGGRAPH.md) for detailed analysis.
-
-## Roadmap
-
-### v0.0.4 (Planned)
-
-- [ ] **Distributed Execution** - Run pipelines across multiple machines
-- [ ] **Streaming Support** - Real-time streaming of pipeline outputs
-- [ ] **Advanced Caching** - Intelligent result caching
-- [ ] **Workflow Templates** - Pre-built templates for common patterns
-- [ ] **Web Dashboard** - Browser-based pipeline monitoring
-- [ ] **OpenTelemetry Integration** - Industry-standard observability
-
-### v0.1.0 (Planned)
-
-- [ ] **Kubernetes Deployment** - Native Kubernetes support
-- [ ] **GraphQL API** - Query pipelines and metrics via GraphQL
-- [ ] **Advanced Retry Strategies** - Exponential backoff, circuit breakers
-- [ ] **Cost Optimization** - Automatic cost tracking and optimization
-- [ ] **Multi-tenancy** - Isolated pipelines for multiple users
-- [ ] **Advanced Security** - Role-based access control, encryption
-
-See [ROADMAP.md](../ROADMAP.md) for complete roadmap.
 
 ## Getting Help
 
 - **Documentation**: [docs/](.)
 - **Getting Started**: [GETTING_STARTED.md](GETTING_STARTED.md)
-- **API Reference**: [API_REFERENCE.md](API_REFERENCE.md)
-- **Examples**: [tests/pipelines/](../tests/pipelines/)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/ia_modules/issues)
-
-## License
-
-MIT License - see [LICENSE](../LICENSE) for details.
+- **Developer Guide**: [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)
+- **Testing Guide**: [TESTING_GUIDE.md](TESTING_GUIDE.md)

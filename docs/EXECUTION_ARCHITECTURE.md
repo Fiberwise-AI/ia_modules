@@ -4,25 +4,39 @@
 
 The ia_modules pipeline system has **ONE executor** and **ONE tracker**, both using the **ServiceRegistry** pattern for dependency injection. Neither is hardcoded to a specific storage backend.
 
+**ExecutionContext:** As of the refactor, execution-specific data (execution_id, pipeline_id, user_id, thread_id) is passed via ExecutionContext parameter instead of through services.
+
 ## Architecture Summary
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    ServiceRegistry                               │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │  Database    │  │   Tracker    │  │ Execution ID │          │
-│  │  Manager     │  │              │  │              │          │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│  ┌──────────────┐  ┌──────────────┐                            │
+│  │  Database    │  │   Tracker    │                            │
+│  │  Manager     │  │              │                            │
+│  │ (from nexusql)  │              │                            │
+│  └──────────────┘  └──────────────┘                            │
 └─────────────────────────────────────────────────────────────────┘
-           │                  │                  │
-           ▼                  ▼                  ▼
+           │                  │
+           ▼                  ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Pipeline                                  │
 │  - Loads and executes steps                                     │
 │  - Determines execution order from flow                         │
 │  - Calls tracker via services (optional)                        │
+│  - Uses ExecutionContext parameter (execution_id, pipeline_id)  │
 │  - Stores in-memory results format                              │
 └─────────────────────────────────────────────────────────────────┘
+           ▲
+           │
+  ┌────────────────┐
+  │ ExecutionContext│
+  │ - execution_id  │
+  │ - pipeline_id   │
+  │ - user_id       │
+  │ - thread_id     │
+  │ - metadata      │
+  └────────────────┘
 ```
 
 ## Component Breakdown
@@ -126,26 +140,28 @@ class ExecutionTracker:
 
 ```
 1. Application creates ServiceRegistry
-   ├─ Registers DatabaseManager (PostgreSQL or SQLite)
+   ├─ Registers DatabaseManager (from nexusql)
    ├─ Creates ExecutionTracker(db_manager)
    └─ Registers tracker in services
 
 2. Pipeline execution starts
    ├─ Pipeline.__init__(services=service_registry)
-   └─ services.register('execution_id', job_id)
+   ├─ Create ExecutionContext(execution_id='job-123', pipeline_id='pipe-456')
+   └─ Call pipeline.run(input_data, execution_context)
 
 3. For each step:
    ├─ Pipeline gets tracker: self.services.get('execution_tracker')
-   │  
+   ├─ Get execution_id from execution_context.execution_id
+   │
    ├─ IF tracker exists:
-   │  └─ tracker.start_step_execution() → PostgreSQL INSERT
-   │  
+   │  └─ tracker.start_step_execution(execution_id, ...) → Database INSERT
+   │
    ├─ Pipeline executes step code
    │  └─ await step.run(data)
-   │  
+   │
    ├─ IF tracker exists:
-   │  └─ tracker.complete_step_execution() → PostgreSQL UPDATE
-   │  
+   │  └─ tracker.complete_step_execution() → Database UPDATE
+   │
    └─ Pipeline stores in-memory result
       └─ results["steps"].append({"step_name", "result", "status"})
 
@@ -161,20 +177,36 @@ class ExecutionTracker:
 **From `pipeline_service.py`:**
 
 ```python
+from nexusql import DatabaseManager
+from ia_modules.pipeline.core import ExecutionContext
+from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.pipeline.execution_tracker import ExecutionTracker
+
 # 1. Setup services (dependency injection)
 self.services = ServiceRegistry()
+db_manager = DatabaseManager(config)
 self.services.register('database', db_manager)
 
 # 2. Create tracker with injected database
-self.tracker = ExecutionTracker(db_manager)  # NOT hardcoded!
+self.tracker = ExecutionTracker(db_manager)
 
 # 3. Register tracker in services
 self.services.register('execution_tracker', self.tracker)
 
-# 4. Execute pipeline
+# 4. Create execution context
+execution_context = ExecutionContext(
+    execution_id='job-123',
+    pipeline_id='pipe-456',
+    user_id='user-789'
+)
+
+# 5. Execute pipeline
 graph_runner = GraphPipelineRunner(self.services)
-result = await graph_runner.run_pipeline_from_json(config, input_data)
-# Pipeline uses services.get('execution_tracker') internally
+result = await graph_runner.run_pipeline_from_json(
+    config,
+    input_data,
+    execution_context  # Required!
+)
 ```
 
 **From `core.py` (Pipeline execution):**
@@ -182,12 +214,18 @@ result = await graph_runner.run_pipeline_from_json(config, input_data)
 ```python
 # Pipeline OPTIONALLY uses tracker via services
 tracker = self.services.get('execution_tracker') if self.services else None
-execution_id = self.services.get('execution_id') if self.services else None
+execution_id = execution_context.execution_id  # From ExecutionContext parameter
 
 if tracker and execution_id:
     # Track to database (optional!)
-    step_execution_id = await tracker.start_step_execution(...)
-    
+    step_execution_id = await tracker.start_step_execution(
+        execution_id=execution_context.execution_id,
+        pipeline_id=execution_context.pipeline_id or self.name,
+        step_id=current_step_name,
+        step_name=current_step_name,
+        ...
+    )
+
 # Execute the actual step
 step_result = await step.run(current_data)
 

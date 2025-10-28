@@ -4,13 +4,6 @@ Side-by-side comparison of NexusQL and SQLAlchemy backends.
 Demonstrates that queries are IDENTICAL regardless of backend.
 """
 
-import sys
-from pathlib import Path
-
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "nexusql"))
-
 from ia_modules.database import get_database
 
 

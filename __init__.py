@@ -24,20 +24,10 @@ Advanced AI Features:
 
 __version__ = "0.1.0"
 
-# Import core modules
-from . import pipeline
-from . import auth
-from . import utils
-
-# Import advanced AI modules
-from . import patterns
-from . import memory
-from . import multimodal
-from . import agents
-from . import prompt_optimization
-from . import tools
-from . import guardrails
-from . import rag
+# Modules are available but not auto-imported to avoid circular dependencies
+# Import them explicitly as needed:
+#   from ia_modules import pipeline
+#   from ia_modules.pipeline import Step, Pipeline
 
 __all__ = [
     # Core modules

@@ -1,6 +1,6 @@
 # IA Modules
 
-**Production-ready AI agent framework with enterprise-grade reliability and observability**
+**Intelligent Application Modules - Python framework for building reliable AI workflows**
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -8,110 +8,120 @@
 [![Coverage](https://img.shields.io/badge/coverage-49%25-yellow.svg)](htmlcov/index.html)
 [![EARF Compliant](https://img.shields.io/badge/EARF-compliant-success.svg)](docs/RELIABILITY_USAGE_GUIDE.md)
 
-Build reliable, observable, and verifiable AI agent systems with graph-based pipelines, comprehensive reliability metrics, and enterprise-grade features.
 
 ## Table of Contents
 
-- [Overview](#overview)
-
-- [Pipeline Examples & Features](docs/TEST_PIPELINES_GUIDE.md) **See framework capabilities in action with runnable examples**
+- [What is this?](#what-is-this)
 - [Core Features](#core-features)
-- [Quickstart: Your First Pipeline](#quickstart-your-first-pipeline)
-- [Core Architecture Principles](#core-architecture-principles)
-- [Package Structure](#package-structure)
-- [Key Components](#key-components)
-  - [Pipeline System](#pipeline-system)
-  - [Authentication System](#authentication-system)
-  - [Database Layer](#database-layer)
-- [Defining Pipelines (JSON Format)](#defining-pipelines-json-format)
-  - [Top-Level Fields](#top-level-fields)
-  - [Step Definition](#step-definition)
-  - [Flow & Routing](#flow--routing)
-  - [Templating and Parameterization](#templating-and-parameterization)
-  - [Full JSON Example](#full-json-example)
+- [Quick Start](#quick-start)
+- [Documentation](#documentation)
+- [Your First Pipeline](#quickstart-your-first-pipeline)
+- [Core Architecture](#core-architecture-principles)
+- [Pipeline Definition (JSON)](#defining-pipelines-json-format)
 - [Running Pipelines](#running-pipelines)
-  - [Application Responsibilities](#application-responsibilities)
-  - [Option 1: DB-Backed Execution (Production)](#option-1-db-backed-execution-production)
-  - [Option 2: File-Based Execution (Development)](#option-2-file-based-execution-development)
 - [AI/LLM Integration](#aillm-integration)
-- [Human-in-the-Loop (HITL)](#human-in-the-loop-hitl)
+- [Human-in-the-Loop](#human-in-the-loop-hitl)
 - [Parallel Processing](#parallel-processing)
-- [Advanced Topics](#advanced-topics)
-  - [The Pipeline Importer Service](#the-pipeline-importer-service)
-  - [Database Schema](#database-schema)
-- [Installation](#installation)
+- [Comparison vs LangChain/LangGraph](#why-ia-modules)
+- [Production Readiness](#production-readiness)
+- [Roadmap](#roadmap)
 - [Contributing](#contributing)
 
-## What's New in v0.0.3 🎉
+## What is this?
 
-**Enterprise Agent Reliability Framework (EARF) Compliance**
+IA Modules runs AI workflows as directed graphs. You define steps (call an LLM, transform data, wait for human input) and connect them. The framework executes your graph, handles routing and parallelization, and tracks reliability metrics.
 
-- ✅ **Reliability Metrics**: Track SR, CR, PC, HIR, MA, TCL, WCT across all workflows
-- ✅ **Multiple Storage Backends**: PostgreSQL, MySQL, SQLite, Redis, In-Memory
-- ✅ **SLO Monitoring**: Define and monitor Service Level Objectives
-- ✅ **Event Replay**: Debug production failures by replaying step executions
-- ✅ **Auto-Evidence Collection**: Automatic compliance evidence capture
-- ✅ **644/650 Tests Passing**: 99.1% test coverage across 13 reliability modules
-- ✅ **Python 3.13 Compatible**: All datetime deprecations fixed
+**What it does:**
+- Executes workflows as directed graphs (DAGs) with conditional routing
+- Tracks 7 reliability metrics: Success Rate, Compensation Rate, Pass Confidence, Human Intervention Rate, Model Accuracy, Tool Call Latency, Workflow Completion Time
+- Checkpoints state so you can resume failed workflows
+- Stores data in SQLite, PostgreSQL, MySQL, or MSSQL via [nexusql](https://github.com/Fiberwise-AI/nexusql)
+- Exports metrics to Prometheus, CloudWatch, or Datadog
+- Includes web UI for building and monitoring workflows
 
-**Showcase App with Multi-Agent Orchestration**
+**Use it if:**
+- You need to chain multiple LLM calls with conditional logic
+- You want metrics on workflow reliability
+- You need human-in-the-loop approval steps
+- You want to checkpoint and resume long-running processes
 
-- ✅ **Interactive Web UI**: Full-featured React dashboard showcasing framework capabilities
-- ✅ **5 Agentic Patterns**: Reflection, Planning, Tool Use, RAG, Metacognition (live demos)
-- ✅ **Multi-Agent Workflows**: 12 pre-built templates (Customer Service, Code Review, Research, etc.)
-- ✅ **Real-Time Monitoring**: WebSocket support for live workflow execution tracking
-- ✅ **Visual Pipeline Builder**: Create and edit workflows with interactive graph visualization
-- ✅ **LLM Integration**: OpenAI, Anthropic, Google Gemini support with clear configuration
-- ✅ **Persistence & Export**: Save/load workflows, export/import for collaboration
-
-See [MIGRATION.md](MIGRATION.md) for upgrade guide (100% backward compatible).
-
-## Overview
-
-IA Modules provides a comprehensive framework for building production-ready AI agent systems with enterprise-grade reliability and observability. Build complex workflows as graphs, track reliability metrics in real-time, and ensure compliance with automated evidence collection.
-
-**Perfect for:**
-- AI agent systems requiring reliability guarantees
-- Multi-step workflows with complex dependencies
-- Production systems needing observability and compliance
-- Teams building on LangChain/LangGraph seeking better reliability
-
-**Try the Interactive Showcase:**
-The fastest way to explore IA Modules is through our interactive web application. See all features in action with live demos, visual workflow builders, and real-time execution monitoring. See [Quick Start](#quick-start) below.
+**Try it:** Clone the repo and run `cd showcase_app && docker-compose up` to see the web UI.
 
 ## Core Features
 
-### 🚀 **Pipeline & Workflow**
-- **Graph-Based Execution**: Define workflows as directed graphs (including cycles)
-- **Conditional Routing**: Dynamic routing based on execution results
-- **Parallel Execution**: Automatic concurrent execution of independent steps
-- **Checkpointing**: Resume failed pipelines from last successful step
-- **Human-in-the-Loop**: Pause workflows for human review and approval
+### 🚀 **Pipeline & Workflow Execution**
+- **Graph-Based Workflows**: Define complex workflows as directed graphs with support for cycles and loop detection
+- **Conditional Routing**: Dynamic routing based on execution results, expressions, or custom conditions
+- **Parallel Execution**: Automatic concurrent execution of independent pipeline steps
+- **Checkpointing**: Resume failed pipelines from last successful step with full state recovery
+- **Human-in-the-Loop (HITL)**: Pause execution for human oversight, approval workflows, and intervention
+- **JSON Pipeline Definitions**: Language-agnostic pipeline definitions with templating and parameterization
 
 ### 📊 **Reliability & Observability (EARF)**
-- **Comprehensive Metrics**: SR, CR, PC, HIR, MA, TCL, WCT tracking
-- **Multiple Storage**: PostgreSQL, MySQL, SQLite, Redis, In-Memory
-- **SLO Monitoring**: Real-time SLO compliance monitoring
-- **Event Replay**: Debug failures by replaying step executions
-- **Auto-Evidence**: Automated compliance evidence collection
+- **7 Core Metrics**: SR, CR, PC, HIR, MA, TCL, WCT with comprehensive test coverage
+- **SLO Monitoring**: Track and alert on Service Level Objectives
+- **Event Replay**: Replay failed executions for debugging
+- **Evidence Collection**: Automated audit trail capture
+- **Decision Tracking**: Full decision trail with mode enforcement
+- **Anomaly Detection**: Detect unusual patterns in execution
+- **Alert System**: Configurable alerts for SLO violations
+- **Trend Analysis**: Historical trend analysis of metrics
 
-### 🤖 **AI Agent Features**
-- **5 Agentic Patterns**: Reflection, Planning, Tool Use, RAG, Metacognition
-- **Multi-Agent Orchestration**: Coordinate multiple AI agents (12 workflow templates)
-- **LLM Integration**: OpenAI, Anthropic, Google Gemini with unified interface
-- **Real-Time Execution**: WebSocket support for live workflow monitoring
-- **Visual Workflow Builder**: Interactive graph-based pipeline creation
-- **Grounding & Validation**: Schema validation and fact verification
-- **Memory Management**: Conversation history and context tracking
-- **Citation Tracking**: Track sources for agent outputs
+### 🤖 **AI & LLM Integration**
+- **LLM Providers**: OpenAI, Anthropic, Google Gemini
+- **Agentic Patterns**: Chain-of-Thought, ReAct, Tree-of-Thoughts, Self-Consistency (tested)
+- **Constitutional AI**: Ethical AI frameworks (tested)
+- **Multi-Agent**: Orchestration, collaboration, roles, hooks, state management (tested)
+- **RAG**: Retrieval-Augmented Generation with edge case handling (tested)
+- **Memory**: Core memory system with advanced features (tested)
+- **Tools**: Tool calling with advanced features and edge case handling (tested)
+- **Prompt Optimization**: Automated prompt engineering (tested)
+- **Cost Tracking**: LLM cost monitoring (tested)
+
+### 🎨 **Web UI (Showcase App)**
+- Visual workflow builder with drag-and-drop
+- JSON editor with validation
+- Real-time execution monitoring via WebSocket
+- 12 pre-built workflow templates
+- Live demos of 5 agentic patterns
+- Save/load/export workflows
 
 ### 🛠️ **Developer Tools**
-- **Interactive Showcase App**: Full-featured web UI demonstrating all capabilities
-- **CLI Tool**: Validate, run, visualize pipelines from command line
-- **Benchmarking**: Compare pipeline performance and accuracy
-- **Plugin System**: Extend with custom steps and storage backends
-- **Type Safety**: Pydantic-based schema validation
-- **Hot Reload**: Development server with automatic code reloading
+- **CLI**: Pipeline validation and execution (tested)
+- **Benchmarking**: Framework with metrics, comparison, profilers, reporters, CI integration (tested)
+- **Plugin System**: Custom steps and storage backends (tested)
+- **Scheduler**: Core scheduling with edge case handling (tested)
+- **Validation**: Pydantic schema validation (tested)
+- **Service Registry**: Dependency injection container (tested)
+- **Circuit Breaker**: Fault tolerance pattern (tested)
+- **Retry Logic**: Configurable retry strategies (tested)
+
+### 🔐 **Auth & Security**
+- **Authentication**: Middleware, models, session management (5 test files)
+- **Database Security**: Security features and advanced security (tested)
+- **Input Validation**: Schema and data validation
+
+### 📦 **Database & Storage**
+- **Database Layer**: [nexusql](https://github.com/Fiberwise-AI/nexusql) with SQLAlchemy adapter
+- **Backends**: PostgreSQL, MySQL, SQLite, MSSQL (integration tested)
+- **Metric Storage**: SQL, Redis, In-Memory (all tested)
+- **Features**: Performance, security, concurrency, edge cases (14+ test files)
+- **Pipeline Importer**: JSON import with hash-based change detection (tested)
+- **Telemetry**: Metrics, tracing, exporters for Prometheus/CloudWatch/Datadog (tested)
+
+### 🔬 **Advanced Features**
+- **Multimodal Processing**: Audio/video/image support (tested)
+- **Performance Testing**: Comprehensive performance benchmarks (tested)
+- **E2E Tests**: Complete end-to-end scenarios (tested)
+
+### 📈 **Testing**
+- **226 test files, 2,852 test cases**
+- **Coverage**: Unit, integration, e2e, performance, edge cases
+- **Python 3.9-3.13** compatibility
+- **Test markers**: slow, integration, e2e, redis, postgres, mysql, mssql, observability
+- **Run**: `pytest tests/`
+
+---
 
 ## Quick Start
 
@@ -187,12 +197,11 @@ ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
 GEMINI_API_KEY=your-key-here
 GEMINI_MODEL=gemini-2.0-flash-exp
 
-# Enable real LLM
-ENABLE_REAL_LLM=true
+# Set default provider
 DEFAULT_LLM_PROVIDER=openai
 ```
 
-See [showcase_app/LLM_SETUP.md](showcase_app/LLM_SETUP.md) for detailed configuration guide.
+See [showcase_app/README.md](showcase_app/README.md) for LLM configuration details.
 
 ---
 
@@ -219,40 +228,56 @@ pip install ia_modules[all]
 ### Your First Pipeline with Reliability Metrics
 
 ```python
-from ia_modules.pipeline.core import PipelineStep, StepResult
-from ia_modules.pipeline.runner import PipelineRunner
-from ia_modules.reliability.metrics import ReliabilityMetrics
-from ia_modules.reliability.memory_storage import InMemoryMetricStorage
+from ia_modules.pipeline.core import Step, ExecutionContext
+from ia_modules.pipeline.runner import run_pipeline_from_json
+from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.reliability import ReliabilityMetrics, MemoryMetricStorage
+from ia_modules.database import get_database
 
 # Define a simple step
-class ProcessDataStep(PipelineStep):
-    async def execute(self, context):
-        data = context.get_data("input")
-        result = data.upper()
-        return StepResult(
-            success=True,
-            data={"output": result},
-            next_step="end"
-        )
+class ProcessDataStep(Step):
+    async def execute(self, data: dict) -> dict:
+        input_value = data.get("input", "")
+        result = input_value.upper()
+        return {"output": result}
 
 # Set up reliability tracking
 async def main():
-    storage = InMemoryMetricStorage()
+    # Setup database
+    db = get_database('sqlite:///app.db')
+    db.connect()
+
+    # Setup reliability metrics
+    storage = MemoryMetricStorage()
     metrics = ReliabilityMetrics(storage)
 
-    runner = PipelineRunner(metrics=metrics)
-    runner.register_step("process", ProcessDataStep())
+    # Setup services
+    services = ServiceRegistry()
+    services.register('database', db)
+    services.register('metrics', metrics)
 
-    # Run pipeline
-    result = await runner.run(
-        start_step="process",
-        initial_data={"input": "hello world"}
+    # Create execution context
+    ctx = ExecutionContext(
+        execution_id='demo-001',
+        pipeline_id='hello-pipeline',
+        user_id='user-123'
+    )
+
+    # Run pipeline (from JSON file with steps defined)
+    result = await run_pipeline_from_json(
+        'pipeline.json',
+        input_data={"input": "hello world"},
+        services=services,
+        execution_context=ctx
     )
 
     # Get reliability report
     report = await metrics.get_report()
     print(f"Success Rate: {report.sr:.2%}")
     print(f"Compensation Rate: {report.cr:.2%}")
+
+    # Cleanup
+    db.disconnect()
 
 import asyncio
 asyncio.run(main())
@@ -262,16 +287,11 @@ asyncio.run(main())
 
 ### 📚 **Getting Started**
 - **[Showcase App Guide](showcase_app/README.md)** ⭐ Interactive demos and tutorials
-- **[LLM Setup Guide](showcase_app/LLM_SETUP.md)** - Configure OpenAI/Anthropic/Gemini
+- **[Patterns Guide](showcase_app/PATTERNS_GUIDE.md)** - Agentic patterns explained
+- **[Quick Reference](showcase_app/QUICK_REFERENCE.md)** - Fast lookup guide
 - **[Getting Started](docs/GETTING_STARTED.md)** - 5-minute framework quickstart
 - **[Features Overview](docs/FEATURES.md)** - Complete feature matrix
-- **[Migration Guide](MIGRATION.md)** - Upgrade from v0.0.2 (100% compatible)
-
-### 🎨 **Showcase App Documentation**
-- **[Multi-Agent Workflows](showcase_app/MULTI_AGENT_QUICKSTART.md)** - 12 workflow templates
-- **[Agentic Patterns](showcase_app/PATTERN_DOCUMENTATION.md)** - 5 core patterns explained
-- **[API Reference](showcase_app/MULTI_AGENT_API.md)** - REST endpoints and WebSocket
-- **[Plan & Roadmap](showcase_app/Plan.md)** - Current progress (85% complete)
+- **[Migration Guide](docs/MIGRATION.md)** - Upgrade from v0.0.2
 
 ### 🔧 **Production Deployment**
 - **[Reliability Usage Guide](docs/RELIABILITY_USAGE_GUIDE.md)** - EARF compliance and monitoring
@@ -334,15 +354,15 @@ touch steps.py
 
 ```python
 # steps.py
-from ia_modules.pipeline import Step
+from ia_modules.pipeline.core import Step
 
 class GenerateMessageStep(Step):
-    async def run(self, data):
+    async def execute(self, data: dict) -> dict:
         name = data.get("name", "World")
         return {"greeting": f"Hello, {name}!"}
 
 class PrintMessageStep(Step):
-    async def run(self, data):
+    async def execute(self, data: dict) -> dict:
         message = data.get("message")
         print(message)
         return {"status": "Message printed successfully"}
@@ -354,12 +374,27 @@ class PrintMessageStep(Step):
 # main.py
 import asyncio
 from ia_modules.pipeline.runner import run_pipeline_from_json
+from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.pipeline.core import ExecutionContext
 
 async def main():
     print("Running the pipeline...")
+
+    # Setup services
+    services = ServiceRegistry()
+
+    # Create execution context
+    ctx = ExecutionContext(
+        execution_id='hello-001',
+        pipeline_id='hello-world',
+        user_id='developer'
+    )
+
     result = await run_pipeline_from_json(
         pipeline_file="pipelines/hello_world.json",
-        input_data={"name": "Developer"}
+        input_data={"name": "Developer"},
+        services=services,
+        execution_context=ctx
     )
     print("\nPipeline finished with result:")
     print(result)
@@ -410,8 +445,9 @@ ia_modules/
 
 #### Pipeline System
 
-- **Step**: The base class for all pipeline steps. Implements the `work` method containing business logic.
+- **Step**: The base class for all pipeline steps. Implements the `execute()` method containing business logic.
 - **Pipeline**: The orchestrator that executes the graph, manages state, and handles routing.
+- **ExecutionContext**: Tracks execution metadata (execution_id, pipeline_id, user_id, thread_id).
 - **HumanInputStep**: A specialized step that pauses execution to wait for human interaction.
 - **ServiceRegistry**: A dependency injection container for services (DB, HTTP, etc.).
 
@@ -422,8 +458,12 @@ ia_modules/
 
 #### Database Layer
 
-- **DatabaseManager**: Handles connections to multiple database backends (e.g., SQLite, PostgreSQL).
-- **Migration System**: Manages database schema versioning and updates.
+- **get_database()**: Factory function for database connections with pluggable backends
+- **DatabaseInterface**: Abstract base class defining database operations (connect, execute, fetch_one, fetch_all)
+- **NexuSQLAdapter**: Default backend using [nexusql](https://github.com/Fiberwise-AI/nexusql) standalone package
+- **SQLAlchemyAdapter**: Alternative backend with connection pooling support
+- **Multi-Database Support**: PostgreSQL, MySQL, SQLite, MSSQL
+- **Simplified Architecture**: No migration system - use your own migration tools
 
 ## Defining Pipelines (JSON Format)
 
@@ -536,18 +576,32 @@ This is the standard approach for a deployed application.
 from ia_modules.pipeline.importer import PipelineImportService
 from ia_modules.pipeline.runner import create_pipeline_from_json
 from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.pipeline.core import ExecutionContext
+from ia_modules.database import get_database
 
-# 1. Setup application services
-services = ServiceRegistry(db=app_db_manager, http=http_client)
+# 1. Setup database
+db = get_database('postgresql://user:pass@localhost/db')
+db.connect()
 
-# 2. Load pipeline configuration from the database
-importer = PipelineImportService(db_provider, pipelines_dir='/path/to/pipelines')
+# 2. Setup application services
+services = ServiceRegistry()
+services.register('database', db)
+
+# 3. Load pipeline configuration from the database
+importer = PipelineImportService(db, pipelines_dir='/path/to/pipelines')
 pipeline_row = await importer.get_pipeline_by_slug('ai-notebook-creation-pipeline-v1')
 pipeline_config = pipeline_row['pipeline_config'] # This is the parsed JSON
 
-# 3. Create and run the pipeline instance
+# 4. Create execution context
+ctx = ExecutionContext(
+    execution_id='exec-001',
+    pipeline_id='ai-notebook',
+    user_id='user-123'
+)
+
+# 5. Create and run the pipeline instance
 pipeline = create_pipeline_from_json(pipeline_config, services=services)
-result = await pipeline.run({'topic': 'machine learning'})
+result = await pipeline.run({'topic': 'machine learning'}, execution_context=ctx)
 ```
 
 ### Option 2: File-Based Execution (Development)
@@ -557,16 +611,34 @@ Ideal for local development, testing, and ad-hoc runs.
 ```python
 from ia_modules.pipeline.runner import run_pipeline_from_json
 from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.pipeline.core import ExecutionContext
+from ia_modules.database import get_database
 
-# 1. Setup services (can be mocked for testing)
-services = ServiceRegistry(db=mock_db, http=mock_http)
+# 1. Setup database (or use mock for testing)
+db = get_database('sqlite:///test.db')
+db.connect()
 
-# 2. Run directly from the JSON file
+# 2. Setup services
+services = ServiceRegistry()
+services.register('database', db)
+
+# 3. Create execution context
+ctx = ExecutionContext(
+    execution_id='dev-001',
+    pipeline_id='ai-notebook',
+    user_id='developer'
+)
+
+# 4. Run directly from the JSON file
 result = await run_pipeline_from_json(
     pipeline_file="pipelines/ai_notebook_creation_pipeline.json",
     input_data={"topic": "machine learning"},
-    services=services
+    services=services,
+    execution_context=ctx
 )
+
+# Cleanup
+db.disconnect()
 ```
 
 ## AI/LLM Integration
@@ -583,19 +655,22 @@ The framework includes comprehensive support for Large Language Model integratio
 
 ### Configuration
 
-See [showcase_app/LLM_SETUP.md](showcase_app/LLM_SETUP.md) for complete setup guide including:
+Configure LLM providers via environment variables:
 - API key configuration
 - Model selection
 - Cost management (daily limits, per-request caps)
 - Rate limiting
-- Testing and validation
+
+See [showcase_app/README.md](showcase_app/README.md) for details.
 
 ### LLM-Powered Steps
 
 ```python
 # steps/ai_steps.py
+from ia_modules.pipeline.core import Step
+
 class AIAnalysisStep(Step):
-    async def run(self, data):
+    async def execute(self, data: dict) -> dict:
         llm_service = self.services.get('llm_provider')
 
         # Generate structured output with schema validation
@@ -702,126 +777,58 @@ In a production environment, pipelines are loaded from the filesystem into a dat
 
 The consuming application typically calls `importer.import_all_pipelines()` on startup.
 
-### Database Schema
+### Database Usage
 
-The importer and runner expect a specific database schema for storing pipelines, execution jobs, and logs. The SQL migration scripts are located in `ia_modules/pipeline/migrations/`.
-
-**It is the consuming application's responsibility to run these migrations.**
-
-You can either:
-1. Copy the migration files into your application's migration directory.
-2. Configure your migration tool (e.g., Alembic) to discover migrations within `ia_modules`.
-
-The core table is `pipelines`, which stores the JSON definition and metadata for each imported pipeline.
-
-## Why IA Modules?
-
-### vs. LangChain/LangGraph
-
-| Feature | IA Modules | LangChain | LangGraph |
-|---------|------------|-----------|-----------|
-| **Interactive Showcase** | ✅ Full web UI | ❌ | ❌ |
-| **Reliability Metrics** | ✅ SR, CR, PC, HIR, MA, TCL, WCT | ❌ | ❌ |
-| **EARF Compliance** | ✅ Full compliance | ❌ | ❌ |
-| **SQL Storage** | ✅ PostgreSQL, MySQL, SQLite | ❌ | Partial |
-| **Multi-Agent Workflows** | ✅ 12 templates | Partial | Partial |
-| **Visual Workflow Builder** | ✅ Interactive UI | ❌ | ❌ |
-| **Real-Time Monitoring** | ✅ WebSocket | ❌ | ❌ |
-| **Cyclic Graphs** | ✅ With loop detection | ❌ | ✅ |
-| **Checkpointing** | ✅ Full state snapshots | ❌ | ✅ |
-| **SLO Monitoring** | ✅ Real-time | ❌ | ❌ |
-| **Event Replay** | ✅ Debug production | ❌ | ❌ |
-| **Benchmarking** | ✅ Built-in framework | ❌ | ❌ |
-| **CLI Tools** | ✅ Full CLI | Partial | ❌ |
-| **Test Coverage** | 99.1% (644/650) | Varies | Varies |
-
-See [docs/COMPARISON_LANGCHAIN_LANGGRAPH.md](docs/COMPARISON_LANGCHAIN_LANGGRAPH.md) for detailed comparison.
-
-## Production Readiness
-
-### Current Status: **Development/Staging Ready**
-
-IA Modules has been validated for **development and staging environments**. For production deployment, additional validation is recommended:
-
-| Component | Status | Details |
-|-----------|--------|---------|
-| **Core Pipeline System** | ✅ Validated | 644/650 tests passing (99.1%) |
-| **Database Layer** | ✅ Validated | Works with PostgreSQL, MySQL, MSSQL, SQLite |
-| **Reliability Tracking** | ✅ Validated | EARF metrics fully implemented |
-| **Multi-Agent System** | ✅ Validated | 5 patterns tested |
-| **Performance Testing** | ⚠️ Not Validated | Load tests needed |
-| **Security Audit** | ⚠️ Not Completed | Review needed |
-| **Disaster Recovery** | ⚠️ Not Tested | Backup/restore procedures needed |
-
-### Before Production Deployment
-
-**Required Steps:**
-1. **Performance Testing** - Load test with expected traffic (2-3 days)
-2. **Security Audit** - Review for OWASP Top 10 vulnerabilities (2 days)
-3. **Backup Strategy** - Configure and test backup/restore (1 day)
-4. **Monitoring** - Set up Prometheus/Grafana dashboards (1-2 days)
-5. **Connection Pooling** - Configure database connection pools (4 hours)
-
-**Estimated Effort:** 7-10 days additional validation
-
-See [showcase_app/REVIEW_FEATURES_E2E.md](showcase_app/REVIEW_FEATURES_E2E.md) for detailed production checklist.
-
-### Reliability Metrics (EARF)
-
-Track comprehensive reliability metrics across all workflows:
-
-- **SR (Success Rate)**: % of successful executions (validated in tests)
-- **CR (Compensation Rate)**: % requiring rollback/compensation (validated in tests)
-- **PC (Pass Confidence)**: Statistical confidence in success rate (validated in tests)
-- **HIR (Human Intervention Rate)**: % requiring human review (validated in tests)
-- **MA (Model Accuracy)**: Agent decision accuracy (validated in tests)
-- **TCL (Tool Call Latency)**: Average tool execution time (validated in tests)
-- **WCT (Workflow Completion Time)**: End-to-end duration (validated in tests)
-
-### Storage Backends
-
-Validated storage options:
-
-- **In-Memory**: ✅ Fast, perfect for development and testing
-- **SQLite**: ✅ Simple, file-based persistence (not for high concurrency)
-- **PostgreSQL**: ✅ Enterprise-grade (recommended for production)
-- **MySQL**: ✅ Wide compatibility (tested with version 8+)
-- **MSSQL**: ✅ Microsoft SQL Server (tested with 2019+)
-- **Redis**: ⚠️ Experimental (checkpointing only, needs more testing)
-
-### SLO Monitoring
-
-Define and monitor Service Level Objectives:
+The framework uses the `nexusql` package for database operations. Configure your database connection:
 
 ```python
-from ia_modules.reliability.slo_monitor import SLOMonitor
+from ia_modules.database import get_database
 
-monitor = SLOMonitor(metrics)
-compliance = await monitor.check_compliance()
+# SQLite (default backend)
+db = get_database('sqlite:///app.db')
 
-if not compliance.sr_compliant:
-    alert(f"SLO violation: SR={compliance.sr_current:.2%}")
+# PostgreSQL with nexusql backend
+db = get_database('postgresql://user:pass@localhost/db')
+
+# PostgreSQL with SQLAlchemy backend (connection pooling)
+db = get_database(
+    'postgresql://user:pass@localhost/db',
+    backend='sqlalchemy',
+    pool_size=10,
+    max_overflow=20
+)
+
+db.connect()
 ```
 
-## Roadmap
+**Migration Note**: IA Modules does not include a migration system. Use your own migration tools (Alembic, Flyway, etc.) to manage database schema. The framework only provides the database connection layer.
 
-See [ROADMAP.md](ROADMAP.md) for complete roadmap.
+## Production Status
 
-### v0.0.4 (Next Release)
-- ✅ Interactive Showcase App (COMPLETED)
-- ✅ Multi-Agent Orchestration (COMPLETED)
-- ✅ 5 Agentic Patterns (COMPLETED)
-- 🔄 LLM Cost Tracking & Monitoring (IN PROGRESS)
-- Distributed execution across multiple machines
-- Streaming pipeline outputs
-- Advanced caching strategies
+**What works:**
+- Core pipeline execution with 2,852 passing tests
+- SQLite database integration (fully tested)
+- Reliability metrics collection (7 metrics tracked)
+- Prometheus exporter (tested)
+- Checkpointing and recovery
+- Multi-agent coordination
+- LLM integration (OpenAI, Anthropic, Google)
+- Circuit breakers and cost tracking
+- Anomaly detection and alerting
 
-### v0.1.0
-- Kubernetes deployment templates
-- GraphQL API
-- Advanced retry strategies
-- Multi-tenancy support
-- Workflow marketplace
+**What needs work before production:**
+- Load testing (not done - don't know how it performs under concurrent users)
+- PostgreSQL/MySQL integration testing (tests exist but require manual DB setup)
+- Security review (no formal audit completed)
+- Backup/restore procedures (not documented or tested)
+- CloudWatch/Datadog exporters (exist but untested with real endpoints)
+
+**If you're deploying to production:**
+- Run your own load tests for your expected traffic
+- Set up monitoring (Prometheus exporter works)
+- Test backup/restore for your database
+- Review security for your use case
+- Test with your specific database backend
 
 ## Contributing
 

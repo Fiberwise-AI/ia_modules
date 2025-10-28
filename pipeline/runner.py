@@ -148,30 +148,47 @@ async def run_pipeline_from_json(
     input_data: Dict[str, Any] = None,
     services: Optional[ServiceRegistry] = None,
     working_directory: Optional[str] = None,
+    execution_context=None,
+    # Legacy parameters for backward compatibility
     websocket_manager=None,
     user_id: int = None,
     execution_id: str = None
 ) -> Dict[str, Any]:
-    """Main runner function - execute pipeline from JSON configuration"""
-    
+    """Main runner function - execute pipeline from JSON configuration
+
+    Args:
+        pipeline_file: Path to pipeline JSON file
+        input_data: Input data dict for pipeline
+        services: ServiceRegistry instance (optional)
+        working_directory: Working directory for module imports
+        execution_context: ExecutionContext instance (preferred)
+        websocket_manager: Legacy websocket manager (deprecated)
+        user_id: Legacy user ID (deprecated)
+        execution_id: Legacy execution ID (deprecated)
+
+    Returns:
+        Pipeline execution result dict
+    """
+    from .core import ExecutionContext
+
     # Set working directory for relative module imports
     if working_directory:
         import sys
         if working_directory not in sys.path:
             sys.path.insert(0, working_directory)
-    
+
     # Load JSON configuration
     json_path = Path(pipeline_file)
     if not json_path.exists():
         raise FileNotFoundError(f"Pipeline configuration file not found: {pipeline_file}")
-    
+
     with open(json_path, 'r', encoding='utf-8') as f:
         pipeline_config = json.load(f)
-    
+
     # Ensure input data exists
     if input_data is None:
         input_data = {}
-    
+
     # Inject WebSocket service if provided
     if services is None:
         services = ServiceRegistry()
@@ -181,8 +198,16 @@ async def run_pipeline_from_json(
         services.register('websocket_user_id', user_id)
         services.register('websocket_execution_id', execution_id)
 
+    # Create execution context if not provided (for backward compatibility)
+    if execution_context is None and execution_id:
+        execution_context = ExecutionContext(
+            execution_id=execution_id,
+            pipeline_id=json_path.stem,
+            user_id=str(user_id) if user_id else 'unknown'
+        )
+
     # Create and run pipeline with injected services
     pipeline = create_pipeline_from_json(pipeline_config, services)
-    result = await pipeline.run(input_data)
+    result = await pipeline.run(input_data, execution_context=execution_context)
 
     return result

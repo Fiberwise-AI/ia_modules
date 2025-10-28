@@ -10,12 +10,6 @@ Demonstrates that queries are 100% identical for:
 With both NexusQL and SQLAlchemy backends.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "nexusql"))
-
 from ia_modules.database import get_database
 
 

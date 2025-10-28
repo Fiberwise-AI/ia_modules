@@ -1,11 +1,10 @@
 # Pipeline CLI Tool Documentation
 
 **Version**: 0.2.0
-**Status**: ✅ Complete (73 tests passing)
 
 ## Overview
 
-The IA Pipeline CLI tool (`ia-modules`) provides comprehensive validation, formatting, and visualization capabilities for pipeline definitions. It helps developers catch errors early, ensure consistency, and understand pipeline structure.
+The IA Pipeline CLI tool (`ia-modules`) provides pipeline execution, validation, formatting, and visualization capabilities. It helps developers run pipelines from JSON configuration, catch errors early, ensure consistency, and understand pipeline structure.
 
 ## Installation
 
@@ -21,7 +20,63 @@ After installation, the `ia-modules` command will be available globally.
 
 ## Commands
 
-### 1. Validate
+### 1. Run
+
+Execute a pipeline from JSON configuration.
+
+#### Usage
+
+```bash
+ia-modules run <pipeline-file> [options]
+```
+
+#### Options
+
+- `--input <file>` - Path to JSON file with input data
+- `--working-dir <dir>` - Working directory for relative module imports
+- `--output <file>` - Path to save output JSON (default: print to stdout)
+
+#### Examples
+
+**Basic execution:**
+```bash
+ia-modules run pipeline.json
+```
+
+Output:
+```json
+{
+  "step1": {
+    "result": "success",
+    "data": {...}
+  },
+  "step2": {
+    "result": "success",
+    "data": {...}
+  }
+}
+```
+
+**With input data:**
+```bash
+ia-modules run pipeline.json --input input.json
+```
+
+**Save output to file:**
+```bash
+ia-modules run pipeline.json --output result.json
+```
+
+**With custom working directory:**
+```bash
+ia-modules run pipeline.json --working-dir ./my_steps
+```
+
+This adds the working directory to `sys.path` for module imports.
+
+---
+
+### 2. Validate
 
 Comprehensive pipeline validation including structure, steps, flow, and templates.
 
@@ -158,7 +213,7 @@ Warnings (1):
 
 ---
 
-### 2. Format
+### 3. Format
 
 Format and prettify pipeline JSON files with consistent indentation and structure.
 
@@ -198,7 +253,7 @@ Formatted pipeline.json
 
 ---
 
-### 3. Visualize
+### 4. Visualize
 
 Generate visual representations of pipeline flow using graphviz.
 
@@ -397,9 +452,7 @@ Flow contains cycles: step1 -> step2 -> step1
 
 ## Testing
 
-The CLI tool has comprehensive test coverage:
-
-### Unit Tests (73 tests)
+Test the CLI commands:
 
 ```bash
 cd ia_modules
@@ -407,58 +460,14 @@ pytest tests/unit/test_cli_validate.py -v
 pytest tests/unit/test_cli_main.py -v
 ```
 
-**Coverage:**
-- Validation logic (48 tests)
-  - Structure validation (9 tests)
-  - Step validation (9 tests)
-  - Input validation (4 tests)
-  - Flow validation (9 tests)
-  - Condition validation (3 tests)
-  - Template validation (4 tests)
-  - Strict mode (2 tests)
-  - Complex pipelines (3 tests)
-  - ValidationResult (5 tests)
-- CLI commands (25 tests)
-  - Argument parsing (11 tests)
-  - Validate command (6 tests)
-  - Format command (4 tests)
-  - Visualize command (3 tests)
-  - Error handling (1 test)
-
 ### Integration Testing
 
 ```bash
-# Create test pipeline
-cat > test_pipeline.json << 'EOF'
-{
-  "name": "test_pipeline",
-  "steps": [
-    {
-      "name": "step1",
-      "module": "ia_modules.pipeline.core",
-      "class": "Step"
-    }
-  ],
-  "flow": {
-    "start_at": "step1",
-    "paths": [
-      {"from_step": "step1", "to_step": "end_with_success"}
-    ]
-  }
-}
-EOF
-
-# Test validation
-ia-modules validate test_pipeline.json
-ia-modules validate test_pipeline.json --strict
-ia-modules validate test_pipeline.json --json
-
-# Test formatting
-ia-modules format test_pipeline.json
-ia-modules format test_pipeline.json --in-place
-
-# Test visualization (if graphviz installed)
-ia-modules visualize test_pipeline.json --output test.png
+# Test all commands
+ia-modules validate pipeline.json
+ia-modules format pipeline.json
+ia-modules visualize pipeline.json
+ia-modules run pipeline.json --input input.json
 ```
 
 ---
@@ -518,34 +527,6 @@ Benchmark results (10 iterations):
 
 ---
 
-## Roadmap
-
-### Completed ✅
-- JSON schema validation
-- Step import checking
-- Flow validation (reachability, cycles)
-- Template validation
-- Error reporting with rich formatting
-- Format command
-- Visualize command
-- 73 comprehensive tests
-
-### Future Enhancements 🔮
-
-#### Week 2: Advanced Features
-- [ ] Dry-run simulation
-- [ ] Init command (pipeline templates)
-- [ ] Diff command (compare pipelines)
-- [ ] Documentation generation
-
-#### Later
-- [ ] Interactive validation mode
-- [ ] Auto-fix suggestions
-- [ ] Custom validation rules
-- [ ] IDE integration (VS Code extension)
-
----
-
 ## Troubleshooting
 
 ### Command Not Found
@@ -595,75 +576,3 @@ pip install graphviz
 
 ---
 
-## Contributing
-
-### Adding New Validation Rules
-
-1. Add validation logic to `cli/validate.py`:
-```python
-def _validate_my_feature(self) -> None:
-    """Validate my feature"""
-    if 'my_feature' in self.pipeline_data:
-        # Add validation logic
-        if not valid:
-            self.result.add_error("My feature is invalid")
-```
-
-2. Call from `validate()` method:
-```python
-def validate(self) -> ValidationResult:
-    self._validate_structure()
-    self._validate_steps()
-    self._validate_flow()
-    self._validate_my_feature()  # Add here
-    return self.result
-```
-
-3. Add tests to `tests/unit/test_cli_validate.py`:
-```python
-class TestMyFeatureValidation:
-    def test_valid_my_feature(self):
-        # Test valid case
-        ...
-
-    def test_invalid_my_feature(self):
-        # Test invalid case
-        ...
-```
-
-### Adding New Commands
-
-1. Add command parser in `cli/main.py`:
-```python
-my_parser = subparsers.add_parser('mycommand', help='My command')
-my_parser.add_argument('pipeline', type=str)
-```
-
-2. Add command handler:
-```python
-def cmd_mycommand(args) -> int:
-    # Implement command logic
-    return 0
-```
-
-3. Add to dispatcher:
-```python
-if args.command == 'mycommand':
-    return cmd_mycommand(args)
-```
-
-4. Add tests to `tests/unit/test_cli_main.py`.
-
----
-
-## License
-
-Part of the IA Modules project.
-
-## Support
-
-For issues and questions:
-- Check this documentation
-- Run with `--help` flag
-- Review test examples in `tests/unit/test_cli_*.py`
-- Check integration tests in `tests/integration/test_importer_integration.py`

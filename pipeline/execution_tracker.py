@@ -14,7 +14,11 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 import logging
 
-from ..database.manager import DatabaseManager
+try:
+    from nexusql import DatabaseManager
+except ImportError:
+    # Fallback to database interface
+    from ia_modules.database import DatabaseInterface as DatabaseManager
 
 logger = logging.getLogger(__name__)
 

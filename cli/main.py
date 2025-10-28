@@ -7,6 +7,7 @@ Provides command-line interface for pipeline operations.
 import sys
 import json
 import argparse
+import asyncio
 from pathlib import Path
 from typing import Optional
 
@@ -81,6 +82,32 @@ def create_parser() -> argparse.ArgumentParser:
         '--in-place',
         action='store_true',
         help='Edit file in place'
+    )
+
+    # Run command
+    run_parser = subparsers.add_parser(
+        'run',
+        help='Execute a pipeline from JSON configuration'
+    )
+    run_parser.add_argument(
+        'pipeline',
+        type=str,
+        help='Path to pipeline JSON file'
+    )
+    run_parser.add_argument(
+        '--input',
+        type=str,
+        help='Path to JSON file with input data'
+    )
+    run_parser.add_argument(
+        '--working-dir',
+        type=str,
+        help='Working directory for relative module imports'
+    )
+    run_parser.add_argument(
+        '--output',
+        type=str,
+        help='Path to save output JSON (default: print to stdout)'
     )
 
     return parser
@@ -173,6 +200,71 @@ def cmd_format(args) -> int:
     return 0
 
 
+def cmd_run(args) -> int:
+    """Execute run command"""
+    from ia_modules.pipeline.runner import run_pipeline_from_json
+    from ia_modules.pipeline.services import ServiceRegistry
+    from ia_modules.pipeline.core import ExecutionContext
+
+    pipeline_path = Path(args.pipeline)
+
+    if not pipeline_path.exists():
+        print(f"Error: Pipeline file not found: {pipeline_path}", file=sys.stderr)
+        return 1
+
+    # Load input data if provided
+    input_data = {}
+    if args.input:
+        input_path = Path(args.input)
+        if not input_path.exists():
+            print(f"Error: Input file not found: {input_path}", file=sys.stderr)
+            return 1
+        try:
+            with open(input_path, 'r') as f:
+                input_data = json.load(f)
+        except json.JSONDecodeError as e:
+            print(f"Error: Invalid JSON in {input_path}: {e}", file=sys.stderr)
+            return 1
+
+    # Create services registry
+    services = ServiceRegistry()
+
+    # Create execution context
+    execution_context = ExecutionContext(
+        execution_id='cli-run',
+        pipeline_id=pipeline_path.stem,
+        user_id='cli-user'
+    )
+
+    # Run pipeline
+    try:
+        result = asyncio.run(run_pipeline_from_json(
+            str(pipeline_path),
+            input_data,
+            services=services,
+            working_directory=args.working_dir,
+            execution_context=execution_context
+        ))
+
+        # Output result
+        output_json = json.dumps(result, indent=2, default=str)
+
+        if args.output:
+            output_path = Path(args.output)
+            with open(output_path, 'w') as f:
+                f.write(output_json)
+            print(f"Pipeline result saved to: {output_path}")
+        else:
+            print(output_json)
+
+        return 0
+    except Exception as e:
+        print(f"Error executing pipeline: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        return 1
+
+
 def print_validation_result(result: ValidationResult) -> None:
     """Print validation result in human-readable format"""
     # Print header
@@ -221,6 +313,8 @@ def cli(argv: Optional[list] = None) -> int:
         return cmd_visualize(args)
     elif args.command == 'format':
         return cmd_format(args)
+    elif args.command == 'run':
+        return cmd_run(args)
     else:
         print(f"Unknown command: {args.command}", file=sys.stderr)
         return 1

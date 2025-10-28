@@ -2,7 +2,9 @@
 
 ## Overview
 
-The IA Modules Pipeline System is a sophisticated, graph-based workflow execution framework designed for building intelligent, modular AI applications. It provides a declarative JSON configuration approach for defining complex workflows with conditional routing, service injection, and human-in-the-loop capabilities.
+The IA Modules Pipeline System is a graph-based workflow execution framework designed for building intelligent, modular AI applications. It provides a declarative JSON configuration approach for defining complex workflows with conditional routing, service injection, and human-in-the-loop capabilities.
+
+**ExecutionContext:** The system uses ExecutionContext (containing execution_id, pipeline_id, user_id, thread_id) as a required parameter to `Pipeline.run()`. This replaced the previous pattern of registering execution_id in services.
 
 ## Table of Contents
 
@@ -311,16 +313,17 @@ Real-time updates through WebSocket services:
 
 ```python
 # Automatic WebSocket notifications during step execution
+# Note: execution_id comes from ExecutionContext parameter passed to Pipeline.run()
 if self.services:
     websocket_manager = self.services.get('websocket_manager')
     user_id = self.services.get('websocket_user_id')
-    execution_id = self.services.get('websocket_execution_id')
+    # execution_id is from execution_context.execution_id
 
-    if websocket_manager and user_id and execution_id:
+    if websocket_manager and user_id:
         await websocket_manager.send_processing_status(
             user_id=user_id,
             status="step_completed",
-            execution_id=execution_id,
+            execution_id=execution_context.execution_id,
             extra_data={"step_name": self.name, "result": result}
         )
 ```
@@ -604,21 +607,23 @@ class WellDesignedStep(Step):
 ### Service Registry Setup
 
 ```python
+from nexusql import DatabaseManager
+from ia_modules.pipeline.services import ServiceRegistry
+
 # Production setup
-services = ServiceRegistry(
-    database=database_manager,
-    http=http_client,
-    websocket_manager=websocket_manager,
-    central_logger=central_logger,
-    websocket_user_id=user_id,
-    websocket_execution_id=execution_id
-)
+database_manager = DatabaseManager(config)
+services = ServiceRegistry()
+services.register('database', database_manager)
+services.register('http', http_client)
+services.register('websocket_manager', websocket_manager)
+services.register('central_logger', central_logger)
+services.register('websocket_user_id', user_id)
+# Note: execution_id is passed via ExecutionContext, not registered in services
 
 # Development setup with mocks
-services = ServiceRegistry(
-    database=mock_database,
-    http=mock_http_client
-)
+services = ServiceRegistry()
+services.register('database', mock_database)
+services.register('http', mock_http_client)
 ```
 
 This pipeline architecture provides a robust, scalable foundation for building complex AI workflows with intelligent routing, comprehensive logging, and real-time user interaction capabilities.

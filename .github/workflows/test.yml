@@ -31,8 +31,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Checkout nexusql
+      uses: actions/checkout@v4
+      with:
+        repository: Fiberwise-AI/nexusql
+        path: nexusql
+    - name: Install nexusql
+      run: |
+        cd nexusql
+        pip install -e .
+    - name: Set up Python ${{ matrix.python-version }}'
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
@@ -385,3 +393,4 @@ jobs:
       with:
         name: dist
         path: dist/
+

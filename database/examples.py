@@ -4,12 +4,6 @@ Examples demonstrating the database abstraction layer.
 Run this file to see both NexusQL and SQLAlchemy in action.
 """
 
-import sys
-from pathlib import Path
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from ia_modules.database import get_database, set_default_backend, DatabaseBackend
 
 

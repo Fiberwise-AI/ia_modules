@@ -8,9 +8,8 @@ import sys
 from pathlib import Path
 import pytest
 
-# Add the project root to Python path for imports
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
+# Note: sys.path manipulation removed - rely on proper package installation
+# Install with: pip install -e .
 
 # Load .env file if available (for LLM API keys and other test config)
 try:

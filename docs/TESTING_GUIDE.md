@@ -1,730 +1,478 @@
 # IA Modules - Testing Guide
 
-## Overview
-
-This comprehensive testing guide covers all aspects of testing the IA Modules framework, including unit tests, integration tests, pipeline testing, and end-to-end testing scenarios. The framework provides robust testing utilities and example pipelines for thorough validation.
+Comprehensive guide for testing pipelines, steps, and database integrations.
 
 ## Table of Contents
 
-- [Test Architecture](#test-architecture)
-- [Test Categories](#test-categories)
 - [Running Tests](#running-tests)
+- [Test Organization](#test-organization)
 - [Unit Testing](#unit-testing)
 - [Integration Testing](#integration-testing)
+- [Database Testing](#database-testing)
 - [Pipeline Testing](#pipeline-testing)
-- [Test Utilities](#test-utilities)
-- [Example Test Pipelines](#example-test-pipelines)
-- [Mocking and Fixtures](#mocking-and-fixtures)
-- [Performance Testing](#performance-testing)
+- [Test Examples](#test-examples)
 - [Best Practices](#best-practices)
-
-## Test Architecture
-
-The testing framework is organized into several layers:
-
-```
-tests/
-├── unit/                    # Unit tests for individual components
-│   ├── test_core.py        # Core pipeline component tests
-│   ├── test_services.py    # Service registry tests
-│   ├── test_runner.py      # Pipeline runner tests
-│   ├── test_importer.py    # Pipeline importer tests
-│   └── test_*.py           # Other unit tests
-├── integration/             # Integration tests
-│   ├── test_pipeline_integration.py
-│   ├── test_database_integration.py
-│   └── test_*.py
-├── e2e/                    # End-to-end tests
-│   └── test_complete_workflows.py
-├── pipelines/              # Test pipeline configurations
-│   ├── simple_pipeline/    # Basic test pipeline
-│   ├── conditional_pipeline/  # Conditional flow tests
-│   ├── parallel_pipeline/  # Parallel execution tests
-│   └── agent_pipeline/     # AI agent tests
-├── conftest.py             # Global test configuration
-└── pipeline_runner.py      # Standalone pipeline test runner
-```
-
-## Test Categories
-
-### 1. Unit Tests (`tests/unit/`)
-
-Test individual components in isolation with mocked dependencies.
-
-**Coverage Areas:**
-- Pipeline core components (Step, Pipeline, TemplateParameterResolver)
-- Service registry functionality
-- Database interfaces and managers
-- Authentication models
-- Utility functions
-
-### 2. Integration Tests (`tests/integration/`)
-
-Test component interactions and system integration.
-
-**Coverage Areas:**
-- Pipeline execution with real database
-- Service injection and dependency resolution
-- Template parameter resolution in context
-- Flow control and conditional routing
-- Migration system with database
-
-### 3. End-to-End Tests (`tests/e2e/`)
-
-Test complete workflows from JSON configuration to final output.
-
-**Coverage Areas:**
-- Full pipeline execution workflows
-- Real database operations
-- File system interactions
-- WebSocket communications (if applicable)
-
-### 4. Pipeline Tests (`tests/pipelines/`)
-
-Validate pipeline configurations and step implementations.
-
-**Coverage Areas:**
-- JSON configuration validation
-- Step implementation correctness
-- Flow definition validation
-- Parameter template resolution
 
 ## Running Tests
 
-### Prerequisites
+### Quick Start
 
 ```bash
-# Install test dependencies
-pip install pytest pytest-asyncio pytest-mock pytest-cov
+# Run all tests
+pytest
 
-# Ensure ia_modules is in Python path
-export PYTHONPATH="${PYTHONPATH}:/path/to/ia_modules"
-```
+# Run with verbose output
+pytest -v
 
-### Running All Tests
-
-```bash
-# Run all tests with verbose output
-python -m pytest tests/ -v
-
-# Run with coverage report
-python -m pytest tests/ --cov=ia_modules --cov-report=html
-
-# Run specific test categories
-python -m pytest tests/unit/ -v
-python -m pytest tests/integration/ -v
-python -m pytest tests/e2e/ -v
-```
-
-### Running Specific Tests
-
-```bash
 # Run specific test file
-python -m pytest tests/unit/test_core.py -v
+pytest tests/unit/test_core.py
 
-# Run specific test function
-python -m pytest tests/unit/test_core.py::test_step_execution -v
+# Run tests matching pattern
+pytest -k "test_pipeline"
 
-# Run tests with pattern matching
-python -m pytest -k "test_pipeline" -v
+# Run with coverage
+pytest --cov=ia_modules --cov-report=html
 ```
 
-### Platform-Specific Considerations
+### Test Collection
 
-#### Windows Testing
+Current test suite: **2,852 tests** (13 collection errors in security/performance modules)
 
 ```bash
-# Use Windows-specific event loop policy
-set PYTHONASYNCIODEBUG=1
-python -m pytest tests/ -v
+# Show all collected tests
+pytest --collect-only
+
+# Count tests
+pytest --collect-only -q | tail -1
 ```
 
-#### Configuration in `conftest.py`
+## Test Organization
 
-```python
-import sys
-import asyncio
-
-# Set up event loop policy for Windows
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 ```
+tests/
+├── unit/                       # Unit tests for components
+│   ├── test_core.py           # Pipeline core tests
+│   ├── test_services.py       # Service registry tests
+│   ├── test_database.py       # Database interface tests
+│   └── test_cli_*.py          # CLI command tests
+├── integration/                # Integration tests
+│   ├── test_pipeline_integration.py
+│   └── test_database_integration.py
+├── pipelines/                  # Test pipeline configurations
+│   ├── simple_pipeline/
+│   ├── conditional_pipeline/
+│   ├── parallel_pipeline/
+│   └── loop_pipeline/
+└── conftest.py                # Shared fixtures
 
 ## Unit Testing
 
-### Core Component Tests
-
-#### Step Testing
+### Testing Steps
 
 ```python
-# tests/unit/test_core.py
 import pytest
 from ia_modules.pipeline.core import Step
-from ia_modules.pipeline.services import ServiceRegistry
 
-class MockStep(Step):
-    async def run(self, data: dict) -> dict:
-        return {"test_result": "success", "input_data": data}
-
-def test_step_execution():
-    """Test basic step execution"""
-    step = MockStep("test_step", {"param": "value"})
-
-    # Mock services
-    services = ServiceRegistry()
-    step.set_services(services)
-
-    # Test properties
-    assert step.name == "test_step"
-    assert step.config == {"param": "value"}
-
-    # Test service access
-    assert step.get_db() is None  # No database service registered
+class TestGreetingStep(Step):
+    async def execute(self, data):
+        name = data.get('name', 'World')
+        return {'message': f'Hello, {name}!'}
 
 @pytest.mark.asyncio
-async def test_step_run():
-    """Test step run method with logging"""
-    step = MockStep("test_step", {})
+async def test_greeting_step():
+    step = TestGreetingStep('greet', {})
+    result = await step.execute({'name': 'Alice'})
 
-    result = await step.run({"input": "test_data"})
+    assert result['message'] == 'Hello, Alice!'
 
-    # Verify result structure
-    assert "test_result" in result
-    assert result["test_result"] == "success"
-    assert result["input_data"]["input"] == "test_data"
+@pytest.mark.asyncio
+async def test_greeting_step_default():
+    step = TestGreetingStep('greet', {})
+    result = await step.execute({})
+
+    assert result['message'] == 'Hello, World!'
 ```
 
-#### Template Parameter Resolution Testing
+### Testing Service Registry
 
 ```python
-def test_template_parameter_resolver():
-    """Test template parameter resolution"""
-    from ia_modules.pipeline.core import TemplateParameterResolver
+from ia_modules.pipeline.services import ServiceRegistry
 
-    context = {
-        "pipeline_input": {"business_type": "retail"},
-        "steps": {"geocoder": {"result": {"city": "New York"}}},
-        "parameters": {"custom_value": "test_value"}
-    }
+def test_service_registration():
+    services = ServiceRegistry()
 
-    config = {
-        "url": "{pipeline_input.business_type}",
-        "city": "{steps.geocoder.result.city}",
-        "value": "{parameters.custom_value}",
-        "nested": {
-            "param": "{pipeline_input.business_type}"
-        }
-    }
+    # Register service
+    db_mock = {'type': 'mock_db'}
+    services.register('database', db_mock)
 
-    resolved = TemplateParameterResolver.resolve_parameters(config, context)
+    # Retrieve service
+    assert services.get('database') == db_mock
+    assert services.has('database') is True
 
-    assert resolved["url"] == "retail"
-    assert resolved["city"] == "New York"
-    assert resolved["value"] == "test_value"
-    assert resolved["nested"]["param"] == "retail"
+def test_service_not_found():
+    services = ServiceRegistry()
 
-def test_template_parameter_extraction():
-    """Test template parameter extraction"""
-    config = {
-        "field1": "{pipeline_input.data}",
-        "field2": "{steps.step1.result}",
-        "field3": "no template here"
-    }
-
-    parameters = TemplateParameterResolver.extract_template_parameters(config)
-
-    assert "pipeline_input.data" in parameters
-    assert "steps.step1.result" in parameters
-    assert len(parameters) == 2
+    assert services.get('nonexistent') is None
+    assert services.has('nonexistent') is False
 ```
 
-### Service Registry Testing
+### Testing ExecutionContext
 
 ```python
-# tests/unit/test_services.py
-import pytest
-from ia_modules.pipeline.services import ServiceRegistry, CentralLoggingService
+from ia_modules.pipeline.core import ExecutionContext
 
-def test_service_registry():
-    """Test service registry functionality"""
-    registry = ServiceRegistry()
+def test_execution_context():
+    ctx = ExecutionContext(
+        execution_id='exec-123',
+        pipeline_id='pipeline-456',
+        user_id='user-789'
+    )
 
-    # Test service registration
-    mock_service = {"type": "mock"}
-    registry.register("mock_service", mock_service)
-
-    # Test service retrieval
-    assert registry.get("mock_service") == mock_service
-    assert registry.has("mock_service") is True
-    assert registry.get("nonexistent") is None
-    assert registry.has("nonexistent") is False
-
-def test_central_logging_service():
-    """Test central logging service"""
-    logger = CentralLoggingService()
-
-    # Test execution ID setting
-    logger.set_execution_id("test_exec_123")
-    assert logger.current_execution_id == "test_exec_123"
-
-    # Test logging methods
-    logger.info("Test info message", "test_step")
-    logger.error("Test error message", "test_step")
-    logger.warning("Test warning message")
-
-    assert len(logger.execution_logs) == 3
-
-    # Verify log entries
-    info_log = logger.execution_logs[0]
-    assert info_log.level == "INFO"
-    assert info_log.message == "Test info message"
-    assert info_log.step_name == "test_step"
-
-    # Test log clearing
-    logger.clear_logs()
-    assert len(logger.execution_logs) == 0
-    assert logger.current_execution_id is None
-```
-
-### Database Testing
-
-```python
-# tests/unit/test_database.py
-import pytest
-from unittest.mock import Mock, AsyncMock
-from ia_modules.database.interfaces import QueryResult, create_query_result, create_error_result
-
-def test_query_result():
-    """Test QueryResult functionality"""
-    data = [{"id": 1, "name": "John"}, {"id": 2, "name": "Jane"}]
-    result = QueryResult(success=True, data=data, row_count=2)
-
-    # Test basic properties
-    assert result.success is True
-    assert result.row_count == 2
-
-    # Test first row access
-    first_row = result.get_first_row()
-    assert first_row["name"] == "John"
-
-    # Test column value extraction
-    names = result.get_column_values("name")
-    assert names == ["John", "Jane"]
-
-def test_query_result_utilities():
-    """Test query result utility functions"""
-    # Test success result creation
-    success_result = create_query_result(data=[{"id": 1}])
-    assert success_result.success is True
-    assert success_result.row_count == 1
-
-    # Test error result creation
-    error_result = create_error_result("Test error message")
-    assert error_result.success is False
-    assert error_result.error_message == "Test error message"
-    assert error_result.row_count == 0
+    assert ctx.execution_id == 'exec-123'
+    assert ctx.pipeline_id == 'pipeline-456'
+    assert ctx.user_id == 'user-789'
 ```
 
 ## Integration Testing
 
-### Pipeline Integration Tests
+### Testing Pipeline Execution
 
 ```python
-# tests/integration/test_pipeline_integration.py
 import pytest
-import tempfile
 import json
+import tempfile
 from pathlib import Path
 
 from ia_modules.pipeline.runner import run_pipeline_from_json
 from ia_modules.pipeline.services import ServiceRegistry
-from ia_modules.database.manager import DatabaseManager
+from ia_modules.pipeline.core import ExecutionContext
 
 @pytest.mark.asyncio
-async def test_complete_pipeline_execution():
-    """Test complete pipeline execution with database"""
-
-    # Create temporary database
-    with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp_db:
-        db_url = f"sqlite:///{tmp_db.name}"
-
-    # Setup database
-    db_manager = DatabaseManager(db_url)
-    await db_manager.initialize()
-
-    # Setup services
-    services = ServiceRegistry()
-    services.register('database', db_manager)
-
-    # Create test pipeline configuration
+async def test_simple_pipeline_execution():
+    # Create pipeline config
     pipeline_config = {
-        "name": "Test Integration Pipeline",
-        "version": "1.0",
+        "name": "test_pipeline",
         "steps": [
             {
-                "id": "test_step",
-                "step_class": "TestIntegrationStep",
-                "module": "tests.fixtures.test_steps"
+                "id": "greet",
+                "module": "tests.fixtures.test_steps",
+                "step_class": "GreetingStep"
             }
         ],
         "flow": {
-            "start_at": "test_step",
+            "start_at": "greet",
             "paths": []
         }
     }
 
-    # Write pipeline to temporary file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as tmp_pipeline:
-        json.dump(pipeline_config, tmp_pipeline)
-        pipeline_file = tmp_pipeline.name
+    # Write to temp file
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        json.dump(pipeline_config, f)
+        pipeline_file = f.name
 
-    # Execute pipeline
-    result = await run_pipeline_from_json(
-        pipeline_file=pipeline_file,
-        input_data={"test_input": "integration_test"},
-        services=services
-    )
-
-    # Verify results
-    assert "test_step" in result
-    assert result["test_step"]["status"] == "success"
-
-    # Cleanup
-    Path(pipeline_file).unlink()
-    Path(tmp_db.name).unlink()
-
-@pytest.mark.asyncio
-async def test_conditional_flow_integration():
-    """Test conditional flow execution"""
-    pipeline_file = "tests/pipelines/conditional_pipeline/pipeline.json"
-
-    # Test high quality path
-    result_high = await run_pipeline_from_json(
-        pipeline_file=pipeline_file,
-        input_data={"quality_score": 0.9, "data": [{"test": "data"}]}
-    )
-
-    # Verify high quality processing occurred
-    assert "high_quality_processor" in result_high
-
-    # Test low quality path
-    result_low = await run_pipeline_from_json(
-        pipeline_file=pipeline_file,
-        input_data={"quality_score": 0.3, "data": [{"test": "data"}]}
-    )
-
-    # Verify low quality processing occurred
-    assert "low_quality_processor" in result_low
-```
-
-### Database Integration Tests
-
-```python
-# tests/integration/test_database_integration.py
-import pytest
-import tempfile
-from pathlib import Path
-
-from ia_modules.database.manager import DatabaseManager
-from ia_modules.database.migrations import MigrationRunner
-
-@pytest.mark.asyncio
-async def test_database_initialization():
-    """Test database initialization with migrations"""
-
-    # Create temporary database
-    with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp_db:
-        db_url = f"sqlite:///{tmp_db.name}"
-
-    # Initialize database
-    db_manager = DatabaseManager(db_url)
-    success = await db_manager.initialize(apply_schema=True)
-
-    assert success is True
-    assert db_manager._connection is not None
-
-    # Verify tables were created
-    tables_result = db_manager.fetch_all(
-        "SELECT name FROM sqlite_master WHERE type='table'"
-    )
-
-    table_names = [row['name'] for row in tables_result]
-    assert 'ia_migrations' in table_names
-
-    # Cleanup
-    db_manager.disconnect()
-    Path(tmp_db.name).unlink()
-
-@pytest.mark.asyncio
-async def test_migration_system():
-    """Test migration system functionality"""
-
-    # Create temporary database and migration directory
-    with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp_db:
-        db_url = f"sqlite:///{tmp_db.name}"
-
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        migration_dir = Path(tmp_dir)
-
-        # Create test migration
-        migration_content = """
-        CREATE TABLE test_table (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL
-        );
-        """
-
-        migration_file = migration_dir / "V001__create_test_table.sql"
-        migration_file.write_text(migration_content)
-
-        # Setup database
-        db_manager = DatabaseManager(db_url)
-        await db_manager.initialize(apply_schema=False)
-
-        # Run migrations
-        migration_runner = MigrationRunner(
-            database=db_manager,
-            migration_path=migration_dir,
-            migration_type="test"
+    try:
+        # Execute pipeline
+        services = ServiceRegistry()
+        ctx = ExecutionContext(
+            execution_id='test-001',
+            pipeline_id='test-pipeline',
+            user_id='test-user'
         )
 
-        success = await migration_runner.run_pending_migrations()
-        assert success is True
+        result = await run_pipeline_from_json(
+            pipeline_file,
+            input_data={'name': 'Test'},
+            services=services,
+            execution_context=ctx
+        )
 
-        # Verify migration was applied
-        applied_migrations = await migration_runner.get_applied_migrations()
-        assert len(applied_migrations) == 1
-        assert applied_migrations[0].version == "V001__create_test_table"
+        # Verify result
+        assert 'greet' in result
+        assert result['greet']['message'] == 'Hello, Test!'
 
-        # Verify table was created
-        table_exists = await db_manager.table_exists("test_table")
-        assert table_exists is True
+    finally:
+        Path(pipeline_file).unlink()
+```
 
-        # Cleanup
-        db_manager.disconnect()
-        Path(tmp_db.name).unlink()
+### Testing Conditional Flow
+
+```python
+@pytest.mark.asyncio
+async def test_conditional_flow():
+    pipeline_config = {
+        "name": "conditional_test",
+        "steps": [
+            {
+                "id": "validator",
+                "module": "tests.fixtures.test_steps",
+                "step_class": "ValidationStep"
+            },
+            {
+                "id": "process_valid",
+                "module": "tests.fixtures.test_steps",
+                "step_class": "ValidProcessorStep"
+            },
+            {
+                "id": "process_invalid",
+                "module": "tests.fixtures.test_steps",
+                "step_class": "InvalidProcessorStep"
+            }
+        ],
+        "flow": {
+            "start_at": "validator",
+            "paths": [
+                {
+                    "from_step": "validator",
+                    "to_step": "process_valid",
+                    "condition": {
+                        "type": "field_equals",
+                        "field": "valid",
+                        "value": true
+                    }
+                },
+                {
+                    "from_step": "validator",
+                    "to_step": "process_invalid",
+                    "condition": {
+                        "type": "field_equals",
+                        "field": "valid",
+                        "value": false
+                    }
+                }
+            ]
+        }
+    }
+
+    # Test valid path
+    result_valid = await execute_pipeline(pipeline_config, {'score': 0.9})
+    assert 'process_valid' in result_valid
+
+    # Test invalid path
+    result_invalid = await execute_pipeline(pipeline_config, {'score': 0.3})
+    assert 'process_invalid' in result_invalid
+```
+
+## Database Testing
+
+### Testing with NexusQL
+
+```python
+import pytest
+from ia_modules.database import get_database
+
+@pytest.fixture
+def test_db():
+    """Create temporary in-memory database"""
+    db = get_database('sqlite:///:memory:', backend='nexusql')
+    db.connect()
+
+    # Create test table
+    db.execute("""
+        CREATE TABLE users (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE
+        )
+    """, {})
+
+    yield db
+
+    db.disconnect()
+
+def test_database_insert(test_db):
+    # Insert data
+    test_db.execute(
+        "INSERT INTO users (id, name, email) VALUES (:id, :name, :email)",
+        {"id": 1, "name": "Alice", "email": "alice@example.com"}
+    )
+
+    # Query data
+    result = test_db.fetch_one(
+        "SELECT * FROM users WHERE id = :id",
+        {"id": 1}
+    )
+
+    assert result['name'] == 'Alice'
+    assert result['email'] == 'alice@example.com'
+
+def test_database_fetch_all(test_db):
+    # Insert multiple rows
+    for i in range(3):
+        test_db.execute(
+            "INSERT INTO users (id, name, email) VALUES (:id, :name, :email)",
+            {"id": i+1, "name": f"User{i+1}", "email": f"user{i+1}@example.com"}
+        )
+
+    # Fetch all
+    results = test_db.fetch_all("SELECT * FROM users ORDER BY id", {})
+
+    assert len(results) == 3
+    assert results[0]['name'] == 'User1'
+    assert results[2]['name'] == 'User3'
+```
+
+### Testing with SQLAlchemy Backend
+
+```python
+@pytest.fixture
+def sqlalchemy_db():
+    """Create database with SQLAlchemy backend"""
+    db = get_database(
+        'sqlite:///:memory:',
+        backend='sqlalchemy',
+        pool_size=5
+    )
+    db.connect()
+
+    db.execute("""
+        CREATE TABLE test_data (
+            id INTEGER PRIMARY KEY,
+            value TEXT
+        )
+    """, {})
+
+    yield db
+
+    db.disconnect()
+
+def test_sqlalchemy_backend(sqlalchemy_db):
+    # Test insert
+    sqlalchemy_db.execute(
+        "INSERT INTO test_data (id, value) VALUES (:id, :value)",
+        {"id": 1, "value": "test"}
+    )
+
+    # Test fetch
+    result = sqlalchemy_db.fetch_one(
+        "SELECT * FROM test_data WHERE id = :id",
+        {"id": 1}
+    )
+
+    assert result['value'] == 'test'
+```
+
+### Testing Steps with Database
+
+```python
+from ia_modules.pipeline.core import Step
+from ia_modules.database import get_database
+
+class DatabaseStep(Step):
+    async def execute(self, data):
+        db = self.services.get('database')
+        user_id = data.get('user_id')
+
+        result = db.fetch_one(
+            "SELECT * FROM users WHERE id = :id",
+            {"id": user_id}
+        )
+
+        return {"user": result}
+
+@pytest.mark.asyncio
+async def test_database_step(test_db):
+    # Insert test data
+    test_db.execute(
+        "INSERT INTO users (id, name, email) VALUES (:id, :name, :email)",
+        {"id": 1, "name": "Bob", "email": "bob@example.com"}
+    )
+
+    # Setup services
+    from ia_modules.pipeline.services import ServiceRegistry
+    services = ServiceRegistry()
+    services.register('database', test_db)
+
+    # Create and run step
+    step = DatabaseStep('db_step', {})
+    step.set_services(services)
+
+    result = await step.execute({'user_id': 1})
+
+    assert result['user']['name'] == 'Bob'
 ```
 
 ## Pipeline Testing
 
-### Test Pipeline Runner
+### Test Pipeline Examples
 
-The framework includes a standalone pipeline test runner for development and debugging:
+The `tests/pipelines/` directory contains working pipeline examples:
+
+- **simple_pipeline**: Basic linear flow
+- **conditional_pipeline**: Conditional routing based on data
+- **parallel_pipeline**: Concurrent execution of multiple branches
+- **loop_pipeline**: Iterative processing with loops
+- **multi_agent_collaboration**: Multi-agent workflows
+
+### Testing Existing Pipelines
 
 ```python
-# tests/pipeline_runner.py
-def run_pipeline_test(
-    pipeline_file: str,
-    input_data: Dict[str, Any] = None
-) -> Dict[str, Any]:
-    """Run a pipeline test with minimal setup"""
+import pytest
+from ia_modules.pipeline.runner import run_pipeline_from_json
+from ia_modules.pipeline.core import ExecutionContext
+from ia_modules.pipeline.services import ServiceRegistry
 
-    # Load JSON configuration
-    json_path = Path(pipeline_file)
-    if not json_path.exists():
-        raise FileNotFoundError(f"Pipeline configuration file not found: {pipeline_file}")
-
-    with open(json_path, 'r', encoding='utf-8') as f:
-        pipeline_config = json.load(f)
-
-    # Provide default input data if none given
-    if input_data is None:
-        input_data = {
-            "input_data": [
-                {"name": "example1", "value": 10},
-                {"name": "example2", "value": 20}
-            ]
-        }
-
-    # Create minimal services registry
+@pytest.mark.asyncio
+async def test_simple_pipeline():
+    """Test existing simple pipeline"""
     services = ServiceRegistry()
+    ctx = ExecutionContext(
+        execution_id='test-simple',
+        pipeline_id='simple',
+        user_id='tester'
+    )
 
-    # Create and run pipeline
-    pipeline = create_pipeline_from_json(pipeline_config, services)
-    result = asyncio.run(pipeline.run(input_data))
+    result = await run_pipeline_from_json(
+        'tests/pipelines/simple_pipeline/pipeline.json',
+        input_data={'test': 'data'},
+        services=services,
+        execution_context=ctx
+    )
 
-    return result
+    assert result is not None
 ```
 
-**Usage:**
+### Creating Custom Test Pipelines
 
-```bash
-# Run test pipeline
-python tests/pipeline_runner.py tests/pipelines/simple_pipeline/pipeline.json
-
-# Run with custom input
-python tests/pipeline_runner.py tests/pipelines/simple_pipeline/pipeline.json --input '{"topic": "test"}'
+**tests/my_test/pipeline.json:**
+```json
+{
+  "name": "my_test_pipeline",
+  "steps": [
+    {
+      "id": "step1",
+      "module": "tests.my_test.steps",
+      "step_class": "Step1"
+    },
+    {
+      "id": "step2",
+      "module": "tests.my_test.steps",
+      "step_class": "Step2"
+    }
+  ],
+  "flow": {
+    "start_at": "step1",
+    "paths": [
+      {"from_step": "step1", "to_step": "step2"}
+    ]
+  }
+}
 ```
 
-## Test Utilities
-
-### Mock Database Manager
-
+**tests/my_test/steps.py:**
 ```python
-# tests/fixtures/mock_database.py
-class MockDatabaseManager:
-    """Mock database manager for testing"""
-
-    def __init__(self):
-        self.data = {}
-        self.queries_executed = []
-
-    def fetch_all(self, query: str, params: tuple = None) -> List[Dict]:
-        self.queries_executed.append((query, params))
-        return self.data.get('fetch_all_result', [])
-
-    def fetch_one(self, query: str, params: tuple = None) -> Optional[Dict]:
-        self.queries_executed.append((query, params))
-        return self.data.get('fetch_one_result')
-
-    def execute(self, query: str, params: tuple = None):
-        self.queries_executed.append((query, params))
-        return self
-
-    def set_mock_data(self, key: str, value: Any):
-        """Set mock data for responses"""
-        self.data[key] = value
-```
-
-### Test Step Implementations
-
-```python
-# tests/fixtures/test_steps.py
 from ia_modules.pipeline.core import Step
-from typing import Dict, Any
 
-class TestDataStep(Step):
-    """Test step that generates data"""
+class Step1(Step):
+    async def execute(self, data):
+        return {"result": "step1_done", "data": data}
 
-    async def run(self, data: Dict[str, Any]) -> Any:
-        return {
-            "generated_data": [1, 2, 3, 4, 5],
-            "timestamp": "2024-01-01T00:00:00Z",
-            "status": "success"
-        }
-
-class TestDatabaseStep(Step):
-    """Test step that uses database service"""
-
-    async def run(self, data: Dict[str, Any]) -> Any:
-        db = self.get_db()
-        if not db:
-            return {"error": "No database service"}
-
-        # Perform mock database operation
-        result = db.fetch_all("SELECT * FROM test_table")
-
-        return {
-            "database_result": result,
-            "query_count": len(db.queries_executed) if hasattr(db, 'queries_executed') else 0
-        }
-
-class TestConditionalStep(Step):
-    """Test step that returns different results for conditional flow testing"""
-
-    async def run(self, data: Dict[str, Any]) -> Any:
-        quality_score = data.get("quality_score", 0.5)
-
-        return {
-            "quality_score": quality_score,
-            "quality_category": "high" if quality_score > 0.8 else "low",
-            "processing_recommended": quality_score > 0.5
-        }
+class Step2(Step):
+    async def execute(self, data):
+        prev_result = data.get('result')
+        return {"result": "step2_done", "previous": prev_result}
 ```
 
-## Example Test Pipelines
-
-### Simple Pipeline
-
-```json
-{
-    "name": "Simple Data Processing Pipeline",
-    "description": "A simple pipeline for basic data processing",
-    "version": "1.0.0",
-    "steps": [
-        {
-            "id": "step1",
-            "name": "Data Cleaner",
-            "step_class": "DataCleanerStep",
-            "module": "tests.pipelines.simple_pipeline.steps.data_cleaner"
-        },
-        {
-            "id": "step2",
-            "name": "Data Analyzer",
-            "step_class": "DataAnalyzerStep",
-            "module": "tests.pipelines.simple_pipeline.steps.data_analyzer"
-        }
-    ],
-    "flow": {
-        "start_at": "step1",
-        "paths": [
-            {
-                "from_step": "step1",
-                "to_step": "step2",
-                "condition": {"type": "always"}
-            }
-        ]
-    }
-}
-```
-
-### Conditional Pipeline
-
-```json
-{
-    "name": "Conditional Processing Pipeline",
-    "description": "Pipeline with conditional flow based on data quality",
-    "version": "1.0.0",
-    "steps": [
-        {
-            "id": "quality_checker",
-            "step_class": "QualityCheckerStep",
-            "module": "tests.pipelines.conditional_pipeline.steps.quality_checker"
-        },
-        {
-            "id": "high_quality_processor",
-            "step_class": "HighQualityProcessorStep",
-            "module": "tests.pipelines.conditional_pipeline.steps.high_quality_processor"
-        },
-        {
-            "id": "low_quality_processor",
-            "step_class": "LowQualityProcessorStep",
-            "module": "tests.pipelines.conditional_pipeline.steps.low_quality_processor"
-        }
-    ],
-    "flow": {
-        "start_at": "quality_checker",
-        "paths": [
-            {
-                "from_step": "quality_checker",
-                "to_step": "high_quality_processor",
-                "condition": {
-                    "type": "expression",
-                    "config": {
-                        "source": "result.quality_score",
-                        "operator": "greater_than",
-                        "value": 0.8
-                    }
-                }
-            },
-            {
-                "from_step": "quality_checker",
-                "to_step": "low_quality_processor",
-                "condition": {
-                    "type": "expression",
-                    "config": {
-                        "source": "result.quality_score",
-                        "operator": "less_than_or_equal",
-                        "value": 0.8
-                    }
-                }
-            }
-        ]
-    }
-}
-```
-
-## Mocking and Fixtures
+## Test Examples
 
 ### Pytest Fixtures
 
@@ -732,244 +480,148 @@ class TestConditionalStep(Step):
 # conftest.py
 import pytest
 from ia_modules.pipeline.services import ServiceRegistry
-from tests.fixtures.mock_database import MockDatabaseManager
+from ia_modules.pipeline.core import ExecutionContext
+from ia_modules.database import get_database
 
 @pytest.fixture
-def service_registry():
-    """Provide a clean service registry for each test"""
+def services():
+    """Provide clean ServiceRegistry"""
     return ServiceRegistry()
 
 @pytest.fixture
-def mock_database():
-    """Provide a mock database manager"""
-    return MockDatabaseManager()
+def execution_context():
+    """Provide ExecutionContext"""
+    return ExecutionContext(
+        execution_id='test-exec',
+        pipeline_id='test-pipeline',
+        user_id='test-user'
+    )
 
 @pytest.fixture
-def service_registry_with_db(service_registry, mock_database):
-    """Provide service registry with mock database"""
-    service_registry.register('database', mock_database)
-    return service_registry
+def test_database():
+    """Provide in-memory test database"""
+    db = get_database('sqlite:///:memory:')
+    db.connect()
+    yield db
+    db.disconnect()
 
 @pytest.fixture
-def sample_pipeline_config():
-    """Provide sample pipeline configuration"""
-    return {
-        "name": "Test Pipeline",
-        "version": "1.0",
-        "steps": [
-            {
-                "id": "test_step",
-                "step_class": "TestStep",
-                "module": "tests.fixtures.test_steps"
-            }
-        ],
-        "flow": {
-            "start_at": "test_step",
-            "paths": []
-        }
-    }
+def services_with_db(services, test_database):
+    """Provide ServiceRegistry with database"""
+    services.register('database', test_database)
+    return services
 ```
 
-### Using Fixtures in Tests
+### Using Fixtures
 
 ```python
-def test_pipeline_with_fixtures(service_registry_with_db, sample_pipeline_config):
+def test_with_fixtures(services_with_db, execution_context):
     """Test using pytest fixtures"""
-    from ia_modules.pipeline.runner import create_pipeline_from_json
-
-    # Create pipeline
-    pipeline = create_pipeline_from_json(sample_pipeline_config, service_registry_with_db)
-
-    assert len(pipeline.steps) == 1
-    assert pipeline.steps[0].name == "test_step"
-
-    # Test database service injection
-    step = pipeline.steps[0]
-    db = step.get_db()
+    # Services already has database registered
+    db = services_with_db.get('database')
     assert db is not None
-    assert hasattr(db, 'queries_executed')
-```
 
-## Performance Testing
-
-### Load Testing
-
-```python
-# tests/performance/test_performance.py
-import asyncio
-import time
-import pytest
-
-@pytest.mark.asyncio
-async def test_pipeline_performance():
-    """Test pipeline execution performance"""
-
-    # Create performance test pipeline
-    pipeline_config = {
-        "name": "Performance Test Pipeline",
-        "steps": [
-            {
-                "id": "perf_step",
-                "step_class": "PerformanceTestStep",
-                "module": "tests.fixtures.performance_steps"
-            }
-        ],
-        "flow": {
-            "start_at": "perf_step",
-            "paths": []
-        }
-    }
-
-    # Measure execution time
-    start_time = time.time()
-
-    pipeline = create_pipeline_from_json(pipeline_config)
-    result = await pipeline.run({"test_data": list(range(1000))})
-
-    end_time = time.time()
-    execution_time = end_time - start_time
-
-    # Assert performance criteria
-    assert execution_time < 1.0  # Should complete within 1 second
-    assert "perf_step" in result
-
-@pytest.mark.asyncio
-async def test_concurrent_pipelines():
-    """Test concurrent pipeline execution"""
-
-    async def run_single_pipeline(pipeline_id: int):
-        pipeline_config = {
-            "name": f"Concurrent Pipeline {pipeline_id}",
-            "steps": [{
-                "id": f"step_{pipeline_id}",
-                "step_class": "ConcurrentTestStep",
-                "module": "tests.fixtures.performance_steps"
-            }],
-            "flow": {
-                "start_at": f"step_{pipeline_id}",
-                "paths": []
-            }
-        }
-
-        pipeline = create_pipeline_from_json(pipeline_config)
-        return await pipeline.run({"pipeline_id": pipeline_id})
-
-    # Run 10 pipelines concurrently
-    start_time = time.time()
-
-    tasks = [run_single_pipeline(i) for i in range(10)]
-    results = await asyncio.gather(*tasks)
-
-    end_time = time.time()
-
-    # Verify all pipelines completed
-    assert len(results) == 10
-
-    # Concurrent execution should be faster than sequential
-    assert end_time - start_time < 5.0  # Should complete within 5 seconds
+    # ExecutionContext is ready
+    assert execution_context.execution_id == 'test-exec'
 ```
 
 ## Best Practices
 
-### Test Organization
+### 1. Use Fixtures for Common Setup
 
-1. **Separate Concerns**: Keep unit, integration, and e2e tests in separate directories
-2. **Use Fixtures**: Create reusable fixtures for common test setup
-3. **Mock External Dependencies**: Mock databases, APIs, and file systems in unit tests
-4. **Test Real Integrations**: Use real services in integration tests
-5. **Cover Edge Cases**: Test error conditions and boundary cases
+Create reusable fixtures in `conftest.py` for databases, services, and execution contexts.
 
-### Test Data Management
+### 2. Use In-Memory Databases for Speed
 
 ```python
-# tests/fixtures/test_data.py
-def get_sample_input_data():
-    """Get standardized test input data"""
-    return {
-        "topic": "artificial intelligence",
-        "data": [
-            {"id": 1, "name": "item1", "value": 10, "category": "A"},
-            {"id": 2, "name": "item2", "value": 20, "category": "B"},
-            {"id": 3, "name": "item3", "value": 30, "category": "A"}
-        ],
-        "metadata": {
-            "source": "test_data",
-            "timestamp": "2024-01-01T00:00:00Z"
-        }
-    }
-
-def get_expected_output_data():
-    """Get expected output data for validation"""
-    return {
-        "processed_count": 3,
-        "categories": ["A", "B"],
-        "total_value": 60,
-        "status": "success"
-    }
+db = get_database('sqlite:///:memory:')  # Fast, isolated
 ```
 
-### Error Testing
+### 3. Test Isolation
+
+Each test should be independent and not rely on other tests' side effects.
+
+### 4. Use Async Tests Properly
 
 ```python
 @pytest.mark.asyncio
-async def test_step_error_handling():
-    """Test step error handling"""
-
-    class ErrorStep(Step):
-        async def run(self, data):
-            raise ValueError("Intentional test error")
-
-    step = ErrorStep("error_step", {})
-
-    # Test that error is properly propagated
-    with pytest.raises(ValueError, match="Intentional test error"):
-        await step.run({"test": "data"})
-
-@pytest.mark.asyncio
-async def test_pipeline_error_recovery():
-    """Test pipeline behavior with step errors"""
-
-    pipeline_config = {
-        "name": "Error Test Pipeline",
-        "steps": [
-            {
-                "id": "error_step",
-                "step_class": "ErrorStep",
-                "module": "tests.fixtures.error_steps"
-            }
-        ],
-        "flow": {
-            "start_at": "error_step",
-            "paths": []
-        }
-    }
-
-    pipeline = create_pipeline_from_json(pipeline_config)
-
-    with pytest.raises(Exception):
-        await pipeline.run({"test": "data"})
+async def test_async_function():
+    result = await some_async_function()
+    assert result is not None
 ```
 
-### Cleanup and Teardown
+### 5. Test Both Success and Failure Paths
+
+```python
+@pytest.mark.asyncio
+async def test_step_success():
+    step = MyStep('test', {})
+    result = await step.execute({'valid': True})
+    assert result['success'] is True
+
+@pytest.mark.asyncio
+async def test_step_failure():
+    step = MyStep('test', {})
+    with pytest.raises(ValueError):
+        await step.execute({'valid': False})
+```
+
+### 6. Test with Different Backends
+
+```python
+@pytest.mark.parametrize("backend", ["nexusql", "sqlalchemy"])
+def test_database_backends(backend):
+    db = get_database('sqlite:///:memory:', backend=backend)
+    db.connect()
+
+    # Test should work with both backends
+    db.execute("CREATE TABLE test (id INTEGER)", {})
+    db.execute("INSERT INTO test VALUES (:id)", {"id": 1})
+    result = db.fetch_one("SELECT * FROM test WHERE id = :id", {"id": 1})
+
+    assert result['id'] == 1
+    db.disconnect()
+```
+
+### 7. Clean Up Resources
 
 ```python
 @pytest.fixture
-def temp_database():
-    """Provide temporary database that cleans up after test"""
-    import tempfile
-
-    with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp_db:
-        db_url = f"sqlite:///{tmp_db.name}"
-
-    db_manager = DatabaseManager(db_url)
-    yield db_manager
-
-    # Cleanup
-    db_manager.disconnect()
-    Path(tmp_db.name).unlink()
+def resource():
+    res = create_resource()
+    yield res
+    res.cleanup()  # Always cleanup
 ```
 
-### Continuous Integration
+### 8. Use Descriptive Test Names
+
+```python
+# Good
+def test_database_insert_with_duplicate_key_raises_error():
+    ...
+
+# Bad
+def test_db_error():
+    ...
+```
+
+## Running Specific Test Categories
+
+```bash
+# Run only unit tests
+pytest tests/unit/ -v
+
+# Run only integration tests
+pytest tests/integration/ -v
+
+# Run only database tests
+pytest -k "database" -v
+
+# Run only async tests
+pytest -k "asyncio" -v
+```
+
+## Continuous Integration
 
 ```yaml
 # .github/workflows/test.yml
@@ -982,29 +634,34 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8, 3.9, '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
+
+    - name: Set up Python
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
         pip install -e .
         pip install pytest pytest-asyncio pytest-cov
 
     - name: Run tests
       run: |
-        python -m pytest tests/ -v --cov=ia_modules --cov-report=xml
+        pytest tests/ -v --cov=ia_modules --cov-report=xml
 
-    - name: Upload coverage to Codecov
+    - name: Upload coverage
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
 ```
 
-This comprehensive testing guide provides the foundation for maintaining high code quality and reliability in the IA Modules framework through systematic testing at all levels.
+## Documentation
+
+- [Developer Guide](DEVELOPER_GUIDE.md) - API reference and patterns
+- [Getting Started](GETTING_STARTED.md) - Quick start guide
+- [Migration Guide](MIGRATION.md) - Database migration guide
+- [Pipeline Architecture](PIPELINE_ARCHITECTURE.md) - Pipeline design patterns

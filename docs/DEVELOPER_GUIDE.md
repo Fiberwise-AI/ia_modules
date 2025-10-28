@@ -4,6 +4,11 @@
 
 This comprehensive developer guide covers everything needed to work with, extend, and contribute to the IA Modules framework. Whether you're building custom pipeline steps, integrating the framework into applications, or contributing to the core library, this guide provides detailed instructions and best practices.
 
+**Important Updates:**
+- **ExecutionContext**: Pipeline.run() now requires an ExecutionContext parameter containing execution_id, pipeline_id, user_id, and thread_id
+- **Database**: Uses `nexusql.DatabaseManager` (external package) instead of `ia_modules.database.manager`
+- **Service Registry**: execution_id is no longer registered in services - it comes from ExecutionContext
+
 ## Table of Contents
 
 - [Getting Started](#getting-started)
@@ -601,14 +606,15 @@ import asyncio
 import os
 from pathlib import Path
 
+from nexusql import DatabaseManager
 from ia_modules.pipeline.runner import run_pipeline_from_json
 from ia_modules.pipeline.services import ServiceRegistry
-from ia_modules.database.manager import DatabaseManager
+from ia_modules.pipeline.core import ExecutionContext
 
 async def main():
     # Setup database
     database_url = os.getenv('DATABASE_URL', 'sqlite:///./app_data.db')
-    db_manager = DatabaseManager(database_url)
+    db_manager = DatabaseManager({'database_url': database_url})
 
     # Initialize with migrations
     migration_dirs = ['./migrations']
@@ -623,6 +629,13 @@ async def main():
     async with aiohttp.ClientSession() as session:
         services.register('http', session)
 
+        # Create execution context
+        execution_context = ExecutionContext(
+            execution_id='job-123',
+            pipeline_id='custom_processing',
+            user_id='user-789'
+        )
+
         # Execute pipeline
         result = await run_pipeline_from_json(
             pipeline_file='./pipelines/custom_processing.json',
@@ -630,7 +643,8 @@ async def main():
                 'source_data': './data/input.csv',
                 'processing_mode': 'batch'
             },
-            services=services
+            services=services,
+            execution_context=execution_context
         )
 
         print("Pipeline execution completed!")
@@ -647,7 +661,7 @@ if __name__ == "__main__":
 ```python
 # config/database.py
 import os
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 
 class DatabaseConfig:
     @staticmethod
@@ -668,7 +682,7 @@ class DatabaseConfig:
         else:
             raise ValueError(f"Unknown environment: {env}")
 
-        return DatabaseManager(database_url)
+        return DatabaseManager({'database_url': database_url})
 
     @staticmethod
     async def initialize_database():
@@ -730,7 +744,10 @@ CREATE TRIGGER IF NOT EXISTS update_pipeline_results_updated_at
 
 ```python
 class PersistentAnalysisStep(Step):
-    """Step that persists analysis results to database"""
+    """Step that persists analysis results to database
+
+    Note: execution_id should be passed via context or stored in step config
+    """
 
     async def run(self, data: Dict[str, Any]) -> Any:
         db = self.get_db()
@@ -740,8 +757,8 @@ class PersistentAnalysisStep(Step):
         # Perform analysis
         analysis_result = await self._perform_analysis(data)
 
-        # Store results in database
-        execution_id = self.services.get('execution_id') if self.services else 'unknown'
+        # Get execution_id from data context (passed from Pipeline)
+        execution_id = data.get('execution_context', {}).get('execution_id', 'unknown')
 
         try:
             db.execute("""
@@ -1082,6 +1099,7 @@ import tempfile
 from pathlib import Path
 
 from ia_modules.pipeline.runner import run_pipeline_from_json
+from ia_modules.pipeline.core import ExecutionContext
 
 @pytest.mark.asyncio
 async def test_full_pipeline_execution():
@@ -1114,10 +1132,18 @@ async def test_full_pipeline_execution():
         pipeline_file = tmp.name
 
     try:
+        # Create execution context
+        execution_context = ExecutionContext(
+            execution_id='test-123',
+            pipeline_id='test-pipeline',
+            user_id='test-user'
+        )
+
         # Execute pipeline
         result = await run_pipeline_from_json(
             pipeline_file=pipeline_file,
-            input_data={'message': 'test message'}
+            input_data={'message': 'test message'},
+            execution_context=execution_context
         )
 
         # Verify results
@@ -1364,7 +1390,7 @@ volumes:
 ```python
 # config/production.py
 import os
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 
 class ProductionConfig:
     # Database configuration
@@ -1421,7 +1447,7 @@ from my_steps import CustomStep
 async def diagnose_database():
     """Diagnose database connection issues"""
     try:
-        db = DatabaseManager(database_url)
+        db = DatabaseManager({'database_url': database_url})
         success = db.connect()
         if not success:
             print("❌ Database connection failed")
@@ -1510,6 +1536,9 @@ logger.info("Application starting...")
 ### Pipeline Performance
 
 ```python
+from ia_modules.pipeline.runner import run_pipeline_from_json
+from ia_modules.pipeline.core import ExecutionContext
+
 class OptimizedPipeline:
     """Pipeline with performance optimizations"""
 
@@ -1521,7 +1550,7 @@ class OptimizedPipeline:
             'cache_misses': 0
         }
 
-    async def run_with_metrics(self, pipeline_file: str, input_data: dict):
+    async def run_with_metrics(self, pipeline_file: str, input_data: dict, execution_context: ExecutionContext):
         """Run pipeline with performance metrics"""
         import time
         import psutil
@@ -1530,7 +1559,7 @@ class OptimizedPipeline:
         start_memory = psutil.Process().memory_info().rss
 
         try:
-            result = await run_pipeline_from_json(pipeline_file, input_data)
+            result = await run_pipeline_from_json(pipeline_file, input_data, execution_context)
 
             end_time = time.time()
             end_memory = psutil.Process().memory_info().rss

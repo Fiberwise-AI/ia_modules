@@ -1,466 +1,411 @@
 # Getting Started with IA Modules
 
-Welcome to IA Modules - a production-ready pipeline framework for building reliable AI agent systems.
+Build AI workflows as directed graphs with execution tracking and reliability monitoring.
 
 ## Installation
 
-### Basic Installation
-
 ```bash
-pip install ia_modules
-```
-
-### With Optional Features
-
-```bash
-# CLI tools with visualization
-pip install ia_modules[cli]
-
-# Performance profiling
-pip install ia_modules[profiling]
-
-# Everything
-pip install ia_modules[all]
-```
-
-### For Development
-
-```bash
+# Install from source
 git clone <repository-url>
 cd ia_modules
-pip install -e ".[dev]"
+pip install -e .
+
+# Install with CLI visualization support
+pip install -e ".[cli]"
 ```
 
-## Quick Start (5 Minutes)
+**Dependencies:**
+- Python 3.9+
+- nexusql (database adapter for SQLAlchemy)
+
+## Quick Start
 
 ### 1. Your First Pipeline
 
-Create a simple pipeline that processes data through multiple steps:
+Create a simple pipeline JSON configuration:
 
+**pipeline.json:**
+```json
+{
+  "name": "hello_pipeline",
+  "steps": [
+    {
+      "id": "greet",
+      "module": "my_steps",
+      "step_class": "GreetingStep",
+      "config": {
+        "greeting": "Hello"
+      }
+    }
+  ],
+  "flow": {
+    "start_at": "greet",
+    "paths": []
+  }
+}
+```
+
+**my_steps.py:**
 ```python
-from ia_modules.pipeline.core import PipelineStep, StepResult
+from ia_modules.pipeline.core import Step
 
-# Define pipeline steps
-class FetchDataStep(PipelineStep):
-    async def execute(self, context):
-        # Fetch data from your source
-        data = {"user_input": "Hello, world!"}
-        return StepResult(
-            success=True,
-            data=data,
-            next_step="process"
-        )
+class GreetingStep(Step):
+    def __init__(self, name, config):
+        super().__init__(name, config)
+        self.greeting = config.get('greeting', 'Hello')
 
-class ProcessDataStep(PipelineStep):
-    async def execute(self, context):
-        # Process the data
-        input_data = context.get_data("user_input")
-        processed = input_data.upper()
-        return StepResult(
-            success=True,
-            data={"processed": processed},
-            next_step="output"
-        )
+    async def execute(self, data):
+        message = f"{self.greeting}, World!"
+        print(message)
+        return {"message": message}
+```
 
-class OutputStep(PipelineStep):
-    async def execute(self, context):
-        # Output results
-        result = context.get_data("processed")
-        print(f"Result: {result}")
-        return StepResult(success=True)
-
-# Run the pipeline
-from ia_modules.pipeline.runner import PipelineRunner
-
-async def main():
-    runner = PipelineRunner()
-
-    # Register steps
-    runner.register_step("fetch", FetchDataStep())
-    runner.register_step("process", ProcessDataStep())
-    runner.register_step("output", OutputStep())
-
-    # Execute
-    result = await runner.run(start_step="fetch")
-    print(f"Pipeline completed: {result.success}")
-
-import asyncio
-asyncio.run(main())
+**Run it:**
+```bash
+ia-modules run pipeline.json
 ```
 
 ### 2. Using the CLI
 
-IA Modules includes a powerful CLI for managing pipelines:
-
 ```bash
-# Validate a pipeline definition
-ia-modules validate my_pipeline.json
-
 # Run a pipeline
-ia-modules run my_pipeline.json
+ia-modules run pipeline.json
+
+# Validate a pipeline definition
+ia-modules validate pipeline.json
+
+# Format pipeline JSON
+ia-modules format pipeline.json --in-place
 
 # Visualize pipeline structure
-ia-modules visualize my_pipeline.json --output graph.png
-
-# List all pipelines
-ia-modules list
-
-# Show pipeline details
-ia-modules info my_pipeline
+ia-modules visualize pipeline.json --output graph.png
 ```
+
+See [CLI_TOOL_DOCUMENTATION.md](CLI_TOOL_DOCUMENTATION.md) for details.
 
 ## Core Concepts
 
 ### Pipeline Structure
 
-Pipelines are defined in JSON format:
+Pipelines use a graph-based flow with JSON configuration:
 
 ```json
 {
   "name": "example_pipeline",
-  "version": "1.0.0",
-  "steps": {
-    "start": {
-      "module": "my_module.steps",
-      "class": "StartStep",
-      "transitions": {
-        "success": "process",
-        "error": "error_handler"
-      }
+  "steps": [
+    {
+      "id": "fetch",
+      "module": "my_steps",
+      "step_class": "FetchStep"
     },
-    "process": {
-      "module": "my_module.steps",
-      "class": "ProcessStep",
-      "transitions": {
-        "success": "end"
-      }
+    {
+      "id": "process",
+      "module": "my_steps",
+      "step_class": "ProcessStep"
     }
+  ],
+  "flow": {
+    "start_at": "fetch",
+    "paths": [
+      {
+        "from_step": "fetch",
+        "to_step": "process"
+      }
+    ]
   }
 }
 ```
 
-### Context and Data Flow
+### Step Implementation
 
-The pipeline context manages data between steps:
+Steps receive data from previous steps and return results:
 
 ```python
-class MyStep(PipelineStep):
-    async def execute(self, context):
-        # Get data from previous steps
-        user_input = context.get_data("user_input")
+from ia_modules.pipeline.core import Step
+
+class MyStep(Step):
+    def __init__(self, name, config):
+        super().__init__(name, config)
+
+    async def execute(self, data):
+        # data contains results from previous steps
+        input_value = data.get('previous_step_result')
 
         # Process data
-        result = process(user_input)
+        result = self.process(input_value)
 
-        # Store data for next steps
-        context.set_data("result", result)
-
-        return StepResult(success=True, next_step="next")
+        # Return result for next steps
+        return {"result": result}
 ```
 
 ## Essential Features
 
-### 1. Checkpointing (Resume Failed Pipelines)
+### 1. Execution Tracking
 
-Enable automatic checkpointing to resume from failures:
-
-```python
-from ia_modules.checkpoint.manager import CheckpointManager
-
-# Initialize checkpoint manager
-checkpoint_mgr = CheckpointManager(storage_path="./checkpoints")
-
-# Create runner with checkpointing
-runner = PipelineRunner(checkpoint_manager=checkpoint_mgr)
-
-# Run with checkpointing enabled
-result = await runner.run(
-    start_step="fetch",
-    checkpoint_enabled=True,
-    thread_id="my_workflow_123"
-)
-
-# Resume from checkpoint after failure
-result = await runner.resume(thread_id="my_workflow_123")
-```
-
-### 2. Reliability Metrics (Monitor Your Pipelines)
-
-Track reliability metrics for production systems:
+Track pipeline executions with ExecutionContext:
 
 ```python
-from ia_modules.reliability.metrics import ReliabilityMetrics
-from ia_modules.reliability.memory_storage import InMemoryMetricStorage
+from ia_modules.pipeline.runner import run_pipeline_from_json
+from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.pipeline.core import ExecutionContext
 
-# Initialize metrics
-storage = InMemoryMetricStorage()
-metrics = ReliabilityMetrics(storage)
-
-# Record step execution
-await metrics.record_step(
-    agent_name="data_processor",
-    success=True,
-    required_compensation=False
+# Create services and execution context
+services = ServiceRegistry()
+execution_context = ExecutionContext(
+    execution_id='job-123',
+    pipeline_id='my-pipeline',
+    user_id='user-456'
 )
 
-# Record workflow completion
-await metrics.record_workflow(
-    workflow_id="workflow_123",
-    steps=5,
-    retries=1,
-    success=True
-)
-
-# Get reliability report
-report = await metrics.get_report()
-print(f"Success Rate: {report.sr:.2%}")
-print(f"Compensation Rate: {report.cr:.2%}")
-print(f"Human Intervention Rate: {report.hir:.2%}")
-```
-
-### 3. Multi-Agent Workflows
-
-Coordinate multiple agents in parallel or sequence:
-
-```python
-from ia_modules.agents.orchestrator import AgentOrchestrator
-
-orchestrator = AgentOrchestrator()
-
-# Define agents
-orchestrator.register_agent("researcher", ResearchAgent())
-orchestrator.register_agent("writer", WriterAgent())
-orchestrator.register_agent("reviewer", ReviewerAgent())
-
-# Execute workflow
-result = await orchestrator.execute_workflow(
-    workflow_id="content_creation",
-    agents=["researcher", "writer", "reviewer"],
-    mode="sequential"
+# Run pipeline with tracking
+result = await run_pipeline_from_json(
+    'pipeline.json',
+    input_data={'key': 'value'},
+    services=services,
+    execution_context=execution_context
 )
 ```
 
-### 4. Conditional Routing
+### 2. Database Integration
 
-Route execution based on step results:
+Use nexusql for database operations:
 
 ```python
-class DataValidatorStep(PipelineStep):
-    async def execute(self, context):
-        data = context.get_data("input_data")
+from nexusql import DatabaseManager
+from ia_modules.pipeline.services import ServiceRegistry
 
-        if self.validate(data):
-            return StepResult(
-                success=True,
-                next_step="process_valid"
-            )
-        else:
-            return StepResult(
-                success=True,
-                next_step="handle_invalid",
-                data={"error": "Validation failed"}
-            )
+# Setup database
+db_manager = DatabaseManager({'database_url': 'sqlite:///pipeline.db'})
+
+# Register with services
+services = ServiceRegistry()
+services.register('database', db_manager)
+
+# Use in steps
+class MyStep(Step):
+    async def execute(self, data):
+        db = self.services.get('database')
+        result = db.fetch_one("SELECT * FROM results WHERE id = ?", (1,))
+        return {"data": result}
 ```
 
-### 5. Parallel Execution
+### 3. Conditional Routing
 
-Execute multiple steps concurrently:
+Route execution based on conditions:
 
 ```json
 {
-  "name": "parallel_pipeline",
-  "steps": {
-    "start": {
-      "module": "steps",
-      "class": "StartStep",
-      "transitions": {
-        "success": ["process_a", "process_b", "process_c"]
+  "flow": {
+    "start_at": "validate",
+    "paths": [
+      {
+        "from_step": "validate",
+        "to_step": "process_valid",
+        "condition": {
+          "type": "field_equals",
+          "field": "valid",
+          "value": true
+        }
+      },
+      {
+        "from_step": "validate",
+        "to_step": "handle_invalid",
+        "condition": {
+          "type": "field_equals",
+          "field": "valid",
+          "value": false
+        }
       }
-    },
-    "process_a": {
-      "module": "steps",
-      "class": "ProcessAStep",
-      "transitions": {"success": "merge"}
-    },
-    "process_b": {
-      "module": "steps",
-      "class": "ProcessBStep",
-      "transitions": {"success": "merge"}
-    },
-    "process_c": {
-      "module": "steps",
-      "class": "ProcessCStep",
-      "transitions": {"success": "merge"}
-    },
-    "merge": {
-      "module": "steps",
-      "class": "MergeStep"
-    }
+    ]
   }
 }
 ```
 
-## Production Deployment
+### 4. Parallel Execution
 
-### Database Storage for Metrics
+Execute multiple branches concurrently:
 
-Use SQL storage for production reliability metrics:
+```json
+{
+  "flow": {
+    "start_at": "split",
+    "paths": [
+      {"from_step": "split", "to_step": "process_a"},
+      {"from_step": "split", "to_step": "process_b"},
+      {"from_step": "split", "to_step": "process_c"},
+      {"from_step": "process_a", "to_step": "merge"},
+      {"from_step": "process_b", "to_step": "merge"},
+      {"from_step": "process_c", "to_step": "merge"}
+    ]
+  }
+}
+```
+
+All three process steps run concurrently, then merge combines results.
+
+## Production Setup
+
+### Database Configuration
+
+Use nexusql with PostgreSQL for production:
 
 ```python
-from ia_modules.reliability.sql_metric_storage import SQLMetricStorage
-from ia_modules.database.interfaces import ConnectionConfig, DatabaseType
+from nexusql import DatabaseManager
 
 # PostgreSQL configuration
-config = ConnectionConfig(
-    database_type=DatabaseType.POSTGRESQL,
-    database_url="postgresql://user:pass@localhost/metrics"
+db_config = {
+    'database_url': 'postgresql://user:pass@localhost/pipelines'
+}
+
+db_manager = DatabaseManager(db_config)
+services.register('database', db_manager)
+```
+
+### WebSocket Integration
+
+Real-time updates for pipeline execution:
+
+```python
+from ia_modules.pipeline.runner import run_pipeline_from_json
+
+# Run with WebSocket notifications
+result = await run_pipeline_from_json(
+    'pipeline.json',
+    input_data=data,
+    services=services,
+    execution_context=execution_context,
+    websocket_manager=ws_manager,
+    user_id=user_id
 )
-
-storage = SQLMetricStorage(config)
-metrics = ReliabilityMetrics(storage)
 ```
 
-### Monitoring and Alerting
+### Error Handling in Steps
 
-Monitor SLO compliance in production:
-
-```python
-from ia_modules.reliability.slo_monitor import SLOMonitor
-
-monitor = SLOMonitor(metrics)
-
-# Check SLO compliance
-compliance = await monitor.check_compliance()
-
-if not compliance.mtte_compliant:
-    print(f"⚠️ MTTE exceeds target: {compliance.mtte_current}ms")
-
-if not compliance.rsr_compliant:
-    print(f"⚠️ RSR below target: {compliance.rsr_current:.2%}")
-```
-
-### Error Recovery
-
-Implement automatic error recovery:
+Handle errors within step execution:
 
 ```python
-from ia_modules.reliability.recovery import RecoveryStrategy
-
-class MyStep(PipelineStep):
-    async def execute(self, context):
+class MyStep(Step):
+    async def execute(self, data):
         try:
-            result = await self.process_data()
-            return StepResult(success=True, data=result)
-        except RetryableError as e:
-            # Automatic retry with backoff
-            return StepResult(
-                success=False,
-                retry=True,
-                retry_delay=5.0
-            )
-        except FatalError as e:
-            # Route to error handler
-            return StepResult(
-                success=False,
-                next_step="error_handler",
-                data={"error": str(e)}
-            )
+            result = await self.process_data(data)
+            return {"success": True, "result": result}
+        except Exception as e:
+            # Log error and return failure
+            logger.error(f"Step failed: {e}")
+            return {"success": False, "error": str(e)}
 ```
 
-## Example: Complete Research Agent
+## Complete Example
 
-Here's a complete example of a research agent with reliability monitoring:
+Here's a complete example with database integration:
 
+**pipeline.json:**
+```json
+{
+  "name": "data_processor",
+  "steps": [
+    {
+      "id": "fetch",
+      "module": "my_steps",
+      "step_class": "FetchStep"
+    },
+    {
+      "id": "validate",
+      "module": "my_steps",
+      "step_class": "ValidateStep"
+    },
+    {
+      "id": "save",
+      "module": "my_steps",
+      "step_class": "SaveStep"
+    }
+  ],
+  "flow": {
+    "start_at": "fetch",
+    "paths": [
+      {"from_step": "fetch", "to_step": "validate"},
+      {"from_step": "validate", "to_step": "save"}
+    ]
+  }
+}
+```
+
+**my_steps.py:**
 ```python
-from ia_modules.pipeline.core import PipelineStep, StepResult
-from ia_modules.pipeline.runner import PipelineRunner
-from ia_modules.reliability.metrics import ReliabilityMetrics
-from ia_modules.reliability.memory_storage import InMemoryMetricStorage
-from ia_modules.checkpoint.manager import CheckpointManager
+from ia_modules.pipeline.core import Step
 
-class ResearchQueryStep(PipelineStep):
-    async def execute(self, context):
-        query = context.get_data("query")
-        # Generate search queries
-        queries = self.generate_queries(query)
-        return StepResult(
-            success=True,
-            data={"search_queries": queries},
-            next_step="search"
-        )
+class FetchStep(Step):
+    async def execute(self, data):
+        # Fetch data
+        return {"raw_data": "example data"}
 
-class SearchStep(PipelineStep):
-    async def execute(self, context):
-        queries = context.get_data("search_queries")
-        # Execute searches (parallel)
-        results = await self.search(queries)
-        return StepResult(
-            success=True,
-            data={"search_results": results},
-            next_step="synthesize"
-        )
+class ValidateStep(Step):
+    async def execute(self, data):
+        raw_data = data.get('raw_data')
+        is_valid = len(raw_data) > 0
+        return {"valid": is_valid, "data": raw_data}
 
-class SynthesizeStep(PipelineStep):
-    async def execute(self, context):
-        results = context.get_data("search_results")
-        # Synthesize findings
-        report = self.synthesize(results)
-        return StepResult(
-            success=True,
-            data={"report": report}
+class SaveStep(Step):
+    async def execute(self, data):
+        # Save to database
+        db = self.services.get('database')
+        execution_id = data.get('execution_context', {}).get('execution_id')
+
+        db.execute(
+            "INSERT INTO results (execution_id, data) VALUES (?, ?)",
+            (execution_id, data.get('data'))
         )
+        return {"saved": True}
+```
+
+**run.py:**
+```python
+import asyncio
+from nexusql import DatabaseManager
+from ia_modules.pipeline.runner import run_pipeline_from_json
+from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.pipeline.core import ExecutionContext
 
 async def main():
-    # Initialize components
-    checkpoint_mgr = CheckpointManager()
-    metrics_storage = InMemoryMetricStorage()
-    metrics = ReliabilityMetrics(metrics_storage)
+    # Setup database
+    db = DatabaseManager({'database_url': 'sqlite:///pipeline.db'})
 
-    # Create runner
-    runner = PipelineRunner(
-        checkpoint_manager=checkpoint_mgr,
-        metrics=metrics
+    # Create services
+    services = ServiceRegistry()
+    services.register('database', db)
+
+    # Create execution context
+    ctx = ExecutionContext(
+        execution_id='job-001',
+        pipeline_id='data_processor',
+        user_id='user-123'
     )
 
-    # Register steps
-    runner.register_step("query", ResearchQueryStep())
-    runner.register_step("search", SearchStep())
-    runner.register_step("synthesize", SynthesizeStep())
-
-    # Execute with monitoring
-    result = await runner.run(
-        start_step="query",
-        checkpoint_enabled=True,
-        thread_id="research_123",
-        initial_data={"query": "What is quantum computing?"}
+    # Run pipeline
+    result = await run_pipeline_from_json(
+        'pipeline.json',
+        input_data={},
+        services=services,
+        execution_context=ctx
     )
 
-    # Get reliability metrics
-    report = await metrics.get_report()
-    print(f"Success Rate: {report.sr:.2%}")
-    print(f"Average TCL: {report.tcl:.2f}ms")
+    print(f"Result: {result}")
 
-import asyncio
 asyncio.run(main())
 ```
 
 ## Next Steps
 
 - **[Features Overview](FEATURES.md)** - Complete feature matrix
-- **[API Reference](API_REFERENCE.md)** - Detailed API documentation
+- **[Developer Guide](DEVELOPER_GUIDE.md)** - Detailed API documentation
 - **[Reliability Guide](RELIABILITY_USAGE_GUIDE.md)** - Production reliability patterns
 - **[Plugin System](PLUGIN_SYSTEM_DOCUMENTATION.md)** - Extending IA Modules
 - **[CLI Documentation](CLI_TOOL_DOCUMENTATION.md)** - Command-line tools
-- **[Examples](EXAMPLES.md)** - More complete examples
-- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment
-- **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Pipeline Architecture](PIPELINE_ARCHITECTURE.md)** - Architecture overview
+- **[Execution Architecture](EXECUTION_ARCHITECTURE.md)** - Execution patterns
+- **[Testing Guide](TESTING_GUIDE.md)** - Testing pipelines
 
 ## Getting Help
 
-- GitHub Issues: Report bugs or request features
-- Documentation: Full documentation at docs/
+- Documentation: See [docs/](.)
 - Examples: Check tests/pipelines/ for working examples
-
-## License
-
-See [LICENSE](../LICENSE) for details.
