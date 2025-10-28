@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Dict, Any
 import uuid
 
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 from ia_modules.pipeline.execution_tracker import ExecutionTracker
 from ia_modules.pipeline.services import ServiceRegistry
 from ia_modules.pipeline.importer import PipelineImportService
@@ -35,7 +35,7 @@ async def db_manager(request):
     await db.initialize()
 
     # Run migrations
-    from ia_modules.database.migrations import MigrationRunner
+    from nexusql import MigrationRunner
     runner = MigrationRunner(db)
     await runner.run_pending_migrations()
 

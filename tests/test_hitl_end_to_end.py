@@ -9,7 +9,7 @@ import os
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
 from ia_modules.pipeline.core import ExecutionContext, ServiceRegistry
 from ia_modules.pipeline.execution_tracker import ExecutionTracker

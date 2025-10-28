@@ -11,7 +11,7 @@ Security Features:
 
 Example:
     from ia_modules.pipeline.db_step_loader import DatabaseStepLoader
-    from ia_modules.database.manager import DatabaseManager
+    from nexusql import DatabaseManager
 
     db = DatabaseManager("sqlite:///pipelines.db")
     loader = DatabaseStepLoader(db)
@@ -27,7 +27,7 @@ import ast
 import hashlib
 import logging
 from typing import Dict, Any, Optional, Type
-from ia_modules.database.interfaces import DatabaseInterface
+from nexusql import DatabaseInterface
 from ia_modules.pipeline.core import Step
 
 logger = logging.getLogger(__name__)

@@ -16,7 +16,7 @@ import hashlib
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
-from ia_modules.database.interfaces import DatabaseInterface
+from nexusql import DatabaseInterface
 
 logger = logging.getLogger(__name__)
 

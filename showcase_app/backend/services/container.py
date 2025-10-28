@@ -1,7 +1,7 @@
 """Service Container - Dependency Injection Container for Showcase App"""
 
 from typing import Optional
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 from services.metrics_service import MetricsService
 from services.pipeline_service import PipelineService
 from services.reliability_service import ReliabilityService

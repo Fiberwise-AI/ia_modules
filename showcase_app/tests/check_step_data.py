@@ -7,7 +7,7 @@ import os
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 import json
 
 def check_step_data():

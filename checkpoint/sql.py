@@ -15,7 +15,7 @@ class SQLCheckpointer(BaseCheckpointer):
     Works with PostgreSQL and SQLite using named parameters (:param).
 
     Example:
-        >>> from ia_modules.database import DatabaseManager
+        >>> from nexusql import DatabaseManager
         >>> db = DatabaseManager("postgresql://localhost/mydb")
                 >>> checkpointer = SQLCheckpointer(db)
     """

@@ -17,7 +17,7 @@ load_dotenv()
 
 from pathlib import Path
 
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 from ia_modules.reliability.decision_trail import DecisionTrailBuilder
 from ia_modules.pipeline.importer import PipelineImportService
 

@@ -11,7 +11,7 @@ Fix: Use regex to extract parameter names in query order, then build tuple accor
 """
 
 import pytest
-from ia_modules.database import DatabaseManager
+from nexusql import DatabaseManager
 
 
 @pytest.fixture(params=["sqlite", "postgresql", "mysql"], ids=lambda x: x)

@@ -11,7 +11,7 @@ import logging
 import json
 
 from ia_modules.reliability.metrics import MetricStorage
-from ia_modules.database import DatabaseManager
+from nexusql import DatabaseManager
 
 
 class SQLMetricStorage(MetricStorage):
@@ -21,7 +21,7 @@ class SQLMetricStorage(MetricStorage):
     Supports multiple database backends through DatabaseManager.
 
     Example:
-        >>> from ia_modules.database import DatabaseManager
+        >>> from nexusql import DatabaseManager
         >>> db_manager = DatabaseManager(config)
         >>> await db_manager.connect()
         >>> storage = SQLMetricStorage(db_manager)

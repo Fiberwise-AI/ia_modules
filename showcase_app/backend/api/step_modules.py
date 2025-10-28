@@ -11,7 +11,7 @@ from datetime import datetime
 import hashlib
 import logging
 
-from ia_modules.database.interfaces import DatabaseInterface
+from nexusql import DatabaseInterface
 
 logger = logging.getLogger(__name__)
 

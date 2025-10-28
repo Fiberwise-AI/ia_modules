@@ -28,7 +28,7 @@ project_root = current_dir.parent
 sys.path.insert(0, str(project_root))
 
 from ia_modules.pipeline.services import ServiceRegistry
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
 from ia_modules.pipeline.llm_provider_service import LLMProviderService, LLMProvider
 

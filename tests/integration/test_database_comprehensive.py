@@ -16,7 +16,7 @@ from ia_modules.pipeline.test_utils import create_test_execution_context
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Dict, List, Any
-from ia_modules.database import DatabaseManager, ConnectionConfig, DatabaseType
+from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
 
 # ============================================================================

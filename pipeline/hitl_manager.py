@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 
 
 @dataclass

@@ -13,7 +13,7 @@ Tests to ensure the database module performs well under load:
 import pytest
 from ia_modules.pipeline.test_utils import create_test_execution_context
 import time
-from ia_modules.database import DatabaseManager, ConnectionConfig, DatabaseType
+from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
 
 @pytest.fixture

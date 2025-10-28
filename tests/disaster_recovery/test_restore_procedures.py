@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List
 
-from ia_modules.database import DatabaseManager
+from nexusql import DatabaseManager
 
 
 class RestoreManager:

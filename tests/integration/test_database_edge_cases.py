@@ -12,7 +12,7 @@ Tests for issues not covered by existing test suites:
 
 import pytest
 from datetime import datetime, timezone
-from ia_modules.database import DatabaseManager
+from nexusql import DatabaseManager
 
 
 @pytest.fixture(params=["sqlite", "postgresql", "mysql", "mssql"], ids=lambda x: x)

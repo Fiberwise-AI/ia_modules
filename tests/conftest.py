@@ -21,7 +21,7 @@ try:
 except ImportError:
     pass  # python-dotenv not installed, use system environment variables
 
-from ia_modules.database import DatabaseManager, ConnectionConfig, DatabaseType
+from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
 # This file can be used to define pytest fixtures that are shared across all tests
 

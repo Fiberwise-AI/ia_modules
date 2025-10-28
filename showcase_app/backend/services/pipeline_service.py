@@ -13,7 +13,7 @@ from ia_modules.telemetry.tracing import SimpleTracer
 from ia_modules.checkpoint import SQLCheckpointer
 from ia_modules.reliability.metrics import ReliabilityMetrics
 from ia_modules.reliability.sql_metric_storage import SQLMetricStorage
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 from typing import Dict, Any, Optional, List
 import asyncio
 import uuid

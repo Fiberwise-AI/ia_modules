@@ -17,7 +17,7 @@ from ia_modules.pipeline.execution_tracker import (
     StepExecutionRecord,
     StepStatus
 )
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 from ia_modules.pipeline.test_utils import create_test_execution_context
 
 

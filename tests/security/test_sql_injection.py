@@ -12,7 +12,7 @@ from typing import List
 from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.orm import sessionmaker
 
-from ia_modules.database import DatabaseManager
+from nexusql import DatabaseManager
 
 
 # OWASP SQL Injection Attack Vectors

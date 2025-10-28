@@ -4,10 +4,12 @@ Intelligent Automation Modules
 A modular framework for building intelligent automation solutions with advanced AI capabilities.
 
 Core Modules:
-- database: Database interfaces and management
 - pipeline: Pipeline orchestration and execution
 - auth: Authentication and authorization
 - utils: Utility functions
+
+Database:
+- For database functionality, use the nexusql package (pip install nexusql)
 
 Advanced AI Features:
 - patterns: AI reasoning patterns (CoT, ReAct, ToT, Constitutional AI)
@@ -23,7 +25,6 @@ Advanced AI Features:
 __version__ = "0.1.0"
 
 # Import core modules
-from . import database
 from . import pipeline
 from . import auth
 from . import utils
@@ -40,7 +41,6 @@ from . import rag
 
 __all__ = [
     # Core modules
-    'database',
     'pipeline',
     'auth',
     'utils',

@@ -24,7 +24,7 @@ import os
 import pytest
 from ia_modules.pipeline.test_utils import create_test_execution_context
 from datetime import datetime, timezone
-from ia_modules.database import DatabaseManager, ConnectionConfig, DatabaseType
+from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
 
 # Skip all tests in this file if PostgreSQL URL not configured

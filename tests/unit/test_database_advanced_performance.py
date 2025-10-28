@@ -18,7 +18,7 @@ import time
 import gc
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from ia_modules.database import DatabaseManager, ConnectionConfig, DatabaseType
+from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
 
 @pytest.fixture

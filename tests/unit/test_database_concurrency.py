@@ -16,7 +16,7 @@ import asyncio
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from ia_modules.database import DatabaseManager, ConnectionConfig, DatabaseType
+from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
 
 @pytest.fixture

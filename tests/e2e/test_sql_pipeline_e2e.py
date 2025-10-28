@@ -12,8 +12,8 @@ from ia_modules.pipeline.test_utils import create_test_execution_context
 import uuid
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from ia_modules.database.manager import DatabaseManager
-from ia_modules.database.interfaces import DatabaseType
+from nexusql import DatabaseManager
+from nexusql import DatabaseType
 
 
 @pytest.fixture

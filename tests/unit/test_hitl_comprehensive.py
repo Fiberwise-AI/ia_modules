@@ -8,7 +8,7 @@ import json
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any
 
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
 from ia_modules.pipeline.core import ExecutionContext, ServiceRegistry, Step
 from ia_modules.pipeline.execution_tracker import ExecutionTracker, ExecutionStatus

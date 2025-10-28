@@ -22,7 +22,7 @@ import tempfile
 import shutil
 from pathlib import Path
 from datetime import datetime, timezone
-from ia_modules.database import DatabaseManager, ConnectionConfig, DatabaseType
+from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
 
 @pytest.fixture

@@ -16,7 +16,7 @@ import os
 import sqlite3
 from pathlib import Path
 
-from ia_modules.database import DatabaseManager
+from nexusql import DatabaseManager
 
 
 def calculate_checksum(data: str) -> str:

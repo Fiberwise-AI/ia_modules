@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from services.scheduler_service import SchedulerService
 from services.pipeline_service import PipelineService
 from services.metrics_service import MetricsService
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 
 # Configure logging
 logging.basicConfig(

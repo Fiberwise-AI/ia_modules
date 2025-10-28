@@ -4,7 +4,7 @@ import os
 import asyncio
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 import json
 
 async def check_parallel():

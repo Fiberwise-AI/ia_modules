@@ -7,7 +7,7 @@ python tests/manual_database_test.py
 
 import asyncio
 import os
-from ia_modules.database import DatabaseManager, ConnectionConfig, DatabaseType
+from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
 
 async def test_postgresql():

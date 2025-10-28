@@ -21,7 +21,7 @@ if sys.platform == 'win32':
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from ia_modules.database.manager import DatabaseManager
+from nexusql import DatabaseManager
 from ia_modules.pipeline.importer import PipelineImportService
 from ia_modules.pipeline.db_step_loader import DatabaseStepLoader
 
