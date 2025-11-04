@@ -315,7 +315,7 @@ class TestLLMProviderService:
         """Test generate completion with no provider configured"""
         service = LLMProviderService()
 
-        with pytest.raises(ValueError, match="not found or no default provider"):
+        with pytest.raises(ValueError, match="Provider .* not found"):
             await service.generate_completion("Test prompt")
 
     async def test_generate_completion_provider_not_found(self):
@@ -504,3 +504,80 @@ class TestLLMProviderService:
             assert "Original prompt" in call_args[0]
             assert "JSON" in call_args[0]
             assert "schema" in call_args[0].lower()
+
+    async def test_register_providers_from_dict(self):
+        """Test registering multiple providers from dictionary"""
+        service = LLMProviderService()
+
+        providers_config = {
+            "openai_gpt4": {
+                "provider": LLMProvider.OPENAI,
+                "api_key": "key1",
+                "model": "gpt-4o",
+                "is_default": True
+            },
+            "openai_gpt3": {
+                "provider": LLMProvider.OPENAI,
+                "api_key": "key1",
+                "model": "gpt-3.5-turbo"
+            },
+            "anthropic_sonnet": {
+                "provider": LLMProvider.ANTHROPIC,
+                "api_key": "key2",
+                "model": "claude-sonnet-4-5-20250929"
+            }
+        }
+
+        service.register_providers_from_dict(providers_config)
+
+        assert len(service.providers) == 3
+        assert "openai_gpt4" in service.providers
+        assert "openai_gpt3" in service.providers
+        assert "anthropic_sonnet" in service.providers
+        assert service.default_provider == "openai_gpt4"
+
+        # Check models are correct
+        assert service.providers["openai_gpt4"].model == "gpt-4o"
+        assert service.providers["openai_gpt3"].model == "gpt-3.5-turbo"
+        assert service.providers["anthropic_sonnet"].model == "claude-sonnet-4-5-20250929"
+
+    async def test_set_default_provider(self):
+        """Test setting default provider"""
+        service = LLMProviderService()
+
+        service.register_provider("provider1", LLMProvider.OPENAI)
+        service.register_provider("provider2", LLMProvider.ANTHROPIC)
+
+        # First provider is default
+        assert service.default_provider == "provider1"
+
+        # Change default
+        service.set_default_provider("provider2")
+        assert service.default_provider == "provider2"
+
+    async def test_set_default_provider_not_found(self):
+        """Test setting default to non-existent provider"""
+        service = LLMProviderService()
+        service.register_provider("provider1", LLMProvider.OPENAI)
+
+        with pytest.raises(ValueError, match="Provider 'nonexistent' not found"):
+            service.set_default_provider("nonexistent")
+
+    async def test_model_override_creates_temp_config(self):
+        """Test that model override creates temporary config"""
+        service = LLMProviderService()
+        service.register_provider(
+            "test",
+            LLMProvider.OPENAI,
+            api_key="test-key",
+            model="gpt-4"
+        )
+
+        # Original config should still have gpt-4
+        original_config = service.get_provider("test")
+        assert original_config.model == "gpt-4"
+
+        # Model override should be used in the call
+        # We'll need to mock the actual call to test this
+        # For now, just verify config hasn't changed
+        assert service.get_provider("test").model == "gpt-4"

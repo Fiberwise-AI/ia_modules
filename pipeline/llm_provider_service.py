@@ -129,7 +129,20 @@ class LLMProviderService:
         is_default: bool = False,
         **kwargs
     ) -> None:
-        """Register an LLM provider configuration"""
+        """
+        Register an LLM provider configuration
+
+        Args:
+            name: Unique name for this provider configuration
+            provider: The LLM provider type
+            api_key: API key for the provider
+            model: Default model to use (can be overridden at call time)
+            base_url: Custom base URL (for Azure, Ollama, etc.)
+            temperature: Default temperature
+            max_tokens: Default max tokens
+            is_default: Whether this should be the default provider
+            **kwargs: Additional provider-specific parameters
+        """
         config = LLMConfig(
             provider=provider,
             api_key=api_key,
@@ -145,7 +158,56 @@ class LLMProviderService:
         if is_default or not self.default_provider:
             self.default_provider = name
 
-        self.logger.info(f"Registered LLM provider: {name} ({provider.value})")
+        self.logger.info(f"Registered LLM provider: {name} ({provider.value}, model: {config.model})")
+
+    def register_providers_from_dict(self, providers_config: Dict[str, Dict[str, Any]]) -> None:
+        """
+        Register multiple providers from a structured dictionary
+
+        Args:
+            providers_config: Dictionary with provider configurations
+
+        Example:
+            llm_providers = {
+                "openai_gpt4": {
+                    "provider": LLMProvider.OPENAI,
+                    "api_key": "...",
+                    "model": "gpt-4o",
+                    "is_default": True
+                },
+                "openai_gpt3": {
+                    "provider": LLMProvider.OPENAI,
+                    "api_key": "...",
+                    "model": "gpt-3.5-turbo"
+                },
+                "anthropic_sonnet": {
+                    "provider": LLMProvider.ANTHROPIC,
+                    "api_key": "...",
+                    "model": "claude-sonnet-4-5-20250929"
+                }
+            }
+            llm_service.register_providers_from_dict(llm_providers)
+        """
+        for name, config in providers_config.items():
+            self.register_provider(name=name, **config)
+
+        self.logger.info(f"Registered {len(providers_config)} providers from config")
+
+    def set_default_provider(self, name: str) -> None:
+        """
+        Set the default provider
+
+        Args:
+            name: Name of the provider to set as default
+
+        Raises:
+            ValueError: If provider not found
+        """
+        if name not in self.providers:
+            raise ValueError(f"Provider '{name}' not found. Available: {list(self.providers.keys())}")
+
+        self.default_provider = name
+        self.logger.info(f"Set default provider to: {name}")
 
     def get_provider(self, name: Optional[str] = None) -> Optional[LLMConfig]:
         """Get provider configuration by name or default"""
@@ -157,6 +219,7 @@ class LLMProviderService:
         self,
         prompt: str,
         provider_name: Optional[str] = None,
+        model: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         **kwargs
@@ -167,35 +230,58 @@ class LLMProviderService:
         Args:
             prompt: The input prompt
             provider_name: Name of the provider to use (uses default if None)
+            model: Override the model for this specific call
             temperature: Override temperature
             max_tokens: Override max tokens
             **kwargs: Additional provider-specific parameters
 
         Returns:
             LLMResponse with standardized response data
+
+        Raises:
+            ValueError: If provider not found or no default set
         """
         config = self.get_provider(provider_name)
         if not config:
-            raise ValueError(f"Provider '{provider_name}' not found or no default provider set")
+            available = list(self.providers.keys())
+            raise ValueError(
+                f"Provider '{provider_name}' not found. "
+                f"Available providers: {available}. "
+                f"Default provider: {self.default_provider or 'None set'}"
+            )
 
         # Override config parameters if provided
+        effective_model = model if model is not None else config.model
         effective_temperature = temperature if temperature is not None else config.temperature
         effective_max_tokens = max_tokens if max_tokens is not None else config.max_tokens
 
+        # Create a temporary config with overridden model if needed
+        effective_config = config
+        if model is not None:
+            effective_config = LLMConfig(
+                provider=config.provider,
+                api_key=config.api_key,
+                model=model,
+                base_url=config.base_url,
+                temperature=config.temperature,
+                max_tokens=config.max_tokens,
+                **config.extra_params
+            )
+
         try:
-            if config.provider == LLMProvider.OPENAI:
-                return await self._call_openai(config, prompt, effective_temperature, effective_max_tokens, **kwargs)
-            elif config.provider == LLMProvider.ANTHROPIC:
-                return await self._call_anthropic(config, prompt, effective_temperature, effective_max_tokens, **kwargs)
-            elif config.provider == LLMProvider.GOOGLE:
-                return await self._call_google(config, prompt, effective_temperature, effective_max_tokens, **kwargs)
-            elif config.provider == LLMProvider.OLLAMA:
-                return await self._call_ollama(config, prompt, effective_temperature, effective_max_tokens, **kwargs)
+            if effective_config.provider == LLMProvider.OPENAI:
+                return await self._call_openai(effective_config, prompt, effective_temperature, effective_max_tokens, **kwargs)
+            elif effective_config.provider == LLMProvider.ANTHROPIC:
+                return await self._call_anthropic(effective_config, prompt, effective_temperature, effective_max_tokens, **kwargs)
+            elif effective_config.provider == LLMProvider.GOOGLE:
+                return await self._call_google(effective_config, prompt, effective_temperature, effective_max_tokens, **kwargs)
+            elif effective_config.provider == LLMProvider.OLLAMA:
+                return await self._call_ollama(effective_config, prompt, effective_temperature, effective_max_tokens, **kwargs)
             else:
-                raise ValueError(f"Provider {config.provider} not implemented")
+                raise ValueError(f"Provider {effective_config.provider} not implemented")
 
         except Exception as e:
-            self.logger.error(f"LLM call failed for provider {config.provider}: {str(e)}")
+            self.logger.error(f"LLM call failed for provider {effective_config.provider} (model: {effective_model}): {str(e)}")
             raise
 
     async def generate_structured_output(

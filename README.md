@@ -50,33 +50,31 @@ IA Modules runs AI workflows as directed graphs. You define steps (call an LLM, 
 ## Core Features
 
 ### 🚀 **Pipeline & Workflow Execution**
-- **Graph-Based Workflows**: Define complex workflows as directed graphs with support for cycles and loop detection
-- **Conditional Routing**: Dynamic routing based on execution results, expressions, or custom conditions
-- **Parallel Execution**: Automatic concurrent execution of independent pipeline steps
-- **Checkpointing**: Resume failed pipelines from last successful step with full state recovery
-- **Human-in-the-Loop (HITL)**: Pause execution for human oversight, approval workflows, and intervention
-- **JSON Pipeline Definitions**: Language-agnostic pipeline definitions with templating and parameterization
+- **Graph-Based Workflows**: Directed graphs with conditional routing, cycle detection, and loop execution
+- **Conditional Routing**: Expression-based routing with dynamic step selection
+- **Parallel Execution**: Automatic concurrent execution of independent pipeline branches
+- **Checkpointing & Recovery**: Resume failed pipelines from last checkpoint with state serialization
+- **Human-in-the-Loop (HITL)**: Pause execution for human approval with UI schema definitions
+- **JSON Pipeline Definitions**: Declarative pipeline config with dynamic step loading and templating
+- **Context Management**: Thread-safe execution context for step data sharing
 
 ### 📊 **Reliability & Observability (EARF)**
-- **7 Core Metrics**: SR, CR, PC, HIR, MA, TCL, WCT with comprehensive test coverage
-- **SLO Monitoring**: Track and alert on Service Level Objectives
-- **Event Replay**: Replay failed executions for debugging
-- **Evidence Collection**: Automated audit trail capture
-- **Decision Tracking**: Full decision trail with mode enforcement
-- **Anomaly Detection**: Detect unusual patterns in execution
-- **Alert System**: Configurable alerts for SLO violations
-- **Trend Analysis**: Historical trend analysis of metrics
+- **Reliability Metrics**: SR, CR, PC, HIR, MA, TCL, WCT tracking across executions
+- **Storage Backends**: In-memory, SQL (PostgreSQL, MySQL, SQLite, DuckDB), Redis
+- **SLO Monitoring**: Define and track Service Level Objectives with automated alerts
+- **Event Replay**: Replay step executions for debugging and analysis
+- **Evidence Collection**: Automatic evidence capture for compliance audits
+- **Compensation Tracking**: Track and analyze compensation/rollback events
+- **Performance Metrics**: MTTE (Mean Time to Error) and RSR (Retry Success Rate)
 
 ### 🤖 **AI & LLM Integration**
-- **LLM Providers**: OpenAI, Anthropic, Google Gemini
-- **Agentic Patterns**: Chain-of-Thought, ReAct, Tree-of-Thoughts, Self-Consistency (tested)
-- **Constitutional AI**: Ethical AI frameworks (tested)
-- **Multi-Agent**: Orchestration, collaboration, roles, hooks, state management (tested)
-- **RAG**: Retrieval-Augmented Generation with edge case handling (tested)
-- **Memory**: Core memory system with advanced features (tested)
-- **Tools**: Tool calling with advanced features and edge case handling (tested)
-- **Prompt Optimization**: Automated prompt engineering (tested)
-- **Cost Tracking**: LLM cost monitoring (tested)
+- **LLM Providers**: OpenAI, Anthropic, Google Gemini with unified interface
+- **Multi-Agent Orchestration**: Sequential, parallel, and hierarchical agent workflows
+- **Agent State Sharing**: Share context and state between agents in workflows
+- **Memory System**: Conversation history, session management, vector search, summarization
+- **RAG Support**: Retrieval-Augmented Generation pipelines
+- **Grounding & Validation**: Citation tracking, fact verification, grounding metrics
+- **Agentic Patterns**: Chain-of-Thought, ReAct, Tree-of-Thoughts implemented in showcase app
 
 ### 🎨 **Web UI (Showcase App)**
 - Visual workflow builder with drag-and-drop
@@ -87,32 +85,24 @@ IA Modules runs AI workflows as directed graphs. You define steps (call an LLM, 
 - Save/load/export workflows
 
 ### 🛠️ **Developer Tools**
-- **CLI**: Pipeline validation and execution (tested)
-- **Benchmarking**: Framework with metrics, comparison, profilers, reporters, CI integration (tested)
-- **Plugin System**: Custom steps and storage backends (tested)
-- **Scheduler**: Core scheduling with edge case handling (tested)
-- **Validation**: Pydantic schema validation (tested)
-- **Service Registry**: Dependency injection container (tested)
-- **Circuit Breaker**: Fault tolerance pattern (tested)
-- **Retry Logic**: Configurable retry strategies (tested)
-
-### 🔐 **Auth & Security**
-- **Authentication**: Middleware, models, session management (5 test files)
-- **Database Security**: Security features and advanced security (tested)
-- **Input Validation**: Schema and data validation
+- **CLI**: Pipeline run, validate, visualize, format commands
+- **Benchmarking Framework**: Performance and accuracy benchmarks with statistical analysis
+- **Plugin System**: Custom steps, storage backends, hooks, automatic discovery
+- **Scheduler**: Cron-based job scheduling with async execution and history
+- **Validation**: Pydantic schema validation for pipeline inputs/outputs
+- **Service Registry**: Dependency injection for database, HTTP, and custom services
+- **Pipeline Importer**: JSON import with hash-based change detection
 
 ### 📦 **Database & Storage**
-- **Database Layer**: [nexusql](https://github.com/Fiberwise-AI/nexusql) with SQLAlchemy adapter
-- **Backends**: PostgreSQL, MySQL, SQLite, MSSQL (integration tested)
-- **Metric Storage**: SQL, Redis, In-Memory (all tested)
-- **Features**: Performance, security, concurrency, edge cases (14+ test files)
-- **Pipeline Importer**: JSON import with hash-based change detection (tested)
-- **Telemetry**: Metrics, tracing, exporters for Prometheus/CloudWatch/Datadog (tested)
+- **Database Layer**: [nexusql](https://github.com/Fiberwise-AI/nexusql) with pluggable backends (NexusQL, SQLAlchemy)
+- **Supported Databases**: PostgreSQL, MySQL, SQLite, DuckDB, MSSQL
+- **Migration System**: Built-in V001__*.sql migration runner with cross-DB syntax translation
+- **Telemetry Exporters**: Prometheus, CloudWatch, Datadog
 
-### 🔬 **Advanced Features**
-- **Multimodal Processing**: Audio/video/image support (tested)
-- **Performance Testing**: Comprehensive performance benchmarks (tested)
-- **E2E Tests**: Complete end-to-end scenarios (tested)
+### 🔐 **Security & Validation**
+- **Authentication**: Middleware and session management
+- **Schema Validation**: Pydantic-based runtime type checking
+- **Grounding**: Citation tracking and fact verification for AI outputs
 
 ### 📈 **Testing**
 - **226 test files, 2,852 test cases**
@@ -760,10 +750,9 @@ The framework automatically executes steps in parallel when they have no depende
 
 ### Performance Benefits
 
-- **🚀 Speed**: CPU-bound tasks utilize multiple cores
-- **⚡ Throughput**: I/O-bound tasks don't block each other  
-- **📈 Scalability**: Add parallel paths to increase capacity
-- **🔧 Efficiency**: Better resource utilization
+- **Faster I/O operations**: Multiple API calls or database queries run concurrently instead of sequentially
+- **Reduced total runtime**: Three 1-second API calls complete in ~1 second instead of 3 seconds
+- **Better resource usage**: While one step waits for I/O, others can execute
 
 ## Advanced Topics
 
@@ -777,20 +766,31 @@ In a production environment, pipelines are loaded from the filesystem into a dat
 
 The consuming application typically calls `importer.import_all_pipelines()` on startup.
 
-### Database Usage
+### Database Setup
 
-The framework uses the `nexusql` package for database operations. Configure your database connection:
+IA Modules uses [nexusql](https://github.com/Fiberwise-AI/nexusql) for database operations. nexusql provides two backend options:
+- **NexusQL backend** (default): Lightweight, built-in SQL execution
+- **SQLAlchemy backend**: Connection pooling for production workloadse
+
+**Basic setup with SQLite:**
 
 ```python
 from ia_modules.database import get_database
 
-# SQLite (default backend)
+# Create database connection
 db = get_database('sqlite:///app.db')
 
-# PostgreSQL with nexusql backend
-db = get_database('postgresql://user:pass@localhost/db')
+# Run migrations to create tables
+await db.initialize(
+    apply_schema=True,
+    app_migration_paths=["database/migrations"]
+)
+```
 
-# PostgreSQL with SQLAlchemy backend (connection pooling)
+**Production setup with PostgreSQL:**
+
+```python
+# Use SQLAlchemy backend for connection pooling
 db = get_database(
     'postgresql://user:pass@localhost/db',
     backend='sqlalchemy',
@@ -798,16 +798,20 @@ db = get_database(
     max_overflow=20
 )
 
-db.connect()
+# Run migrations
+await db.initialize(
+    apply_schema=True,
+    app_migration_paths=["database/migrations"]
+)
 ```
 
-**Migration Note**: IA Modules does not include a migration system. Use your own migration tools (Alembic, Flyway, etc.) to manage database schema. The framework only provides the database connection layer.
+**About migrations**: nexusql includes a migration runner that executes `V001__description.sql` files from `database/migrations/`. It automatically translates SQL syntax for your target database (PostgreSQL, MySQL, SQLite, etc.). See [nexusql docs](https://github.com/Fiberwise-AI/nexusql) for details.
 
 ## Production Status
 
 **What works:**
 - Core pipeline execution with 2,852 passing tests
-- SQLite database integration (fully tested)
+- Database integration (PostgreSQL, MySQL, SQLite, MSSQL - fully tested)
 - Reliability metrics collection (7 metrics tracked)
 - Prometheus exporter (tested)
 - Checkpointing and recovery
@@ -818,7 +822,6 @@ db.connect()
 
 **What needs work before production:**
 - Load testing (not done - don't know how it performs under concurrent users)
-- PostgreSQL/MySQL integration testing (tests exist but require manual DB setup)
 - Security review (no formal audit completed)
 - Backup/restore procedures (not documented or tested)
 - CloudWatch/Datadog exporters (exist but untested with real endpoints)
