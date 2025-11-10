@@ -714,35 +714,37 @@ class Pipeline:
                     except Exception as e:
                         self.logger.warning(f"Failed to save checkpoint: {e}")
 
-                # Find next steps by evaluating transitions
-                next_steps = self._get_next_steps(current_step_name, current_data)
-                
-                if not next_steps:
-                    self.logger.info(f"No more transitions from step '{current_step_name}', pipeline complete")
-                    break
-                
-                # Handle parallel or sequential execution
-                if len(next_steps) > 1:
-                    self.logger.info(f"Parallel fanout: {len(next_steps)} branches from '{current_step_name}'")
-                    # For parallel execution, we need to execute all branches
-                    # Use a simple approach: add all to a queue and process each
-                    # (Real parallel would use asyncio.gather, but this maintains order for now)
-                    pending_steps = list(next_steps)
-                    current_step_name = pending_steps.pop(0)
-                    step_index += 1
-                    
-                    # Store remaining parallel steps to execute after current
-                    if not hasattr(self, '_pending_parallel_steps'):
-                        self._pending_parallel_steps = []
-                    self._pending_parallel_steps.extend(pending_steps)
-                elif hasattr(self, '_pending_parallel_steps') and self._pending_parallel_steps:
+                # Check if there are pending parallel steps first
+                if hasattr(self, '_pending_parallel_steps') and self._pending_parallel_steps:
                     # Continue with pending parallel steps
                     current_step_name = self._pending_parallel_steps.pop(0)
                     step_index += 1
                 else:
-                    # Single next step
-                    current_step_name = next_steps[0]
-                    step_index += 1
+                    # Find next steps by evaluating transitions
+                    next_steps = self._get_next_steps(current_step_name, current_data)
+
+                    if not next_steps:
+                        self.logger.info(f"No more transitions from step '{current_step_name}', pipeline complete")
+                        break
+
+                    # Handle parallel or sequential execution
+                    if len(next_steps) > 1:
+                        self.logger.info(f"Parallel fanout: {len(next_steps)} branches from '{current_step_name}'")
+                        # For parallel execution, we need to execute all branches
+                        # Use a simple approach: add all to a queue and process each
+                        # (Real parallel would use asyncio.gather, but this maintains order for now)
+                        pending_steps = list(next_steps)
+                        current_step_name = pending_steps.pop(0)
+                        step_index += 1
+
+                        # Store remaining parallel steps to execute after current
+                        if not hasattr(self, '_pending_parallel_steps'):
+                            self._pending_parallel_steps = []
+                        self._pending_parallel_steps.extend(pending_steps)
+                    else:
+                        # Single next step
+                        current_step_name = next_steps[0]
+                        step_index += 1
 
             if step_index >= max_steps:
                 raise RuntimeError(f"Pipeline exceeded maximum steps ({max_steps}), possible infinite loop")
@@ -799,19 +801,26 @@ class Pipeline:
             source = config.get("source", "")
             operator = config.get("operator", "equals")
             expected_value = config.get("value")
-            
+
+            self.logger.info(f"Evaluating expression: source={source}, operator={operator}, expected={expected_value}")
+            self.logger.info(f"Current data keys: {list(data.keys()) if isinstance(data, dict) else 'not a dict'}")
+
             # Parse source (e.g., "review_content.approved")
             parts = source.split(".")
             actual_value = data
             for part in parts:
                 if isinstance(actual_value, dict):
                     actual_value = actual_value.get(part)
+                    self.logger.info(f"  Traversed '{part}': {actual_value}")
                 else:
+                    self.logger.warning(f"  Cannot traverse '{part}' - value is not a dict: {type(actual_value)}")
                     return False
             
             # Evaluate operator
             if operator == "equals":
-                return actual_value == expected_value
+                result = actual_value == expected_value
+                self.logger.info(f"  Operator 'equals': {actual_value} == {expected_value} => {result}")
+                return result
             elif operator == "not_equals":
                 return actual_value != expected_value
             elif operator == "greater_than":

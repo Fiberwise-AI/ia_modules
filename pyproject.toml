@@ -33,6 +33,7 @@ dependencies = [
     "fastapi>=0.104.0",
     "bcrypt>=4.0.0",
     "nexusql>=0.1.0",
+    "litellm>=1.50.0",
 ]
 
 [project.optional-dependencies]

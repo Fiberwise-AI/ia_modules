@@ -5,11 +5,13 @@ A modular framework for building intelligent automation solutions with advanced 
 
 Core Modules:
 - pipeline: Pipeline orchestration and execution
-- auth: Authentication and authorization
 - utils: Utility functions
 
 Database:
 - For database functionality, use the nexusql package (pip install nexusql)
+
+Authentication:
+- For authentication functionality, use the ia-auth-sessions package (pip install ia-auth-sessions)
 
 Advanced AI Features:
 - patterns: AI reasoning patterns (CoT, ReAct, ToT, Constitutional AI)
@@ -32,7 +34,6 @@ __version__ = "0.1.0"
 __all__ = [
     # Core modules
     'pipeline',
-    'auth',
     'utils',
     # Advanced AI modules
     'patterns',

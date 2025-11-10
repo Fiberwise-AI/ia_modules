@@ -633,50 +633,63 @@ db.disconnect()
 
 ## AI/LLM Integration
 
-The framework includes comprehensive support for Large Language Model integration with multiple providers.
+Simple LiteLLM wrapper supporting 100+ LLM providers. See [docs/LLM_SERVICE.md](docs/LLM_SERVICE.md) for full documentation.
 
-### Supported Providers
-
-| Provider | Environment Variable | Models | Best For |
-|----------|---------------------|---------|----------|
-| **OpenAI** | `OPENAI_API_KEY` | gpt-3.5-turbo, gpt-4o | Overall best quality, well-tested |
-| **Anthropic** | `ANTHROPIC_API_KEY` | claude-3-haiku, claude-3-5-sonnet-20241022 | Complex reasoning, long context |
-| **Google Gemini** | `GEMINI_API_KEY` | gemini-2.0-flash-exp, gemini-2.5-pro | Fast, cost-effective |
-
-### Configuration
-
-Configure LLM providers via environment variables:
-- API key configuration
-- Model selection
-- Cost management (daily limits, per-request caps)
-- Rate limiting
-
-See [showcase_app/README.md](showcase_app/README.md) for details.
-
-### LLM-Powered Steps
+### Quick Start
 
 ```python
-# steps/ai_steps.py
+from ia_modules.pipeline.llm_provider_service import LLMProviderService
+
+# Initialize and register providers
+service = LLMProviderService()
+service.register_provider("openai", model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
+service.register_provider("anthropic", model="claude-sonnet-4-5-20250929", api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+# Use it
+response = await service.generate_completion(
+    messages=[{"role": "user", "content": "Hello!"}],
+    provider_name="openai"
+)
+print(response["content"])
+print(f"Cost: ${response['usage']['cost_usd']:.4f}")
+```
+
+### Supported Providers (100+)
+
+Via [LiteLLM](https://docs.litellm.ai/):
+- **OpenAI**: gpt-4o, gpt-4o-mini, o1-preview
+- **Anthropic**: claude-sonnet-4-5-20250929, claude-3-5-haiku
+- **Google**: gemini/gemini-2.0-flash-exp, gemini/gemini-pro
+- **Local**: ollama/llama3.2, ollama/qwen2.5-coder
+- **AWS Bedrock**, **Cohere**, **Mistral**, **Groq**, and many more
+
+### Environment Variables
+
+```bash
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=...
+```
+
+### LLM-Powered Pipeline Steps
+
+```python
 from ia_modules.pipeline.core import Step
 
 class AIAnalysisStep(Step):
     async def execute(self, data: dict) -> dict:
         llm_service = self.services.get('llm_provider')
 
-        # Generate structured output with schema validation
-        result = await llm_service.generate_structured_output(
-            prompt=f"Analyze this data: {data['text']}",
-            schema={
-                "type": "object",
-                "properties": {
-                    "sentiment": {"type": "string"},
-                    "confidence": {"type": "number"},
-                    "key_topics": {"type": "array"}
-                }
-            }
+        response = await llm_service.generate_completion(
+            messages=[
+                {"role": "system", "content": "You are a data analyst"},
+                {"role": "user", "content": f"Analyze: {data['text']}"}
+            ],
+            temperature=0.7,
+            max_tokens=500
         )
 
-        return {"analysis": result}
+        return {"analysis": response["content"]}
 ```
 
 ### Running AI-Enhanced Pipelines
