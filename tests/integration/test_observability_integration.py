@@ -20,19 +20,19 @@ from ia_modules.telemetry.metrics import MetricsCollector, Metric, MetricType
 @pytest.fixture
 def prometheus_url():
     """Get Prometheus URL from environment"""
-    return os.environ.get("PROMETHEUS_URL", "http://localhost:9090")
+    return os.environ.get("PROMETHEUS_URL", "http://localhost:19090")
 
 
 @pytest.fixture
 def grafana_url():
     """Get Grafana URL from environment"""
-    return os.environ.get("GRAFANA_URL", "http://localhost:3000")
+    return os.environ.get("GRAFANA_URL", "http://localhost:13001")
 
 
 @pytest.fixture
 def otel_collector_url():
     """Get OpenTelemetry Collector URL from environment"""
-    return os.environ.get("OTEL_COLLECTOR_URL", "http://localhost:4318")
+    return os.environ.get("OTEL_COLLECTOR_URL", "http://localhost:14318")
 
 
 @pytest.fixture
@@ -464,13 +464,13 @@ class TestOpenTelemetryCollectorHealth:
 
     def test_otel_collector_health(self, otel_collector_url):
         """Test OpenTelemetry Collector health endpoint"""
-        health_url = otel_collector_url.replace('4318', '23133')
+        health_url = otel_collector_url.replace('14318', '23133')
         response = requests.get(health_url, timeout=5)
         assert response.status_code == 200
 
     def test_otel_collector_metrics(self, otel_collector_url):
         """Test OpenTelemetry Collector metrics endpoint"""
-        metrics_url = otel_collector_url.replace('4318', '18888') + '/metrics'
+        metrics_url = otel_collector_url.replace('14318', '18888') + '/metrics'
         response = requests.get(metrics_url, timeout=5)
         assert response.status_code == 200
         assert 'otelcol' in response.text
@@ -478,7 +478,7 @@ class TestOpenTelemetryCollectorHealth:
     def test_otel_collector_zpages(self, otel_collector_url):
         """Test OpenTelemetry Collector zpages"""
         # zpages typically on 55679 but may not be enabled
-        zpages_url = otel_collector_url.replace('4318', '55679') + '/debug/tracez'
+        zpages_url = otel_collector_url.replace('14318', '55679') + '/debug/tracez'
         try:
             response = requests.get(zpages_url, timeout=5)
             # zpages may not be enabled, so we just check if endpoint responds
@@ -489,7 +489,7 @@ class TestOpenTelemetryCollectorHealth:
 
     def test_otel_collector_prometheus_metrics(self, otel_collector_url):
         """Test OTel Collector exposes Prometheus metrics"""
-        metrics_url = otel_collector_url.replace('4318', '18888') + '/metrics'
+        metrics_url = otel_collector_url.replace('14318', '18888') + '/metrics'
         response = requests.get(metrics_url, timeout=5)
         assert response.status_code == 200
 
@@ -499,7 +499,7 @@ class TestOpenTelemetryCollectorHealth:
 
     def test_otel_collector_receiver_metrics(self, otel_collector_url):
         """Test OTel Collector receiver metrics"""
-        metrics_url = otel_collector_url.replace('4318', '18888') + '/metrics'
+        metrics_url = otel_collector_url.replace('14318', '18888') + '/metrics'
         response = requests.get(metrics_url, timeout=5)
         assert response.status_code == 200
 
@@ -641,7 +641,7 @@ class TestEndToEndMetrics:
         components = {
             'Prometheus': f"{prometheus_url}/-/healthy",
             'Grafana': f"{grafana_url}/api/health",
-            'OTel Collector': otel_collector_url.replace('4318', '23133'),
+            'OTel Collector': otel_collector_url.replace('14318', '23133'),
             'Jaeger': jaeger_url,
         }
 
@@ -672,7 +672,7 @@ class TestEndToEndMetrics:
     def test_collector_to_prometheus_pipeline(self, otel_collector_url, prometheus_url):
         """Test metrics can flow from OTel Collector to Prometheus"""
         # Check OTel Collector is exporting metrics in Prometheus format
-        metrics_url = otel_collector_url.replace('4318', '8889') + '/metrics'
+        metrics_url = otel_collector_url.replace('14318', '8889') + '/metrics'
 
         try:
             response = requests.get(metrics_url, timeout=5)

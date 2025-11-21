@@ -168,20 +168,17 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 9090:9090
+          - 19090:9090
 
       otel-collector:
         image: otel/opentelemetry-collector-contrib:latest
-        options: >-
-          --health-cmd "wget --quiet --tries=1 --spider http://localhost:13133/ || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        # Note: No health check - collector runs with default config in CI
+        # Health check endpoint (13133) requires custom config which can't be mounted in GH Actions services
         ports:
-          - 4317:4317
-          - 4318:4318
-          - 8888:8888
-          - 13133:13133
+          - 14317:4317
+          - 14318:4318
+          - 18888:8888
+          - 23133:13133
 
       grafana:
         image: grafana/grafana:latest
@@ -196,7 +193,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
         ports:
-          - 3000:3000
+          - 13001:3000
 
       jaeger:
         # Using Jaeger v2 (EOL for v1 is Dec 31, 2025)
@@ -279,9 +276,9 @@ jobs:
 
     - name: Run observability integration tests
       env:
-        PROMETHEUS_URL: http://localhost:9090
-        OTEL_COLLECTOR_URL: http://localhost:4318
-        GRAFANA_URL: http://localhost:3000
+        PROMETHEUS_URL: http://localhost:19090
+        OTEL_COLLECTOR_URL: http://localhost:14318
+        GRAFANA_URL: http://localhost:13001
         JAEGER_URL: http://localhost:16686
       run: |
         pytest tests/integration/test_observability_integration.py -v --tb=short
@@ -294,9 +291,9 @@ jobs:
         TEST_MYSQL_URL: mysql://testuser:testpass@localhost:3306/ia_modules_test
         # TEST_MSSQL_URL: mssql://sa:TestPass123!@localhost:1433/master  # Commented out
         REDIS_URL: redis://localhost:6379
-        PROMETHEUS_URL: http://localhost:9090
-        OTEL_COLLECTOR_URL: http://localhost:4318
-        GRAFANA_URL: http://localhost:3000
+        PROMETHEUS_URL: http://localhost:19090
+        OTEL_COLLECTOR_URL: http://localhost:14318
+        GRAFANA_URL: http://localhost:13001
         JAEGER_URL: http://localhost:16686
       run: |
         pytest tests/integration/ -v --tb=short -m "integration and not (postgres or mysql or mssql or redis or observability)" -k "not mssql"
