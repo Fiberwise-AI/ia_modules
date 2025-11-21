@@ -2,9 +2,6 @@ name: Test and Publish package to PyPI
 
 on:
   push:
-    branches:
-      - test
-      - main
     tags:
       - 'v*'
   release:

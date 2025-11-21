@@ -127,9 +127,10 @@ Issues = "https://github.com/Fiberwise-AI/ia_modules/issues"
 [project.scripts]
 ia-modules = "ia_modules.cli.main:main"
 
-[tool.setuptools]
-packages = ["ia_modules"]
-package-dir = {"ia_modules" = "."}
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ia_modules*"]
+exclude = ["tests*", "docs*", "showcase_app*"]
 
 [tool.setuptools.package-data]
 ia_modules = ["*"]
