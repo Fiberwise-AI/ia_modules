@@ -1,185 +1,88 @@
-"""Image processing with vision models."""
+"""Image processing with vision models via LLMProviderService."""
 
 from typing import Union, List, Optional
 import base64
 import logging
 import io
 
-# Import vision libraries at module level for testing
-try:
-    import openai
-except ImportError:
-    openai = None
-
-try:
-    import anthropic
-except ImportError:
-    anthropic = None
+from ..pipeline.llm_provider_service import LLMProviderService
 
 logger = logging.getLogger(__name__)
 
 
 class ImageProcessor:
-    """Process images using vision models."""
+    """Process images using vision models via LLMProviderService."""
 
     def __init__(
         self,
-        model: str,
-        provider: str = "openai",
-        max_size: int = 2048
+        llm_service: LLMProviderService,
+        model: str = "gpt-4-vision-preview",
+        max_size: int = 2048,
+        provider_name: Optional[str] = None
     ):
         """
         Initialize image processor.
 
         Args:
-            model: Vision model to use (required)
-            provider: Provider name ('openai' or 'anthropic')
+            llm_service: LLMProviderService instance (required)
+            model: Vision model to use
             max_size: Maximum image dimension in pixels
-
-        Raises:
-            ValueError: If provider is not supported
-            ImportError: If provider library is not installed
+            provider_name: Provider name to use with llm_service
         """
+        self.llm_service = llm_service
         self.model = model
-        self.provider = provider
         self.max_size = max_size
-        self._init_provider()
-
-    def _init_provider(self) -> None:
-        """Initialize vision provider."""
-        if self.provider == "openai":
-            if openai is None:
-                raise ImportError(
-                    "OpenAI library not installed. Install with: pip install openai"
-                )
-            self.client = openai.AsyncOpenAI()
-            logger.info("Using OpenAI vision")
-        elif self.provider == "anthropic":
-            if anthropic is None:
-                raise ImportError(
-                    "Anthropic library not installed. Install with: pip install anthropic"
-                )
-            self.client = anthropic.AsyncAnthropic()
-            logger.info("Using Anthropic vision")
-        elif self.provider == "none":
-            # Special case for testing without actual provider
-            self.client = None
-            logger.info("Using no vision provider (testing mode)")
-        else:
-            raise ValueError(
-                f"Unsupported vision provider: {self.provider}. "
-                f"Supported providers: openai, anthropic"
-            )
+        self.provider_name = provider_name
 
     async def process(
         self,
         image: Union[bytes, str],
         prompt: str = "Describe this image"
     ) -> str:
-        """Process image with vision model."""
-        # Handle testing mode without provider
-        if self.provider == "none" or self.client is None:
-            return "Vision processing not available (no provider configured)"
+        """
+        Process image with vision model.
 
-        # Load and resize image
+        Args:
+            image: Image bytes or file path
+            prompt: Prompt for image analysis
+
+        Returns:
+            Model's description/analysis of the image
+        """
         image_data = await self._load_image(image)
         image_data = self._resize_image(image_data)
 
-        # Encode to base64
-        base64_image = base64.b64encode(image_data).decode('utf-8')
-
-        # Call vision API based on provider
-        if self.provider == "openai":
-            return await self._process_openai(base64_image, prompt)
-        elif self.provider == "anthropic":
-            return await self._process_anthropic(base64_image, prompt)
-        else:
-            raise ValueError(f"Unsupported provider: {self.provider}")
-
-    async def _process_openai(self, base64_image: str, prompt: str) -> str:
-        """Process with OpenAI vision."""
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{base64_image}"
-                        }
-                    }
-                ]
-            }],
-            max_tokens=500
+        return await self.llm_service.generate_vision(
+            image=image_data,
+            prompt=prompt,
+            provider_name=self.provider_name,
+            model=self.model
         )
-        return response.choices[0].message.content
-
-    async def _process_anthropic(self, base64_image: str, prompt: str) -> str:
-        """Process with Anthropic vision."""
-        message = await self.client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=500,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "image/jpeg",
-                            "data": base64_image
-                        }
-                    },
-                    {"type": "text", "text": prompt}
-                ]
-            }]
-        )
-        return message.content[0].text
 
     async def _load_image(self, image: Union[bytes, str]) -> bytes:
         """Load image from bytes or file path."""
         if isinstance(image, bytes):
             return image
 
-        # Load from file
         with open(image, 'rb') as f:
             return f.read()
 
     def _resize_image(self, image_data: bytes) -> bytes:
-        """
-        Resize image if needed.
-
-        Args:
-            image_data: Image bytes
-
-        Returns:
-            Resized image bytes (or original if resize not needed/fails)
-
-        Note:
-            If PIL is not available, returns original image with a warning.
-            This is a legitimate degraded mode since images can still be processed.
-        """
+        """Resize image if needed."""
         try:
             from PIL import Image
         except ImportError:
-            logger.warning(
-                "PIL not available, skipping resize. "
-                "Install with: pip install Pillow"
-            )
+            logger.debug("PIL not available, skipping resize")
             return image_data
 
         try:
             img = Image.open(io.BytesIO(image_data))
 
-            # Resize if larger than max_size
             if max(img.size) > self.max_size:
                 ratio = self.max_size / max(img.size)
                 new_size = tuple(int(dim * ratio) for dim in img.size)
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
 
-                # Convert back to bytes
                 output = io.BytesIO()
                 img.save(output, format='JPEG', quality=85)
                 return output.getvalue()
@@ -198,23 +101,14 @@ class ImageProcessor:
 
         Returns:
             Embedding vector
-
-        Raises:
-            ImportError: If sentence-transformers is not installed
-
-        Note:
-            Currently uses text embeddings of image description.
-            For production use, consider using CLIP or similar vision models.
         """
-        # Simplified: convert image description to embedding
-        description = await self.process(image, "Describe this image briefly")
+        description = await self.process(image, "Describe this image in detail")
 
-        try:
-            from sentence_transformers import SentenceTransformer
-            model = SentenceTransformer("all-MiniLM-L6-v2")
-            return model.encode(description).tolist()
-        except ImportError as e:
-            raise ImportError(
-                "sentence-transformers required for embeddings. "
-                "Install with: pip install sentence-transformers"
-            ) from e
+        # Use LLMProviderService for embedding if available
+        import litellm
+        response = await litellm.aembedding(
+            model="text-embedding-ada-002",
+            input=description
+        )
+
+        return response.data[0].embedding

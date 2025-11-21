@@ -156,13 +156,17 @@ class GeneticOptimizer(PromptOptimizer):
             return parent1, parent2
 
         # Single-point crossover
-        point1 = random.randint(0, len(words1))
-        point2 = random.randint(0, len(words2))
+        point1 = random.randint(1, max(1, len(words1) - 1))
+        point2 = random.randint(1, max(1, len(words2) - 1))
 
         offspring1 = words1[:point1] + words2[point2:]
         offspring2 = words2[:point2] + words1[point1:]
 
-        return " ".join(offspring1), " ".join(offspring2)
+        # Ensure non-empty offspring
+        child1 = " ".join(offspring1) if offspring1 else parent1
+        child2 = " ".join(offspring2) if offspring2 else parent2
+
+        return child1, child2
 
     def _tournament_selection(self, population: List[Tuple[str, float]]) -> str:
         """

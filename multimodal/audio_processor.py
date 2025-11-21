@@ -1,38 +1,30 @@
-"""Audio processing (speech-to-text, text-to-speech)."""
+"""Audio processing (speech-to-text, text-to-speech) via LLMProviderService."""
 
 from typing import Union, Optional
 import logging
+
+from ..pipeline.llm_provider_service import LLMProviderService
 
 logger = logging.getLogger(__name__)
 
 
 class AudioProcessor:
-    """Process audio using speech models."""
+    """Process audio using speech models via LLMProviderService."""
 
-    def __init__(self, model: str):
+    def __init__(
+        self,
+        llm_service: LLMProviderService,
+        model: str = "whisper-1"
+    ):
         """
         Initialize audio processor.
 
         Args:
-            model: Whisper model to use (required)
-
-        Raises:
-            ImportError: If openai library is not installed
+            llm_service: LLMProviderService instance (required)
+            model: Whisper model to use
         """
+        self.llm_service = llm_service
         self.model = model
-        self._init_client()
-
-    def _init_client(self) -> None:
-        """Initialize OpenAI client for Whisper."""
-        try:
-            import openai
-            self.client = openai.AsyncOpenAI()
-            logger.info("Audio processor initialized with Whisper")
-        except ImportError as e:
-            raise ImportError(
-                "OpenAI library required for audio processing. "
-                "Install with: pip install openai"
-            ) from e
 
     async def transcribe(
         self,
@@ -49,25 +41,11 @@ class AudioProcessor:
         Returns:
             Transcribed text
         """
-        # Load audio
-        if isinstance(audio, bytes):
-            # Create temp file for API
-            import tempfile
-            with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as f:
-                f.write(audio)
-                audio_path = f.name
-        else:
-            audio_path = audio
-
-        # Transcribe
-        with open(audio_path, 'rb') as audio_file:
-            response = await self.client.audio.transcriptions.create(
-                model=self.model,
-                file=audio_file,
-                language=language
-            )
-
-        return response.text
+        return await self.llm_service.transcribe(
+            audio=audio,
+            model=self.model,
+            language=language
+        )
 
     async def synthesize(
         self,
@@ -80,20 +58,17 @@ class AudioProcessor:
 
         Args:
             text: Text to synthesize
-            voice: Voice to use
-            output_format: Output format
+            voice: Voice to use (alloy, echo, fable, onyx, nova, shimmer)
+            output_format: Output format (mp3, opus, aac, flac)
 
         Returns:
             Audio bytes
         """
-        response = await self.client.audio.speech.create(
-            model="tts-1",
+        return await self.llm_service.synthesize_speech(
+            text=text,
             voice=voice,
-            input=text,
-            response_format=output_format
+            output_format=output_format
         )
-
-        return response.content
 
     async def detect_language(self, audio: Union[bytes, str]) -> str:
         """
@@ -104,22 +79,18 @@ class AudioProcessor:
 
         Returns:
             Language code or "unknown"
-
-        Raises:
-            ImportError: If langdetect library is not installed
         """
-        # Transcribe without language specified
         transcription = await self.transcribe(audio)
 
-        # Use language detection library
         try:
             from langdetect import detect
             return detect(transcription)
-        except ImportError as e:
-            raise ImportError(
-                "langdetect required for language detection. "
-                "Install with: pip install langdetect"
-            ) from e
+        except ImportError:
+            logger.warning("langdetect not installed, returning 'unknown'")
+            return "unknown"
+        except Exception as e:
+            logger.warning(f"Language detection failed: {e}")
+            return "unknown"
 
     def get_supported_formats(self) -> list:
         """Get supported audio formats."""

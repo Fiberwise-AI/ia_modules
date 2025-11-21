@@ -11,7 +11,7 @@ from contextlib import contextmanager
 
 from .metrics import MetricsCollector
 from .tracing import Tracer, SimpleTracer
-from ..benchmarking.framework import BenchmarkResult
+from ..benchmarking.models import BenchmarkResult
 
 logger = logging.getLogger(__name__)
 

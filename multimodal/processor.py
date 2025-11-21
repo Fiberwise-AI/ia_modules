@@ -62,6 +62,7 @@ class MultiModalProcessor:
 
     def __init__(
         self,
+        llm_service: Any,
         config: Optional[MultiModalConfig] = None,
         llm_provider: Optional[Any] = None
     ):
@@ -69,9 +70,11 @@ class MultiModalProcessor:
         Initialize multi-modal processor.
 
         Args:
+            llm_service: LLMProviderService instance (required)
             config: Configuration
             llm_provider: LLM provider for text processing
         """
+        self.llm_service = llm_service
         self.config = config or MultiModalConfig()
         self.llm_provider = llm_provider
 
@@ -97,8 +100,8 @@ class MultiModalProcessor:
                 )
             from .image_processor import ImageProcessor
             self._image_processor = ImageProcessor(
+                llm_service=self.llm_service,
                 model=self.config.image_model,
-                provider=self.config.vision_provider,
                 max_size=self.config.max_image_size
             )
         return self._image_processor
@@ -113,7 +116,10 @@ class MultiModalProcessor:
                     "Example: MultiModalConfig(audio_model='whisper-1')"
                 )
             from .audio_processor import AudioProcessor
-            self._audio_processor = AudioProcessor(model=self.config.audio_model)
+            self._audio_processor = AudioProcessor(
+                llm_service=self.llm_service,
+                model=self.config.audio_model
+            )
         return self._audio_processor
 
     @property

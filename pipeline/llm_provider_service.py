@@ -20,9 +20,12 @@ Usage:
     )
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
+import base64
 import logging
+import tempfile
 from litellm import acompletion, completion_cost
+import litellm
 
 
 class LLMProviderService:
@@ -178,6 +181,117 @@ class LLMProviderService:
         except Exception as e:
             self.logger.error(f"LiteLLM failed: {e}")
             raise RuntimeError(f"LLM completion failed: {str(e)}")
+
+    async def generate_vision(
+        self,
+        image: Union[bytes, str],
+        prompt: str = "Describe this image",
+        provider_name: Optional[str] = None,
+        **litellm_params
+    ) -> str:
+        """
+        Process image with vision model.
+
+        Args:
+            image: Image bytes or file path
+            prompt: Prompt for image analysis
+            provider_name: Name of registered provider
+            **litellm_params: Additional LiteLLM parameters
+
+        Returns:
+            Model's analysis of the image
+        """
+        # Load image
+        if isinstance(image, bytes):
+            image_data = image
+        else:
+            with open(image, 'rb') as f:
+                image_data = f.read()
+
+        base64_image = base64.b64encode(image_data).decode('utf-8')
+
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{base64_image}"
+                        }
+                    }
+                ]
+            }
+        ]
+
+        result = await self.generate_completion(
+            messages=messages,
+            provider_name=provider_name,
+            **litellm_params
+        )
+        return result["content"]
+
+    async def transcribe(
+        self,
+        audio: Union[bytes, str],
+        model: str = "whisper-1",
+        language: Optional[str] = None
+    ) -> str:
+        """
+        Transcribe audio to text (speech-to-text).
+
+        Args:
+            audio: Audio bytes or file path
+            model: Whisper model to use
+            language: Optional language code
+
+        Returns:
+            Transcribed text
+        """
+        # Handle bytes input
+        if isinstance(audio, bytes):
+            with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as f:
+                f.write(audio)
+                audio_path = f.name
+        else:
+            audio_path = audio
+
+        response = await litellm.atranscription(
+            model=model,
+            file=open(audio_path, 'rb'),
+            language=language
+        )
+
+        return response.text
+
+    async def synthesize_speech(
+        self,
+        text: str,
+        voice: str = "alloy",
+        model: str = "tts-1",
+        output_format: str = "mp3"
+    ) -> bytes:
+        """
+        Convert text to speech (text-to-speech).
+
+        Args:
+            text: Text to synthesize
+            voice: Voice to use (alloy, echo, fable, onyx, nova, shimmer)
+            model: TTS model
+            output_format: Output format (mp3, opus, aac, flac)
+
+        Returns:
+            Audio bytes
+        """
+        response = await litellm.aspeech(
+            model=model,
+            voice=voice,
+            input=text,
+            response_format=output_format
+        )
+
+        return response.content
 
 
 # Example usage

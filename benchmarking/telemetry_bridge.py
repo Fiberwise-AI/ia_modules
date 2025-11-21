@@ -4,13 +4,11 @@ Telemetry Bridge for Benchmarking
 Bridges benchmark results to telemetry exporters for production monitoring.
 """
 
-from typing import Optional, List, TYPE_CHECKING
+from typing import List, Optional
 import logging
 
-from .framework import BenchmarkResult
-
-if TYPE_CHECKING:
-    from ..telemetry.integration import PipelineTelemetry
+from .models import BenchmarkResult
+from ..telemetry.integration import PipelineTelemetry
 
 logger = logging.getLogger(__name__)
 
@@ -22,16 +20,13 @@ class BenchmarkTelemetryBridge:
     Automatically exports benchmark metrics to configured telemetry exporters.
     """
 
-    def __init__(self, telemetry: Optional['PipelineTelemetry'] = None):
+    def __init__(self, telemetry: PipelineTelemetry):
         """
         Initialize telemetry bridge.
 
         Args:
-            telemetry: PipelineTelemetry instance (creates/gets global if None)
+            telemetry: PipelineTelemetry instance (required)
         """
-        if telemetry is None:
-            from ..telemetry.integration import get_telemetry
-            telemetry = get_telemetry()
         self.telemetry = telemetry
 
     def export_result(
@@ -76,12 +71,12 @@ class BenchmarkTelemetryBridge:
 _global_bridge: Optional[BenchmarkTelemetryBridge] = None
 
 
-def get_bridge(telemetry: Optional['PipelineTelemetry'] = None) -> BenchmarkTelemetryBridge:
+def get_bridge(telemetry: PipelineTelemetry) -> BenchmarkTelemetryBridge:
     """
     Get or create global telemetry bridge.
 
     Args:
-        telemetry: PipelineTelemetry instance
+        telemetry: PipelineTelemetry instance (required)
 
     Returns:
         BenchmarkTelemetryBridge instance
@@ -94,12 +89,12 @@ def get_bridge(telemetry: Optional['PipelineTelemetry'] = None) -> BenchmarkTele
     return _global_bridge
 
 
-def configure_bridge(telemetry: Optional['PipelineTelemetry'] = None) -> BenchmarkTelemetryBridge:
+def configure_bridge(telemetry: PipelineTelemetry) -> BenchmarkTelemetryBridge:
     """
     Configure global telemetry bridge.
 
     Args:
-        telemetry: PipelineTelemetry instance
+        telemetry: PipelineTelemetry instance (required)
 
     Returns:
         New BenchmarkTelemetryBridge instance

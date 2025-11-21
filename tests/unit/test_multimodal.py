@@ -22,6 +22,17 @@ from ia_modules.multimodal.image_processor import ImageProcessor
 from ia_modules.multimodal.fusion import ModalityFusion
 
 
+@pytest.fixture
+def mock_llm_service():
+    """Create a mock LLMProviderService."""
+    service = Mock()
+    service.generate_vision = AsyncMock(return_value="A test image description")
+    service.transcribe = AsyncMock(return_value="Transcribed text")
+    service.synthesize_speech = AsyncMock(return_value=b"audio bytes")
+    service.generate_completion = AsyncMock(return_value={"content": "Generated text"})
+    return service
+
+
 class TestModalityType:
     """Test ModalityType enum."""
 
@@ -128,60 +139,27 @@ class TestImageProcessor:
     """Test ImageProcessor functionality."""
 
     @pytest.fixture
-    def image_processor(self):
+    def image_processor(self, mock_llm_service):
         """Create image processor instance."""
         return ImageProcessor(
+            llm_service=mock_llm_service,
             model="gpt-4-vision-preview",
-            provider="openai",
             max_size=2048
         )
-
-    @pytest.fixture
-    def mock_openai_client(self):
-        """Create mock OpenAI client."""
-        client = Mock()
-
-        # Mock completion response
-        mock_response = Mock()
-        mock_message = Mock()
-        mock_message.content = "A beautiful landscape with mountains"
-        mock_choice = Mock()
-        mock_choice.message = mock_message
-        mock_response.choices = [mock_choice]
-
-        client.chat = Mock()
-        client.chat.completions = Mock()
-        client.chat.completions.create = AsyncMock(return_value=mock_response)
-
-        return client
 
     def test_creation(self, image_processor):
         """ImageProcessor can be created."""
         assert image_processor.model == "gpt-4-vision-preview"
-        assert image_processor.provider == "openai"
         assert image_processor.max_size == 2048
 
     @pytest.mark.asyncio
-    async def test_process_image_bytes(self, image_processor, mock_openai_client):
+    async def test_process_image_bytes(self, image_processor):
         """Can process image from bytes."""
-        image_processor.client = mock_openai_client
-
-        # Create fake image bytes
-        image_bytes = b"fake image data"
-
-        result = await image_processor.process(image_bytes, "Describe this")
+        result = await image_processor.process(b"fake image data", "Describe this")
 
         assert isinstance(result, str)
-        assert mock_openai_client.chat.completions.create.called
-
-    @pytest.mark.asyncio
-    async def test_process_without_client(self):
-        """Processing without client returns fallback message."""
-        processor = ImageProcessor(model="test-model", provider="none")
-
-        result = await processor.process(b"data", "test")
-
-        assert "not available" in result.lower()
+        assert result == "A test image description"
+        image_processor.llm_service.generate_vision.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_load_image_bytes(self, image_processor):
@@ -203,30 +181,13 @@ class TestImageProcessor:
         # Should return bytes (either resized or original)
         assert isinstance(resized, bytes)
 
-    @pytest.mark.skip(reason="Requires sentence-transformers package")
-    @pytest.mark.asyncio
-    async def test_get_embedding_fallback(self, image_processor):
-        """Can get embedding using fallback method."""
-        # Mock the process method
-        image_processor.process = AsyncMock(return_value="A test image")
+    def test_different_models(self, mock_llm_service):
+        """Can create with different vision models."""
+        processor1 = ImageProcessor(llm_service=mock_llm_service, model="gpt-4-vision-preview")
+        processor2 = ImageProcessor(llm_service=mock_llm_service, model="claude-3-sonnet-20240229")
 
-        embedding = await image_processor.get_embedding(b"image data")
-
-        assert isinstance(embedding, list)
-        assert len(embedding) > 0
-        assert all(isinstance(x, float) for x in embedding)
-
-    def test_provider_initialization_openai(self):
-        """OpenAI provider initialization."""
-        with patch('ia_modules.multimodal.image_processor.openai'):
-            processor = ImageProcessor(model="gpt-4-vision-preview", provider="openai")
-            assert processor.provider == "openai"
-
-    def test_provider_initialization_anthropic(self):
-        """Anthropic provider initialization."""
-        with patch('ia_modules.multimodal.image_processor.anthropic'):
-            processor = ImageProcessor(model="claude-3-sonnet", provider="anthropic")
-            assert processor.provider == "anthropic"
+        assert processor1.model == "gpt-4-vision-preview"
+        assert processor2.model == "claude-3-sonnet-20240229"
 
 
 class TestModalityFusion:
@@ -431,9 +392,9 @@ class TestMultiModalProcessor:
         )
 
     @pytest.fixture
-    def processor(self, config):
+    def processor(self, mock_llm_service, config):
         """Create processor instance."""
-        return MultiModalProcessor(config=config)
+        return MultiModalProcessor(llm_service=mock_llm_service, config=config)
 
     @pytest.fixture
     def mock_llm_provider(self):
@@ -451,10 +412,10 @@ class TestMultiModalProcessor:
         assert processor.audio_processor is not None
         assert processor.video_processor is not None
 
-    def test_creation_with_fusion(self):
+    def test_creation_with_fusion(self, mock_llm_service):
         """Processor with fusion enabled."""
         config = MultiModalConfig(enable_fusion=True)
-        processor = MultiModalProcessor(config=config)
+        processor = MultiModalProcessor(llm_service=mock_llm_service, config=config)
 
         assert processor.fusion is not None
 
@@ -558,10 +519,10 @@ class TestMultiModalProcessor:
         assert result == "Video analysis"
 
     @pytest.mark.asyncio
-    async def test_process_with_fusion_enabled(self):
+    async def test_process_with_fusion_enabled(self, mock_llm_service):
         """Process with fusion combines results."""
         config = MultiModalConfig(enable_fusion=True)
-        processor = MultiModalProcessor(config=config)
+        processor = MultiModalProcessor(llm_service=mock_llm_service, config=config)
 
         # Mock processors
         processor.image_processor.process = AsyncMock(return_value="Image result")
@@ -623,10 +584,10 @@ class TestEdgeCases:
         assert "Only text" in result
 
     @pytest.mark.asyncio
-    async def test_processor_empty_inputs(self):
+    async def test_processor_empty_inputs(self, mock_llm_service):
         """Processor handles empty input list."""
         config = MultiModalConfig()
-        processor = MultiModalProcessor(config=config)
+        processor = MultiModalProcessor(llm_service=mock_llm_service, config=config)
 
         result = await processor.process([])
 
@@ -634,9 +595,9 @@ class TestEdgeCases:
         assert len(result.modality_results) == 0
 
     @pytest.mark.asyncio
-    async def test_image_processor_invalid_image_data(self):
+    async def test_image_processor_invalid_image_data(self, mock_llm_service):
         """Image processor handles invalid image data."""
-        processor = ImageProcessor(model="test-model", provider="none")
+        processor = ImageProcessor(llm_service=mock_llm_service, model="test-model")
 
         # Should not crash on invalid data
         result = await processor.process(b"invalid", "test")
@@ -657,10 +618,10 @@ class TestEdgeCases:
         assert weights[ModalityType.TEXT] == 1.0
 
     @pytest.mark.asyncio
-    async def test_processor_metadata_preservation(self):
+    async def test_processor_metadata_preservation(self, mock_llm_service):
         """Processor preserves metadata from inputs."""
         config = MultiModalConfig(enable_fusion=False)
-        processor = MultiModalProcessor(config=config)
+        processor = MultiModalProcessor(llm_service=mock_llm_service, config=config)
 
         processor.image_processor.process = AsyncMock(return_value="Result")
 
@@ -682,10 +643,10 @@ class TestIntegration:
     """Integration tests combining multiple components."""
 
     @pytest.mark.asyncio
-    async def test_end_to_end_multimodal_processing(self):
+    async def test_end_to_end_multimodal_processing(self, mock_llm_service):
         """End-to-end test with mocked components."""
         config = MultiModalConfig(enable_fusion=True)
-        processor = MultiModalProcessor(config=config)
+        processor = MultiModalProcessor(llm_service=mock_llm_service, config=config)
 
         # Mock all processors
         processor.image_processor.process = AsyncMock(return_value="An image of a cat")
