@@ -24,7 +24,7 @@ from datetime import datetime
 import json
 import os
 import time
-from ia_modules.pipeline.llm_provider_service import LLMProviderService, LLMProvider
+from ia_modules.pipeline.llm_provider_service import LLMProviderService
 from .llm_monitoring_service import LLMMonitoringService
 
 
@@ -43,30 +43,27 @@ class PatternService:
             # Register providers based on available API keys
             if os.getenv("OPENAI_API_KEY"):
                 self.llm_service.register_provider(
-                    "openai",
-                    LLMProvider.OPENAI,
-                    api_key=os.getenv("OPENAI_API_KEY"),
+                    name="openai",
                     model=os.getenv("OPENAI_MODEL", "gpt-4-turbo-preview"),
+                    api_key=os.getenv("OPENAI_API_KEY"),
                     is_default=True
                 )
-            
+
             if os.getenv("ANTHROPIC_API_KEY"):
                 self.llm_service.register_provider(
-                    "anthropic",
-                    LLMProvider.ANTHROPIC,
-                    api_key=os.getenv("ANTHROPIC_API_KEY"),
-                    model=os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
+                    name="anthropic",
+                    model=os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
+                    api_key=os.getenv("ANTHROPIC_API_KEY")
                 )
-            
+
             if os.getenv("GEMINI_API_KEY"):
                 self.llm_service.register_provider(
-                    "google",
-                    LLMProvider.GOOGLE,
-                    api_key=os.getenv("GEMINI_API_KEY"),
-                    model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+                    name="google",
+                    model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+                    api_key=os.getenv("GEMINI_API_KEY")
                 )
             
-            if not self.llm_service.providers:
+            if not self.llm_service._providers:
                 self.llm_service = None
                     
         except Exception as e:

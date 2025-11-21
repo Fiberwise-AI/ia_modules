@@ -249,7 +249,7 @@ class MemoryCompressor:
 
     async def _summarize_text(self, text: str) -> str:
         """
-        Summarize text using LLM.
+        Summarize text using LLM or truncation.
 
         Args:
             text: Text to summarize
@@ -257,17 +257,14 @@ class MemoryCompressor:
         Returns:
             Summarized text
 
-        Raises:
-            ValueError: If llm_provider is not configured
-            Exception: If LLM generation fails
-
         Note:
-            Falls back to truncation on LLM errors (legitimate degraded mode).
+            Falls back to truncation if llm_provider not configured or on errors.
+            This is a legitimate degraded mode for compression.
         """
         if not self.llm_provider:
-            raise ValueError(
-                "llm_provider must be configured for text summarization"
-            )
+            # No LLM available, use truncation
+            logger.debug("No LLM provider, using truncation for summarization")
+            return text[:300] + "..."
 
         prompt = f"Summarize the following in 2-3 sentences:\n\n{text}"
 

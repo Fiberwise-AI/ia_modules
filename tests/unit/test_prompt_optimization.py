@@ -107,7 +107,6 @@ class TestGeneticConfig:
             config.validate()
 
 
-@pytest.mark.asyncio
 class TestGeneticOptimizer:
     """Test GeneticOptimizer functionality."""
 
@@ -139,6 +138,7 @@ class TestGeneticOptimizer:
         """Returns correct optimization strategy."""
         assert optimizer.get_strategy() == OptimizationStrategy.GENETIC
 
+    @pytest.mark.asyncio
     async def test_optimize(self, optimizer):
         """Can run genetic optimization."""
         result = await optimizer.optimize("Base prompt")
@@ -148,6 +148,7 @@ class TestGeneticOptimizer:
         assert result.best_score > 0
         assert result.iterations > 0
 
+    @pytest.mark.asyncio
     async def test_default_mutation(self, optimizer):
         """Default mutation changes prompt."""
         original = "The quick brown fox jumps over the lazy dog"
@@ -161,6 +162,7 @@ class TestGeneticOptimizer:
         # Should have some variation
         assert len(mutations) > 1
 
+    @pytest.mark.asyncio
     async def test_default_crossover(self, optimizer):
         """Default crossover creates offspring."""
         parent1 = "This is the first parent prompt"
@@ -173,6 +175,7 @@ class TestGeneticOptimizer:
         # Children should be different from parents (usually)
         assert child1 != parent1 or child2 != parent2
 
+    @pytest.mark.asyncio
     async def test_custom_mutation_function(self, evaluator):
         """Can use custom mutation function."""
         def custom_mutation(prompt):
@@ -188,6 +191,7 @@ class TestGeneticOptimizer:
         mutated = optimizer.mutation_fn("test")
         assert "[mutated]" in mutated
 
+    @pytest.mark.asyncio
     async def test_custom_crossover_function(self, evaluator):
         """Can use custom crossover function."""
         def custom_crossover(p1, p2):
@@ -204,6 +208,7 @@ class TestGeneticOptimizer:
         assert c1 == "A+B"
         assert c2 == "B+A"
 
+    @pytest.mark.asyncio
     async def test_convergence(self, evaluator):
         """Optimizer converges when improvement plateaus."""
         config = GeneticConfig(
@@ -336,7 +341,6 @@ class TestPromptVariant:
         assert "std_dev" in data
 
 
-@pytest.mark.asyncio
 class TestABTester:
     """Test ABTester functionality."""
 
@@ -395,6 +399,7 @@ class TestABTester:
         """Returns correct optimization strategy."""
         assert ab_tester.get_strategy() == OptimizationStrategy.AB_TESTING
 
+    @pytest.mark.asyncio
     async def test_optimize(self, ab_tester):
         """Can run A/B test optimization."""
         result = await ab_tester.optimize("Base prompt")
@@ -404,6 +409,7 @@ class TestABTester:
         assert result.best_score > 0
         assert result.iterations > 0
 
+    @pytest.mark.asyncio
     async def test_all_variants_tested(self, ab_tester):
         """All variants get tested."""
         await ab_tester.optimize("Base")
@@ -412,6 +418,7 @@ class TestABTester:
         for variant in ab_tester.variants:
             assert len(variant.samples) > 0
 
+    @pytest.mark.asyncio
     async def test_epsilon_greedy_strategy(self, evaluator, variants):
         """Epsilon-greedy strategy works."""
         config = ABTestConfig(min_samples=3, max_iterations=10)
@@ -426,6 +433,7 @@ class TestABTester:
 
         assert result is not None
 
+    @pytest.mark.asyncio
     async def test_thompson_sampling_strategy(self, evaluator, variants):
         """Thompson sampling strategy works."""
         config = ABTestConfig(min_samples=3, max_iterations=10)
@@ -503,10 +511,10 @@ class TestEdgeCases:
         assert variant.variance == 0.0
 
 
-@pytest.mark.asyncio
 class TestIntegration:
     """Integration tests for prompt optimization."""
 
+    @pytest.mark.asyncio
     async def test_compare_strategies(self):
         """Compare different optimization strategies."""
         evaluator = MockEvaluator(score=0.7)
@@ -540,6 +548,7 @@ class TestIntegration:
         assert genetic_result.best_score > 0
         assert ab_result.best_score > 0
 
+    @pytest.mark.asyncio
     async def test_optimization_with_variance(self):
         """Test optimization with varying evaluator scores."""
         class VariableEvaluator(PromptEvaluator):

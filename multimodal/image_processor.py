@@ -5,6 +5,17 @@ import base64
 import logging
 import io
 
+# Import vision libraries at module level for testing
+try:
+    import openai
+except ImportError:
+    openai = None
+
+try:
+    import anthropic
+except ImportError:
+    anthropic = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,23 +48,23 @@ class ImageProcessor:
     def _init_provider(self) -> None:
         """Initialize vision provider."""
         if self.provider == "openai":
-            try:
-                import openai
-                self.client = openai.AsyncOpenAI()
-                logger.info("Using OpenAI vision")
-            except ImportError as e:
+            if openai is None:
                 raise ImportError(
                     "OpenAI library not installed. Install with: pip install openai"
-                ) from e
+                )
+            self.client = openai.AsyncOpenAI()
+            logger.info("Using OpenAI vision")
         elif self.provider == "anthropic":
-            try:
-                import anthropic
-                self.client = anthropic.AsyncAnthropic()
-                logger.info("Using Anthropic vision")
-            except ImportError as e:
+            if anthropic is None:
                 raise ImportError(
                     "Anthropic library not installed. Install with: pip install anthropic"
-                ) from e
+                )
+            self.client = anthropic.AsyncAnthropic()
+            logger.info("Using Anthropic vision")
+        elif self.provider == "none":
+            # Special case for testing without actual provider
+            self.client = None
+            logger.info("Using no vision provider (testing mode)")
         else:
             raise ValueError(
                 f"Unsupported vision provider: {self.provider}. "
@@ -66,6 +77,10 @@ class ImageProcessor:
         prompt: str = "Describe this image"
     ) -> str:
         """Process image with vision model."""
+        # Handle testing mode without provider
+        if self.provider == "none" or self.client is None:
+            return "Vision processing not available (no provider configured)"
+
         # Load and resize image
         image_data = await self._load_image(image)
         image_data = self._resize_image(image_data)

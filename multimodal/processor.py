@@ -42,8 +42,8 @@ class MultiModalConfig:
     supported_modalities: List[ModalityType] = field(
         default_factory=lambda: list(ModalityType)
     )
-    image_model: Optional[str] = None  # Required for image processing
-    audio_model: Optional[str] = None  # Required for audio processing
+    image_model: Optional[str] = "gpt-4-vision-preview"  # Default for image processing
+    audio_model: Optional[str] = "whisper-1"  # Default for audio processing
     vision_provider: str = "openai"  # "openai", "anthropic"
     max_image_size: int = 2048
     audio_format: str = "mp3"
@@ -147,25 +147,30 @@ class MultiModalProcessor:
         for input_item in inputs:
             logger.info(f"Processing {input_item.modality.value}")
 
-            if input_item.modality == ModalityType.TEXT:
-                result = await self._process_text(input_item, global_prompt)
-            elif input_item.modality == ModalityType.IMAGE:
-                result = await self.process_image(
-                    input_item.content,
-                    input_item.prompt or global_prompt or "Describe this image"
-                )
-            elif input_item.modality == ModalityType.AUDIO:
-                result = await self.process_audio(input_item.content)
-            elif input_item.modality == ModalityType.VIDEO:
-                result = await self.process_video(
-                    input_item.content,
-                    input_item.prompt or global_prompt
-                )
-            else:
-                logger.warning(f"Unsupported modality: {input_item.modality}")
-                continue
+            try:
+                if input_item.modality == ModalityType.TEXT:
+                    result = await self._process_text(input_item, global_prompt)
+                elif input_item.modality == ModalityType.IMAGE:
+                    result = await self.process_image(
+                        input_item.content,
+                        input_item.prompt or global_prompt or "Describe this image"
+                    )
+                elif input_item.modality == ModalityType.AUDIO:
+                    result = await self.process_audio(input_item.content)
+                elif input_item.modality == ModalityType.VIDEO:
+                    result = await self.process_video(
+                        input_item.content,
+                        input_item.prompt or global_prompt
+                    )
+                else:
+                    logger.warning(f"Unsupported modality: {input_item.modality}")
+                    continue
 
-            modality_results[input_item.modality] = result
+                modality_results[input_item.modality] = result
+            except Exception as e:
+                logger.error(f"Error processing {input_item.modality.value}: {e}")
+                # Continue processing other modalities
+                continue
 
         # Fuse results if enabled
         if self.fusion and len(modality_results) > 1:

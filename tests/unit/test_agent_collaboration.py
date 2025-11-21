@@ -187,7 +187,6 @@ class TestAgentMessage:
         assert "agent2" in repr_str
 
 
-@pytest.mark.asyncio
 class TestMessageBus:
     """Test MessageBus functionality."""
 
@@ -196,12 +195,14 @@ class TestMessageBus:
         """Create message bus instance."""
         return MessageBus()
 
+    @pytest.mark.asyncio
     async def test_creation(self, message_bus):
         """MessageBus can be created."""
         assert len(message_bus._subscribers) == 0
         assert len(message_bus._queues) == 0
         assert len(message_bus._active_agents) == 0
 
+    @pytest.mark.asyncio
     async def test_subscribe(self, message_bus):
         """Can subscribe agent to bus."""
         handler = AsyncMock()
@@ -212,6 +213,7 @@ class TestMessageBus:
         assert "agent1" in message_bus._queues
         assert "agent1" in message_bus._active_agents
 
+    @pytest.mark.asyncio
     async def test_unsubscribe(self, message_bus):
         """Can unsubscribe agent from bus."""
         handler = AsyncMock()
@@ -223,6 +225,7 @@ class TestMessageBus:
         assert "agent1" not in message_bus._queues
         assert "agent1" not in message_bus._active_agents
 
+    @pytest.mark.asyncio
     async def test_send_direct_message(self, message_bus):
         """Can send direct message to agent."""
         handler = AsyncMock()
@@ -241,6 +244,7 @@ class TestMessageBus:
         await asyncio.sleep(0.1)  # Wait for handler
         assert handler.called
 
+    @pytest.mark.asyncio
     async def test_send_to_nonexistent_agent(self, message_bus):
         """Sending to nonexistent agent returns False."""
         msg = AgentMessage(
@@ -254,6 +258,7 @@ class TestMessageBus:
 
         assert delivered is False
 
+    @pytest.mark.asyncio
     async def test_broadcast_message(self, message_bus):
         """Can broadcast message to all agents."""
         handler1 = AsyncMock()
@@ -274,6 +279,7 @@ class TestMessageBus:
         assert handler1.called
         assert handler2.called
 
+    @pytest.mark.asyncio
     async def test_broadcast_excludes_sender(self, message_bus):
         """Broadcast doesn't send to sender."""
         handler1 = AsyncMock()
@@ -294,6 +300,7 @@ class TestMessageBus:
         assert not handler1.called
         assert handler2.called
 
+    @pytest.mark.asyncio
     async def test_broadcast_convenience_method(self, message_bus):
         """Broadcast convenience method works."""
         handler = AsyncMock()
@@ -308,6 +315,7 @@ class TestMessageBus:
         await asyncio.sleep(0.1)
         assert handler.called
 
+    @pytest.mark.asyncio
     async def test_receive_message(self, message_bus):
         """Can receive message from queue."""
         await message_bus.subscribe("agent1", AsyncMock())
@@ -327,6 +335,7 @@ class TestMessageBus:
         assert received.sender == "agent2"
         assert received.content == "Test"
 
+    @pytest.mark.asyncio
     async def test_receive_timeout(self, message_bus):
         """Receive returns None on timeout."""
         await message_bus.subscribe("agent1", AsyncMock())
@@ -335,6 +344,7 @@ class TestMessageBus:
 
         assert received is None
 
+    @pytest.mark.asyncio
     async def test_receive_all_messages(self, message_bus):
         """Can receive all pending messages."""
         await message_bus.subscribe("agent1", AsyncMock())
@@ -352,6 +362,7 @@ class TestMessageBus:
 
         assert len(messages) == 3
 
+    @pytest.mark.asyncio
     async def test_handler_error_sends_error_message(self, message_bus):
         """Handler error sends error message back."""
         # Handler that raises error
@@ -377,6 +388,7 @@ class TestMessageBus:
         assert error_msg is not None
         assert error_msg.message_type == MessageType.ERROR
 
+    @pytest.mark.asyncio
     async def test_get_message_history(self, message_bus):
         """Can get message history."""
         msg = AgentMessage(
@@ -393,6 +405,7 @@ class TestMessageBus:
         assert len(history) > 0
         assert history[0].content == "Test"
 
+    @pytest.mark.asyncio
     async def test_get_message_history_filtered(self, message_bus):
         """Can filter message history by agent."""
         await message_bus.subscribe("agent1", AsyncMock())
@@ -419,6 +432,7 @@ class TestMessageBus:
         # Should include messages from/to agent1
         assert len(history) > 0
 
+    @pytest.mark.asyncio
     async def test_clear_history(self, message_bus):
         """Can clear message history."""
         msg = AgentMessage(
@@ -434,6 +448,7 @@ class TestMessageBus:
 
         assert len(message_bus._message_history) == 0
 
+    @pytest.mark.asyncio
     async def test_get_active_agents(self, message_bus):
         """Can get set of active agents."""
         await message_bus.subscribe("agent1", AsyncMock())
@@ -445,6 +460,7 @@ class TestMessageBus:
         assert "agent1" in active
         assert "agent2" in active
 
+    @pytest.mark.asyncio
     async def test_wait_for_replies(self, message_bus):
         """Can wait for replies to a message."""
         await message_bus.subscribe("agent1", AsyncMock())
@@ -483,6 +499,7 @@ class TestMessageBus:
 
         assert len(replies) == 2
 
+    @pytest.mark.asyncio
     async def test_wait_for_replies_timeout(self, message_bus):
         """Wait for replies times out correctly."""
         with pytest.raises(asyncio.TimeoutError):
@@ -493,7 +510,6 @@ class TestMessageBus:
             )
 
 
-@pytest.mark.asyncio
 class TestEdge:
     """Test Edge dataclass."""
 
@@ -520,7 +536,6 @@ class TestEdge:
         assert edge.metadata == {"weight": 1.0}
 
 
-@pytest.mark.asyncio
 class TestAgentOrchestrator:
     """Test AgentOrchestrator functionality."""
 
@@ -540,12 +555,14 @@ class TestAgentOrchestrator:
         role = AgentRole(name="test", description="Test agent")
         return MockAgent(role, state_manager)
 
+    @pytest.mark.asyncio
     async def test_creation(self, orchestrator, state_manager):
         """AgentOrchestrator can be created."""
         assert orchestrator.state == state_manager
         assert len(orchestrator.agents) == 0
         assert len(orchestrator.graph) == 0
 
+    @pytest.mark.asyncio
     async def test_add_agent(self, orchestrator, mock_agent):
         """Can add agent to orchestrator."""
         orchestrator.add_agent("agent1", mock_agent)
@@ -554,6 +571,7 @@ class TestAgentOrchestrator:
         assert orchestrator.agents["agent1"] == mock_agent
         assert "agent1" in orchestrator.graph
 
+    @pytest.mark.asyncio
     async def test_add_multiple_agents(self, orchestrator, state_manager):
         """Can add multiple agents."""
         role1 = AgentRole(name="agent1", description="First")
@@ -567,6 +585,7 @@ class TestAgentOrchestrator:
 
         assert len(orchestrator.agents) == 2
 
+    @pytest.mark.asyncio
     async def test_add_edge(self, orchestrator):
         """Can add edge between agents."""
         orchestrator.add_edge("agent1", "agent2")
@@ -574,6 +593,7 @@ class TestAgentOrchestrator:
         assert len(orchestrator.graph["agent1"]) == 1
         assert orchestrator.graph["agent1"][0].to == "agent2"
 
+    @pytest.mark.asyncio
     async def test_add_edge_with_condition(self, orchestrator):
         """Can add conditional edge."""
         async def condition(state):
@@ -584,6 +604,7 @@ class TestAgentOrchestrator:
         edge = orchestrator.graph["agent1"][0]
         assert edge.condition == condition
 
+    @pytest.mark.asyncio
     async def test_add_edge_with_metadata(self, orchestrator):
         """Can add edge with metadata."""
         orchestrator.add_edge(
@@ -595,6 +616,7 @@ class TestAgentOrchestrator:
         edge = orchestrator.graph["agent1"][0]
         assert edge.metadata == {"priority": "high"}
 
+    @pytest.mark.asyncio
     async def test_add_hook(self, orchestrator):
         """Can add execution hooks."""
         hook = AsyncMock()
@@ -603,11 +625,13 @@ class TestAgentOrchestrator:
 
         assert hook in orchestrator.on_agent_start
 
+    @pytest.mark.asyncio
     async def test_add_hook_invalid_event(self, orchestrator):
         """Adding invalid hook raises error."""
         with pytest.raises(ValueError):
             orchestrator.add_hook("invalid_event", AsyncMock())
 
+    @pytest.mark.asyncio
     async def test_run_single_agent(self, orchestrator, mock_agent):
         """Can run single agent."""
         orchestrator.add_agent("agent1", mock_agent)
@@ -617,6 +641,7 @@ class TestAgentOrchestrator:
         assert result is not None
         assert mock_agent.execute_count == 1
 
+    @pytest.mark.asyncio
     async def test_run_sequential_agents(self, orchestrator, state_manager):
         """Can run agents in sequence."""
         role1 = AgentRole(name="agent1", description="First")
@@ -634,6 +659,7 @@ class TestAgentOrchestrator:
         assert agent1.execute_count == 1
         assert agent2.execute_count == 1
 
+    @pytest.mark.asyncio
     async def test_run_conditional_branch(self, orchestrator, state_manager):
         """Can run conditional branch."""
         role1 = AgentRole(name="agent1", description="First")
@@ -667,6 +693,7 @@ class TestAgentOrchestrator:
         assert agent2.execute_count == 1
         assert agent3.execute_count == 0  # Not executed
 
+    @pytest.mark.asyncio
     async def test_hooks_called(self, orchestrator, mock_agent):
         """Execution hooks are called."""
         start_hook = AsyncMock()
@@ -725,10 +752,10 @@ class TestEdgeCases:
             await orchestrator.run("nonexistent", {})
 
 
-@pytest.mark.asyncio
 class TestIntegration:
     """Integration tests for agent collaboration."""
 
+    @pytest.mark.asyncio
     async def test_multi_agent_voting_pattern(self):
         """Test voting/consensus pattern."""
         bus = MessageBus()
@@ -771,6 +798,7 @@ class TestIntegration:
 
         assert len(votes) == 3
 
+    @pytest.mark.asyncio
     async def test_critic_feedback_workflow(self):
         """Test critic feedback collaboration."""
         state = StateManager(thread_id="feedback")

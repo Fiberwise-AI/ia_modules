@@ -117,7 +117,6 @@ class TestToolCapability:
         assert "search" in capability.tags
 
 
-@pytest.mark.asyncio
 class TestAdvancedToolRegistry:
     """Test AdvancedToolRegistry functionality."""
 
@@ -411,7 +410,6 @@ class TestAdvancedToolRegistry:
         assert catalog["total_tools"] > 0
 
 
-@pytest.mark.asyncio
 class TestChainStep:
     """Test ChainStep dataclass."""
 
@@ -429,7 +427,6 @@ class TestChainStep:
         assert step.on_error == "raise"
 
 
-@pytest.mark.asyncio
 class TestToolChain:
     """Test ToolChain functionality."""
 
@@ -509,7 +506,6 @@ class TestToolChain:
         assert executed_params[0][1]["query"] == "test"
 
 
-@pytest.mark.asyncio
 class TestParallelExecutor:
     """Test ParallelExecutor functionality."""
 

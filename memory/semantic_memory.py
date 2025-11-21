@@ -5,6 +5,12 @@ Semantic Memory - Long-term knowledge storage with vector search.
 from typing import List, Optional, Any, Dict
 import logging
 
+# Import for testing - allows tests to mock it
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    SentenceTransformer = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,14 +23,14 @@ class SemanticMemory:
 
     def __init__(
         self,
-        embedding_model: Optional[str] = None,
+        embedding_model: Optional[str] = "text-embedding-ada-002",
         enable_embeddings: bool = True
     ):
         """
         Initialize semantic memory.
 
         Args:
-            embedding_model: Model to use for embeddings (required if enable_embeddings=True)
+            embedding_model: Model to use for embeddings (default: text-embedding-ada-002)
             enable_embeddings: Whether to generate embeddings
         """
         self.embedding_model = embedding_model
@@ -47,14 +53,16 @@ class SemanticMemory:
             ValueError: If OpenAI is used but no model specified
         """
         # First, try sentence-transformers (local)
-        try:
-            from sentence_transformers import SentenceTransformer
-            model_name = "all-MiniLM-L6-v2"  # Fast, efficient model
-            self.embed_model = SentenceTransformer(model_name)
-            self.embed_fn = self._embed_local
-            logger.info(f"Using local embeddings: {model_name}")
-            return
-        except ImportError:
+        if SentenceTransformer is not None:
+            try:
+                model_name = "all-MiniLM-L6-v2"  # Fast, efficient model
+                self.embed_model = SentenceTransformer(model_name)
+                self.embed_fn = self._embed_local
+                logger.info(f"Using local embeddings: {model_name}")
+                return
+            except Exception as e:
+                logger.debug(f"sentence-transformers initialization failed: {e}, trying OpenAI")
+        else:
             logger.debug("sentence-transformers not available, trying OpenAI")
 
         # Try OpenAI
@@ -96,19 +104,24 @@ class SemanticMemory:
         Args:
             memory: Memory object to store
 
-        Raises:
-            Exception: If embedding generation fails and embeddings are enabled
+        Note:
+            If embedding generation fails, the memory is still stored but without embeddings.
+            This allows the system to degrade gracefully to keyword-based search.
         """
         self.memories[memory.id] = memory
 
         # Generate embedding
         if self.embed_fn:
-            if asyncio.iscoroutinefunction(self.embed_fn):
-                embedding = await self.embed_fn(memory.content)
-            else:
-                embedding = self.embed_fn(memory.content)
-            self.embeddings[memory.id] = embedding
-            memory.embedding = embedding
+            try:
+                if asyncio.iscoroutinefunction(self.embed_fn):
+                    embedding = await self.embed_fn(memory.content)
+                else:
+                    embedding = self.embed_fn(memory.content)
+                self.embeddings[memory.id] = embedding
+                memory.embedding = embedding
+            except Exception as e:
+                # Log error but don't fail - allow fallback to keyword search
+                logger.warning(f"Failed to generate embedding for memory {memory.id}: {e}")
 
     async def retrieve(self, query: str, k: int = 5) -> List[Any]:
         """

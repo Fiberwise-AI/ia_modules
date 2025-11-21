@@ -25,7 +25,7 @@ class TestInputValidation:
     def test_pipeline_step_name_validation(self):
         """Test pipeline step names reject malicious characters"""
         from ia_modules.pipeline.core import Pipeline
-from ia_modules.pipeline.test_utils import create_test_execution_context
+        from ia_modules.pipeline.test_utils import create_test_execution_context
 
         malicious_names = [
             "../../../etc/passwd",  # Path traversal

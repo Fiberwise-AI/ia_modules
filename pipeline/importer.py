@@ -13,6 +13,7 @@ they keep pipelines adjacent to their application package.
 import json
 import logging
 import hashlib
+import re
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
@@ -32,9 +33,21 @@ class PipelineImportService:
         else:
             self.pipelines_dir = Path(pipelines_dir)
 
-    async def import_all_pipelines(self) -> Dict[str, Any]:
-        """Import all pipeline JSON files from the pipelines directory"""
+    async def import_all_pipelines(self, clear_existing: bool = False) -> Dict[str, Any]:
+        """Import all pipeline JSON files from the pipelines directory
+
+        Args:
+            clear_existing: If True, clear all existing imported pipelines before import
+
+        Returns:
+            Dictionary with import statistics
+        """
         logger.info(f"Starting pipeline import from: {self.pipelines_dir}")
+
+        # Clear existing imported pipelines if requested
+        if clear_existing:
+            deleted_count = await self.clear_all_imported_pipelines()
+            logger.info(f"Cleared {deleted_count} existing imported pipelines")
 
         if not self.pipelines_dir.exists():
             logger.warning(f"Pipelines directory does not exist: {self.pipelines_dir}")
@@ -92,8 +105,8 @@ class PipelineImportService:
         if not name:
             raise ValueError("Pipeline must have a 'name' field")
 
-        # Generate slug from parent directory name (the directory containing pipeline.json)
-        slug = file_path.parent.name
+        # Generate slug from pipeline name and file path
+        slug = self._generate_slug(name, str(file_path))
         logger.info(f"IMPORTING: file={file_path} slug={slug}")
 
         # Calculate content hash for change detection
@@ -122,6 +135,47 @@ class PipelineImportService:
         """Calculate hash of pipeline content for change detection"""
         content_str = json.dumps(pipeline_data, sort_keys=True)
         return hashlib.md5(content_str.encode()).hexdigest()
+
+    def _generate_slug(self, name: str, file_path: str) -> str:
+        """Generate a URL-safe slug from pipeline name and file path
+
+        Creates a slug in format: sanitized-name-{hash}
+        where hash is first 8 chars of md5(file_path) to prevent collisions.
+
+        Args:
+            name: Pipeline name
+            file_path: File path (used to prevent collisions)
+
+        Returns:
+            URL-safe slug (lowercase, hyphens, alphanumeric)
+
+        Examples:
+            >>> _generate_slug("Test Pipeline", "path/to/pipeline.json")
+            'test-pipeline-a1b2c3d4'
+            >>> _generate_slug("My_Test@Pipeline!", "other/path.json")
+            'my-test-pipeline-e5f6g7h8'
+        """
+        # Convert to lowercase
+        slug = name.lower()
+
+        # Replace spaces and underscores with hyphens
+        slug = slug.replace(' ', '-').replace('_', '-')
+
+        # Remove special characters (keep only alphanumeric and hyphens)
+        slug = re.sub(r'[^a-z0-9-]', '', slug)
+
+        # Remove double hyphens
+        slug = re.sub(r'-+', '-', slug)
+
+        # Trim leading/trailing hyphens
+        slug = slug.strip('-')
+
+        # Add hash of file path to prevent collisions
+        # Different paths with same name will get different slugs
+        path_hash = hashlib.md5(file_path.encode()).hexdigest()[:8]
+        slug = f"{slug}-{path_hash}"
+
+        return slug
 
     async def _get_existing_pipeline(self, slug: str) -> Optional[Dict[str, Any]]:
         """Check if pipeline already exists by slug"""
@@ -246,6 +300,27 @@ class PipelineImportService:
         if result and hasattr(result, 'success') and result.success and result.data:
             return [dict(row) for row in result.data]
         return []
+
+    async def clear_all_imported_pipelines(self) -> int:
+        """Clear all imported (non-system) pipelines
+
+        Returns:
+            Number of pipelines deleted
+        """
+        query = """
+        DELETE FROM pipelines
+        WHERE is_system = 0
+        """
+
+        result = await self.db_provider.execute_async(query)
+
+        # Handle both list and object responses
+        if isinstance(result, list):
+            return 0  # List response doesn't provide rows_affected
+        elif hasattr(result, 'success') and result.success:
+            return getattr(result, 'rows_affected', 0)
+        else:
+            return 0
 
     async def validate_pipeline_config(self, pipeline_data: Dict[str, Any]) -> bool:
         """Validate pipeline configuration structure"""

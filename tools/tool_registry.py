@@ -56,7 +56,16 @@ class CacheEntry:
         if self.ttl <= 0:
             return True  # No expiration
 
-        elapsed = (datetime.now(timezone.utc) - self.timestamp).total_seconds()
+        # Handle both timezone-aware and naive datetimes
+        # Use the same "now" type as timestamp for consistent comparison
+        if self.timestamp.tzinfo is None:
+            # Timestamp is naive (local time), use naive now
+            now = datetime.now()
+        else:
+            # Timestamp is aware, use aware now
+            now = datetime.now(timezone.utc)
+
+        elapsed = (now - self.timestamp).total_seconds()
         return elapsed < self.ttl
 
 
@@ -162,6 +171,18 @@ class AdvancedToolRegistry:
         if capabilities:
             for capability in capabilities:
                 self.capability_index[capability].add((tool.name, version))
+
+        # Initialize execution statistics for this tool if not exists
+        if tool.name not in self.execution_stats:
+            self.execution_stats[tool.name] = {
+                "total_calls": 0,
+                "successful_calls": 0,
+                "failed_calls": 0,
+                "total_duration": 0.0,
+                "avg_execution_time": 0.0,
+                "cache_hits": 0,
+                "cache_misses": 0
+            }
 
         self.logger.info(f"Registered {tool.name} v{version}")
 

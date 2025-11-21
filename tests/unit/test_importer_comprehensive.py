@@ -230,7 +230,7 @@ class TestGetExistingPipeline:
         mock_result = Mock(
             data=[{"id": "123", "content_hash": "abc123"}]
         )
-        mock_db.fetch_one = AsyncMock(return_value=mock_result)
+        mock_db.fetch_one = Mock(return_value=mock_result)  # fetch_one is sync, not async
 
         service = PipelineImportService(mock_db)
         result = await service._get_existing_pipeline("test-pipeline")
@@ -243,7 +243,7 @@ class TestGetExistingPipeline:
     async def test_get_existing_pipeline_not_found(self):
         """Test pipeline not found"""
         mock_db = Mock()
-        mock_db.fetch_one = AsyncMock(return_value=None)
+        mock_db.fetch_one = Mock(return_value=None)  # fetch_one is sync, not async
 
         service = PipelineImportService(mock_db)
         result = await service._get_existing_pipeline("nonexistent")
@@ -255,7 +255,7 @@ class TestGetExistingPipeline:
         """Test pipeline with empty data"""
         mock_db = Mock()
         mock_result = Mock(data=None)
-        mock_db.fetch_one = AsyncMock(return_value=mock_result)
+        mock_db.fetch_one = Mock(return_value=mock_result)  # fetch_one is sync, not async
 
         service = PipelineImportService(mock_db)
         result = await service._get_existing_pipeline("test")
@@ -285,7 +285,7 @@ class TestGetPipelineBySlug:
                 "updated_at": "2024-01-01"
             }]
         )
-        mock_db.fetch_one = AsyncMock(return_value=mock_result)
+        mock_db.fetch_one = Mock(return_value=mock_result)  # fetch_one is sync, not async
 
         service = PipelineImportService(mock_db)
         result = await service.get_pipeline_by_slug("test-pipeline")
@@ -300,7 +300,7 @@ class TestGetPipelineBySlug:
     async def test_get_pipeline_by_slug_not_found(self):
         """Test pipeline not found by slug"""
         mock_db = Mock()
-        mock_db.fetch_one = AsyncMock(return_value=None)
+        mock_db.fetch_one = Mock(return_value=None)  # fetch_one is sync, not async
 
         service = PipelineImportService(mock_db)
         result = await service.get_pipeline_by_slug("nonexistent")

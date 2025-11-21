@@ -9,11 +9,11 @@ import json
 import pytest
 
 from ia_modules.pipeline.runner import (
-from ia_modules.pipeline.test_utils import create_test_execution_context
     load_step_class,
     create_step_from_json,
     create_pipeline_from_json
 )
+from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.pipeline.core import Step, Pipeline
 from ia_modules.pipeline.services import ServiceRegistry
 

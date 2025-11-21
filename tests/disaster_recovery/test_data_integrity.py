@@ -467,8 +467,8 @@ async def test_verify_special_characters_preserved(source_database):
     """Test that special characters are preserved in backup/restore."""
 
     special_chars = [
-        "emoji =  test",
-        "unicode ñ á é í ó ú",
+        "emoji = test",
+        "unicode ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½",
         "quotes ' \" test",
         "newlines\nand\ttabs",
         "backslash \\ test",

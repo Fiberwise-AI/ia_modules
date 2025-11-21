@@ -17,7 +17,7 @@ from typing import List
 
 from ia_modules.patterns import ConstitutionalAIStep, ConstitutionalConfig, Principle
 from ia_modules.memory import MemoryManager, MemoryConfig
-from ia_modules.agents import AgentOrchestrator, CollaborationConfig
+from ia_modules.agents import AgentOrchestrator, StateManager
 
 
 @pytest.fixture
@@ -207,8 +207,8 @@ async def test_memory_leak_detection():
 @pytest.mark.asyncio
 async def test_parallel_agent_execution():
     """Test parallel agent execution performance."""
-    config = CollaborationConfig(pattern="hierarchical", max_rounds=2)
-    orchestrator = AgentOrchestrator(config)
+    state_manager = StateManager(thread_id="test-performance")
+    orchestrator = AgentOrchestrator(state_manager)
 
     # Mock agents
     from ia_modules.agents import ResearchAgent, AnalysisAgent
