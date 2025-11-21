@@ -464,13 +464,13 @@ class TestOpenTelemetryCollectorHealth:
 
     def test_otel_collector_health(self, otel_collector_url):
         """Test OpenTelemetry Collector health endpoint"""
-        health_url = otel_collector_url.replace('4318', '13133')
+        health_url = otel_collector_url.replace('4318', '23133')
         response = requests.get(health_url, timeout=5)
         assert response.status_code == 200
 
     def test_otel_collector_metrics(self, otel_collector_url):
         """Test OpenTelemetry Collector metrics endpoint"""
-        metrics_url = otel_collector_url.replace('4318', '8888') + '/metrics'
+        metrics_url = otel_collector_url.replace('4318', '18888') + '/metrics'
         response = requests.get(metrics_url, timeout=5)
         assert response.status_code == 200
         assert 'otelcol' in response.text
@@ -489,7 +489,7 @@ class TestOpenTelemetryCollectorHealth:
 
     def test_otel_collector_prometheus_metrics(self, otel_collector_url):
         """Test OTel Collector exposes Prometheus metrics"""
-        metrics_url = otel_collector_url.replace('4318', '8888') + '/metrics'
+        metrics_url = otel_collector_url.replace('4318', '18888') + '/metrics'
         response = requests.get(metrics_url, timeout=5)
         assert response.status_code == 200
 
@@ -499,7 +499,7 @@ class TestOpenTelemetryCollectorHealth:
 
     def test_otel_collector_receiver_metrics(self, otel_collector_url):
         """Test OTel Collector receiver metrics"""
-        metrics_url = otel_collector_url.replace('4318', '8888') + '/metrics'
+        metrics_url = otel_collector_url.replace('4318', '18888') + '/metrics'
         response = requests.get(metrics_url, timeout=5)
         assert response.status_code == 200
 
@@ -641,7 +641,7 @@ class TestEndToEndMetrics:
         components = {
             'Prometheus': f"{prometheus_url}/-/healthy",
             'Grafana': f"{grafana_url}/api/health",
-            'OTel Collector': otel_collector_url.replace('4318', '13133'),
+            'OTel Collector': otel_collector_url.replace('4318', '23133'),
             'Jaeger': jaeger_url,
         }
 
