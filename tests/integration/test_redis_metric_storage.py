@@ -35,7 +35,7 @@ if REDIS_AVAILABLE:
     except:
         REDIS_SERVER_AVAILABLE = False
 
-from reliability.redis_metric_storage import RedisMetricStorage
+from ia_modules.reliability.redis_metric_storage import RedisMetricStorage
 
 
 pytestmark = [

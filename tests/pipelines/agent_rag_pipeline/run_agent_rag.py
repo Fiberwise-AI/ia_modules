@@ -22,9 +22,9 @@ from ia_modules.guardrails.pipeline_steps import InputGuardrailStep, OutputGuard
 
 # Import agents
 sys.path.insert(0, str(current_dir))
-from agents.query_analyzer_agent import QueryAnalyzerAgent
-from agents.retriever_agent import RetrieverAgent
-from agents.answer_generator_agent import AnswerGeneratorAgent
+from ia_modules.agents.query_analyzer_agent import QueryAnalyzerAgent
+from ia_modules.agents.retriever_agent import RetrieverAgent
+from ia_modules.agents.answer_generator_agent import AnswerGeneratorAgent
 
 
 class AgentRAGRunner:

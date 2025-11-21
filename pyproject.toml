@@ -31,7 +31,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "fastapi>=0.104.0",
     "bcrypt>=5.0.0",
-    "nexusql>=0.1.1",
+    "nexusql>=0.1.3",
     "litellm>=1.50.0",
     "beautifulsoup4>=4.12.0",
 ]
