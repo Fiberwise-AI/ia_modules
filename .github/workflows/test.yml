@@ -242,31 +242,8 @@ jobs:
       run: |
         pytest tests/integration/ -v --tb=short -m postgres
 
-    - name: Run MySQL integration tests
-      env:
-        TEST_MYSQL_URL: mysql://testuser:testpass@localhost:3306/ia_modules_test
-      run: |
-        pytest tests/integration/test_database_mysql.py -v --tb=short
-      continue-on-error: true
-
-    # MSSQL tests: Commented out - uncomment when MSSQL service is enabled
-    # - name: Run MSSQL integration tests
-    #   env:
-    #     TEST_MSSQL_URL: mssql://sa:TestPass123!@localhost:1433/master
-    #   run: |
-    #     pytest tests/integration/test_database_mssql.py -v --tb=short
-    #   continue-on-error: true
-
-    - name: Run comprehensive database tests (PostgreSQL & MySQL only)
-      env:
-        TEST_POSTGRESQL_URL: postgresql://postgres:postgres@localhost:5432/test_metrics
-        TEST_MYSQL_URL: mysql://testuser:testpass@localhost:3306/ia_modules_test
-        # TEST_MSSQL_URL: mssql://sa:TestPass123!@localhost:1433/master  # Commented out
-      run: |
-        # Run tests, excluding MSSQL-specific tests
-        pytest tests/integration/test_database_complete.py -v --tb=short -k "not mssql"
-        pytest tests/integration/test_database_comprehensive.py -v --tb=short -k "not mssql"
-      continue-on-error: true
+    # Note: Nexusql-specific database tests removed (they belong in nexusql repo)
+    # ia_modules tests focus on pipeline integration with databases, not testing database drivers
 
     - name: Run Redis integration tests
       env:
