@@ -6,13 +6,13 @@ __all__ = ['InMemoryBackend']
 
 # Optional backends
 try:
-    from .sqlite_backend import SQLiteBackend
+    from .sqlite_backend import SQLiteBackend  # noqa: F401
     __all__.append('SQLiteBackend')
 except ImportError:
     pass
 
 try:
-    from .vector_backend import VectorBackend
+    from .vector_backend import VectorBackend  # noqa: F401
     __all__.append('VectorBackend')
 except ImportError:
     pass

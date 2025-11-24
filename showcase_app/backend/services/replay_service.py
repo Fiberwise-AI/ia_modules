@@ -1,7 +1,7 @@
 """Event replay service for debugging and analysis"""
 
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)

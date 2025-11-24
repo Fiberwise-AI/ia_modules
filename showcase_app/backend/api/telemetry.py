@@ -1,7 +1,6 @@
 """Telemetry API endpoints for spans and metrics"""
 
 from fastapi import APIRouter, HTTPException, Depends, Request
-from typing import List
 from models import SpanResponse, SpanTimelineResponse, TelemetryMetrics
 
 router = APIRouter()

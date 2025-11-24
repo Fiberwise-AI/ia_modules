@@ -8,10 +8,8 @@ including image, audio, and video processing, and cross-modal fusion.
 from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Form
 from typing import List, Dict, Optional, Any
 from pydantic import BaseModel, Field
-from datetime import datetime
 from enum import Enum
 import logging
-import base64
 
 logger = logging.getLogger(__name__)
 

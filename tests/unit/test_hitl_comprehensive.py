@@ -3,7 +3,6 @@ Comprehensive pytest tests for HITL (Human-in-the-Loop) functionality
 """
 
 import pytest
-import asyncio
 import json
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any

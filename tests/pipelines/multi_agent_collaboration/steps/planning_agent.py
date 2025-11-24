@@ -32,7 +32,7 @@ class PlanningAgentStep(PipelineStep):
             adjustments = "\n".join(f"- {adj}" for adj in strategy_adjustments)
             constraints_text += f"\n\nStrategy adjustments from metacognition:\n{adjustments}"
 
-        plan_prompt = f"""You are a Planning Agent. Break down this task into 3-5 actionable steps.
+        f"""You are a Planning Agent. Break down this task into 3-5 actionable steps.
 
 Task: {task}
 

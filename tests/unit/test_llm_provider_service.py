@@ -141,7 +141,7 @@ class TestLLMProviderService:
             with patch('ia_modules.pipeline.llm_provider_service.completion_cost', return_value=0.001):
                 mock_acompletion.return_value = mock_response
 
-                response = await service.generate_completion(
+                await service.generate_completion(
                     messages=[{"role": "user", "content": "Test"}],
                     provider_name="openai",
                     temperature=0.8,

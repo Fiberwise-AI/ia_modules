@@ -3,19 +3,15 @@ Unit tests for routing system
 """
 
 import asyncio
-from unittest.mock import Mock
 
 import pytest
 
 from ia_modules.pipeline.routing import (
     RoutingContext, 
     ExpressionConditionEvaluator, 
-    AgentConditionEvaluator,
     FunctionConditionEvaluator,
     AdvancedRouter
 )
-from ia_modules.pipeline.condition_functions import business_hours_condition
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 def test_routing_context():

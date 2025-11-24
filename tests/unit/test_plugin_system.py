@@ -5,19 +5,14 @@ Tests plugin base classes, registry, loader, and decorators.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
-import asyncio
-from pathlib import Path
 from ia_modules.plugins.base import (
-    Plugin,
     PluginMetadata,
     PluginType,
     ConditionPlugin,
     StepPlugin
 )
-from ia_modules.plugins.registry import PluginRegistry, get_registry, reset_registry
-from ia_modules.plugins.loader import PluginLoader
-from ia_modules.plugins.decorators import plugin, condition_plugin, step_plugin
+from ia_modules.plugins.registry import PluginRegistry, reset_registry
+from ia_modules.plugins.decorators import condition_plugin, step_plugin
 
 
 class TestPluginMetadata:

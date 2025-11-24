@@ -1,7 +1,5 @@
 """Tests for anomaly detection."""
 
-import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from datetime import datetime, timedelta, timezone
 
 from ia_modules.reliability.anomaly_detection import (
@@ -256,7 +254,7 @@ def test_anomaly_callback():
     detector.record_value("svr", 0.98)
     detector.record_value("svr", 0.90)
 
-    anomalies = detector.detect_anomalies()
+    detector.detect_anomalies()
 
     # Callback should have been invoked
     assert len(detected_anomalies) > 0

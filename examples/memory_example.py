@@ -54,7 +54,7 @@ async def basic_memory_example():
 
     # Get stats
     stats = await memory.get_stats()
-    print(f"\nMemory Stats:")
+    print("\nMemory Stats:")
     print(f"  Total: {stats['total_memories']}")
     print(f"  By type: {stats['by_type']}")
 

@@ -4,10 +4,10 @@ Loop execution with iteration tracking and safety limits.
 Provides runtime support for executing cyclic pipelines with safeguards
 against infinite loops and excessive resource consumption.
 """
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from .loop_detector import LoopDetector
 
 logger = logging.getLogger(__name__)

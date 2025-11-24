@@ -6,7 +6,7 @@ Tracks agent performance metrics (SVR, CR, PC, HIR, MA) for production monitorin
 
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import logging
 
 

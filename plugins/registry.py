@@ -6,7 +6,7 @@ Central registry for managing plugins.
 
 from typing import Dict, List, Optional, Type
 import logging
-from .base import Plugin, PluginType, PluginMetadata
+from .base import Plugin, PluginType
 
 
 class PluginRegistry:

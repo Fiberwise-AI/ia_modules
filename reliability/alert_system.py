@@ -6,7 +6,7 @@ when issues are detected. Supports multiple alert channels and
 severity-based routing.
 """
 
-from typing import Dict, Any, Optional, List, Callable, Set
+from typing import Dict, Any, Optional, List, Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum

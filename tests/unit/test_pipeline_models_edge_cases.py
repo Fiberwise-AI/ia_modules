@@ -1,7 +1,6 @@
 """
 Edge case tests for pipeline/pipeline_models.py to reach 100% coverage
 """
-import pytest
 from datetime import datetime, timezone
 from ia_modules.pipeline.pipeline_models import (
     PipelineConfiguration,
@@ -9,7 +8,6 @@ from ia_modules.pipeline.pipeline_models import (
     PipelineExecution,
     PipelineExecutionSummary,
 )
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestPipelineConfigurationEdgeCases:

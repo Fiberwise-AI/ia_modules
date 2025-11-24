@@ -8,6 +8,23 @@ NOTE: These tests are currently disabled due to showcase_app dependencies.
 """
 
 import pytest
+from pathlib import Path
+import uuid
+import json
+import os
+
+try:
+    from core.database import DatabaseManager
+    from core.service_registry import ServiceRegistry
+    from pipeline.execution_tracker import ExecutionTracker
+    from pipeline.service import PipelineService
+    from pipeline.import_export import PipelineImportService
+except ImportError:
+    DatabaseManager = None
+    ServiceRegistry = None
+    ExecutionTracker = None
+    PipelineService = None
+    PipelineImportService = None
 
 # Skip all tests in this module until showcase_app dependencies are resolved
 pytestmark = pytest.mark.skip(reason="Tests need showcase_app which has dependency issues")
@@ -104,7 +121,7 @@ class TestPipelineExecutionE2E:
 
         # Insert pipeline into database
         from ia_modules.pipeline.importer import PipelineImportService
-        importer = PipelineImportService(db_manager, Path(__file__).parent.parent / "pipelines")
+        PipelineImportService(db_manager, Path(__file__).parent.parent / "pipelines")
 
         # Insert directly
         pipeline_id = str(uuid.uuid4())
@@ -112,7 +129,7 @@ class TestPipelineExecutionE2E:
         INSERT INTO pipelines (id, name, slug, version, description, config_json, is_active)
         VALUES (:id, :name, :slug, :version, :description, :config_json, :is_active)
         """
-        result = db_manager.execute(query, {
+        db_manager.execute(query, {
             'id': pipeline_id,
             'name': test_pipeline['name'],
             'slug': 'test_e2e_pipeline',

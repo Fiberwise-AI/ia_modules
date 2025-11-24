@@ -168,7 +168,7 @@ def main():
                 f.write("```python\n")
                 f.write(f"def {test_name}():\n")
                 f.write(f"    # TODO: Implement test for: {description}\n")
-                f.write(f"    pass\n")
+                f.write("    pass\n")
                 f.write("```\n\n")
         else:
             f.write("No additional tests recommended at this time.\n\n")

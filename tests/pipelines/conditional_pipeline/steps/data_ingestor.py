@@ -3,7 +3,6 @@ Data Ingestor Step Implementation
 """
 
 from typing import Dict, Any
-import json
 
 from ia_modules.pipeline.core import Step
 

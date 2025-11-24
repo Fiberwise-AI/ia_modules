@@ -5,8 +5,7 @@ Wraps ia_modules decision trail functionality for the showcase app.
 Provides access to decision logging, execution paths, and evidence tracking.
 """
 
-from typing import Dict, Any, List, Optional
-from datetime import datetime
+from typing import Dict, Any, List
 
 
 class DecisionTrailService:

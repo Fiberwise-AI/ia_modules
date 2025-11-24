@@ -4,7 +4,6 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
-from ia_modules.pipeline.runner import create_pipeline_from_json
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
 from ia_modules.pipeline.services import ServiceRegistry
 from ia_modules.pipeline.execution_tracker import ExecutionTracker, ExecutionStatus
@@ -13,7 +12,6 @@ from ia_modules.telemetry.tracing import SimpleTracer
 from ia_modules.checkpoint import SQLCheckpointer
 from ia_modules.reliability.metrics import ReliabilityMetrics
 from ia_modules.reliability.sql_metric_storage import SQLMetricStorage
-from nexusql import DatabaseManager
 from typing import Dict, Any, Optional, List
 import asyncio
 import uuid
@@ -83,7 +81,7 @@ class PipelineService:
         # Load example pipeline JSON files from tests
         self.pipeline_dir = Path(__file__).parent.parent.parent.parent / "tests" / "pipelines"
 
-        logger.info(f"Pipeline service initialized")
+        logger.info("Pipeline service initialized")
 
     async def _save_execution_to_db(self, execution: Dict[str, Any]):
         """Save execution to PostgreSQL with error handling"""
@@ -158,7 +156,7 @@ class PipelineService:
             start = datetime.fromisoformat(execution["started_at"].replace('Z', '+00:00'))
             end = datetime.fromisoformat(execution["completed_at"].replace('Z', '+00:00'))
             return int((end - start).total_seconds() * 1000)
-        except:
+        except Exception:
             return None
 
     async def _count_total_steps(self, execution_id: str) -> int:
@@ -494,7 +492,7 @@ class PipelineService:
     ):
         """Execute pipeline using create_pipeline_from_json from ia_modules library"""
         execution = self.executions[job_id]
-        start_time = datetime.now(timezone.utc)
+        datetime.now(timezone.utc)
 
         # Get WebSocket manager for real-time updates
         from api.websocket import get_ws_manager

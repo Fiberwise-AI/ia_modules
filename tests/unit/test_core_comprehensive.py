@@ -5,8 +5,7 @@ Tests TemplateParameterResolver, InputResolver, Step, and Pipeline classes
 """
 
 import pytest
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-import asyncio
+from unittest.mock import Mock, AsyncMock
 
 from ia_modules.pipeline.core import (
     TemplateParameterResolver,
@@ -327,7 +326,7 @@ class TestPipelineInit:
         flow = {"start_at": "step1", "paths": []}
         services = ServiceRegistry()
 
-        pipeline = Pipeline("test", steps, flow, services)
+        Pipeline("test", steps, flow, services)
 
         assert steps[0].services == services
         assert steps[1].services == services

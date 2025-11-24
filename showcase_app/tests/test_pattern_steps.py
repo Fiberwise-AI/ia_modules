@@ -8,7 +8,7 @@ and LLM provider service.
 import pytest
 import asyncio
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 import sys
 
 # Add parent directory to path

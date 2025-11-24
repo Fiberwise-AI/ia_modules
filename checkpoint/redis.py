@@ -2,15 +2,13 @@
 Redis-based checkpoint storage for high-performance ephemeral checkpoints
 """
 
-import uuid
 import json
 from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from .core import (
     BaseCheckpointer,
     Checkpoint,
-    CheckpointSaveError,
     CheckpointLoadError,
     CheckpointDeleteError,
     CheckpointStatus
@@ -223,7 +221,7 @@ class RedisCheckpointer(BaseCheckpointer):
                     'threads': threads
                 }
 
-        except Exception as e:
+        except Exception:
             return {}
 
     async def close(self) -> None:

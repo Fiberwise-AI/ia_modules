@@ -5,7 +5,7 @@ Tests for pipeline.hitl module - Human-in-the-Loop components
 import pytest
 import asyncio
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 from ia_modules.pipeline.hitl import (
     HITLException,
     InteractionTimeoutException,
@@ -23,7 +23,6 @@ from ia_modules.pipeline.hitl import (
     create_approval_step,
     create_conditional_step
 )
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class MockDBManager:

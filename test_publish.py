@@ -105,7 +105,7 @@ def publish_to_testpypi(token=None):
     ]
     
     # Don't print the token in the command output
-    print(f"Running: python -m twine upload --repository-url https://test.pypi.org/legacy/ -u __token__ -p [REDACTED] dist/*")
+    print("Running: python -m twine upload --repository-url https://test.pypi.org/legacy/ -u __token__ -p [REDACTED] dist/*")
     result = subprocess.run(cmd, check=False)
     
     if result.returncode == 0:

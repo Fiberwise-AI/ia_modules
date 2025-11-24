@@ -5,7 +5,6 @@ Tests SQLMetricStorage with SQLite backend.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from datetime import datetime, timedelta, timezone
 from ia_modules.reliability.sql_metric_storage import SQLMetricStorage
 from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
@@ -37,7 +36,7 @@ class TestSQLMetricStorage:
 
     async def test_initialize(self, db_manager):
         """Can initialize storage."""
-        storage = SQLMetricStorage(db_manager)
+        SQLMetricStorage(db_manager)
 
         
 

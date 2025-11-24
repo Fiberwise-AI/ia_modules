@@ -4,10 +4,7 @@ Unit tests for evidence collector.
 Tests EvidenceCollector for automatic evidence extraction.
 """
 
-import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.reliability.evidence_collector import EvidenceCollector
-from ia_modules.reliability.decision_trail import Evidence
 
 
 class TestEvidenceCollector:

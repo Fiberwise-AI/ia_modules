@@ -17,19 +17,12 @@ class CriticAgentStep(PipelineStep):
     async def run(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Critique the execution and provide feedback"""
 
-        execution_result = data.get("execution_result", {})
-        output = data.get("output", "")
+        data.get("execution_result", {})
+        data.get("output", "")
         iteration = data.get("iteration", 1)
-        task = data.get("task", "")
+        data.get("task", "")
 
         # Critique criteria
-        criteria = {
-            "completeness": "All aspects of the task addressed",
-            "quality": "Output meets high standards",
-            "clarity": "Results are clear and well-structured",
-            "efficiency": "Task completed in reasonable time",
-            "accuracy": "Information is correct and reliable"
-        }
 
         # Simulate critique (in real implementation, use LLM)
         critique = {

@@ -4,7 +4,6 @@ Simple Agent Step Implementation with LLM Integration
 
 from typing import Dict, Any
 from datetime import datetime
-import json
 
 from ia_modules.pipeline.core import Step
 

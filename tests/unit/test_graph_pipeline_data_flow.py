@@ -7,12 +7,9 @@ through pipeline execution using real pipeline components.
 
 import pytest
 from ia_modules.pipeline.graph_pipeline_runner import (
-    GraphPipelineRunner,
-    PipelineConfig
+    GraphPipelineRunner
 )
 from ia_modules.pipeline.services import ServiceRegistry
-from typing import Dict, Any
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 @pytest.mark.asyncio

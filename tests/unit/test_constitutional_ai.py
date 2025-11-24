@@ -5,10 +5,7 @@ Tests critique, revision, and principle evaluation functionality.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
-import asyncio
-from unittest.mock import Mock, AsyncMock, patch
-from datetime import datetime
+from unittest.mock import Mock, AsyncMock
 
 from ia_modules.patterns.constitutional_ai import (
     Principle,

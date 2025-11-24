@@ -34,7 +34,7 @@ async def test_tool_validation():
         {"tool_name": "search", "query": "Python tutorials"},
         context={"tool_name": "search"}
     )
-    print(f"\nTest 1 - Allowed tool (search):")
+    print("\nTest 1 - Allowed tool (search):")
     print(f"  Action: {result1.action.value}")
     print(f"  Tool: {result1.metadata.get('tool_name')}")
 
@@ -43,7 +43,7 @@ async def test_tool_validation():
         {"tool_name": "delete_database"},
         context={"tool_name": "delete_database"}
     )
-    print(f"\nTest 2 - Blocked tool:")
+    print("\nTest 2 - Blocked tool:")
     print(f"  Action: {result2.action.value}")
     print(f"  Triggered: {result2.triggered}")
     print(f"  Reason: {result2.reason}")
@@ -53,7 +53,7 @@ async def test_tool_validation():
         {"tool_name": "send_email", "to": "user@example.com"},
         context={"tool_name": "send_email"}
     )
-    print(f"\nTest 3 - Requires confirmation:")
+    print("\nTest 3 - Requires confirmation:")
     print(f"  Action: {result3.action.value}")
     print(f"  Triggered: {result3.triggered}")
     print(f"  Reason: {result3.reason}")
@@ -63,7 +63,7 @@ async def test_tool_validation():
         {"tool_name": "unknown_tool"},
         context={"tool_name": "unknown_tool"}
     )
-    print(f"\nTest 4 - Not in allowed list:")
+    print("\nTest 4 - Not in allowed list:")
     print(f"  Action: {result4.action.value}")
     print(f"  Triggered: {result4.triggered}")
 
@@ -96,7 +96,7 @@ result = calculate_circle_area(5)
 print(result)
 """
     result1 = await rail.execute(safe_code)
-    print(f"\nTest 1 - Safe code:")
+    print("\nTest 1 - Safe code:")
     print(f"  Action: {result1.action.value}")
     print(f"  Imports: {result1.metadata.get('imports', [])}")
 
@@ -106,7 +106,7 @@ user_input = input("Enter expression: ")
 result = eval(user_input)
 """
     result2 = await rail.execute(dangerous_code1)
-    print(f"\nTest 2 - Dangerous code (eval):")
+    print("\nTest 2 - Dangerous code (eval):")
     print(f"  Action: {result2.action.value}")
     print(f"  Triggered: {result2.triggered}")
     print(f"  Reason: {result2.reason}")
@@ -117,7 +117,7 @@ import os
 os.system('rm -rf /')
 """
     result3 = await rail.execute(dangerous_code2)
-    print(f"\nTest 3 - Dangerous code (system call):")
+    print("\nTest 3 - Dangerous code (system call):")
     print(f"  Action: {result3.action.value}")
     print(f"  Triggered: {result3.triggered}")
     print(f"  Total matches: {result3.metadata.get('total_matches', 0)}")
@@ -130,7 +130,7 @@ import requests
 subprocess.run(['ls', '-la'])
 """
     result4 = await rail.execute(unsafe_import_code)
-    print(f"\nTest 4 - Unsafe imports:")
+    print("\nTest 4 - Unsafe imports:")
     print(f"  Action: {result4.action.value}")
     print(f"  Triggered: {result4.triggered}")
     print(f"  Reason: {result4.reason}")
@@ -168,7 +168,7 @@ async def test_parameter_validation():
         "body": "Test message"
     }
     result1 = await rail.execute(params1, context={"tool_name": "send_email"})
-    print(f"\nTest 1 - Valid parameters:")
+    print("\nTest 1 - Valid parameters:")
     print(f"  Action: {result1.action.value}")
     print(f"  Validated params: {result1.metadata.get('validated_params', [])}")
 
@@ -178,7 +178,7 @@ async def test_parameter_validation():
         # Missing 'to'
     }
     result2 = await rail.execute(params2, context={"tool_name": "send_email"})
-    print(f"\nTest 2 - Missing required parameter:")
+    print("\nTest 2 - Missing required parameter:")
     print(f"  Action: {result2.action.value}")
     print(f"  Triggered: {result2.triggered}")
     print(f"  Errors: {result2.metadata.get('errors', [])}")
@@ -189,7 +189,7 @@ async def test_parameter_validation():
         "subject": "Test"
     }
     result3 = await rail.execute(params3, context={"tool_name": "send_email"})
-    print(f"\nTest 3 - Invalid email format:")
+    print("\nTest 3 - Invalid email format:")
     print(f"  Action: {result3.action.value}")
     print(f"  Triggered: {result3.triggered}")
     print(f"  Errors: {result3.metadata.get('errors', [])}")
@@ -200,7 +200,7 @@ async def test_parameter_validation():
         "to_account": "123456"
     }
     result4 = await rail.execute(params4, context={"tool_name": "transfer_money"})
-    print(f"\nTest 4 - Number out of range:")
+    print("\nTest 4 - Number out of range:")
     print(f"  Action: {result4.action.value}")
     print(f"  Triggered: {result4.triggered}")
     print(f"  Errors: {result4.metadata.get('errors', [])}")
@@ -229,7 +229,7 @@ for i in range(10):
     print(i)
 """
     result1 = await rail.execute(safe_code)
-    print(f"\nTest 1 - Safe code:")
+    print("\nTest 1 - Safe code:")
     print(f"  Action: {result1.action.value}")
 
     # Test 2: Potential infinite loop
@@ -238,7 +238,7 @@ while True:
     print("Running...")
 """
     result2 = await rail.execute(infinite_loop)
-    print(f"\nTest 2 - Potential infinite loop:")
+    print("\nTest 2 - Potential infinite loop:")
     print(f"  Action: {result2.action.value}")
     print(f"  Triggered: {result2.triggered}")
     print(f"  Reason: {result2.reason}")
@@ -249,7 +249,7 @@ for i in range(10000):
     process(i)
 """
     result3 = await rail.execute(large_range)
-    print(f"\nTest 3 - Too many iterations:")
+    print("\nTest 3 - Too many iterations:")
     print(f"  Action: {result3.action.value}")
     print(f"  Triggered: {result3.triggered}")
     print(f"  Warnings: {result3.metadata.get('warnings', [])}")
@@ -259,7 +259,7 @@ for i in range(10000):
         "some_code",
         context={"execution_time": 10.5}
     )
-    print(f"\nTest 4 - Execution time exceeded:")
+    print("\nTest 4 - Execution time exceeded:")
     print(f"  Action: {result4.action.value}")
     print(f"  Triggered: {result4.triggered}")
     print(f"  Reason: {result4.reason}")

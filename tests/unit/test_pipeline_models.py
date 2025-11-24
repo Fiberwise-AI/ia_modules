@@ -4,7 +4,6 @@ Tests for pipeline.pipeline_models module
 
 import pytest
 from datetime import datetime
-import json
 from pydantic import ValidationError
 
 from ia_modules.pipeline.pipeline_models import (
@@ -22,7 +21,6 @@ from ia_modules.pipeline.pipeline_models import (
     row_to_execution,
     row_to_execution_summary
 )
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestPipelineConfiguration:
@@ -521,7 +519,7 @@ class TestRowConversionFunctions:
 
     def test_row_to_execution_tuple_short(self):
         """Test row_to_execution with short tuple input"""
-        now = datetime.now()
+        datetime.now()
         row = ("exec-uuid", "config-uuid", "exec-123", "running", "Test Pipeline")
 
         execution = row_to_execution(row)

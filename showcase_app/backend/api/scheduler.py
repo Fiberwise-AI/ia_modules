@@ -1,7 +1,7 @@
 """Scheduler and job management API endpoints"""
 
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 from pydantic import BaseModel
 
 router = APIRouter()

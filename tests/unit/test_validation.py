@@ -4,8 +4,7 @@ Unit tests for structured output validation.
 Tests StructuredOutputValidator.
 """
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
-from pydantic import BaseModel, ValidationError, Field
+from pydantic import BaseModel, ValidationError
 from typing import List, Optional
 from ia_modules.validation.core import StructuredOutputValidator
 

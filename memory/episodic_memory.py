@@ -171,7 +171,6 @@ class EpisodicMemory:
             return []
 
         start_memory = self.memories[start_id]
-        start_time = start_memory.timestamp
 
         # Find position in temporal index
         start_idx = None

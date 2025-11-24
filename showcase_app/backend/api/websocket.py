@@ -1,6 +1,6 @@
 """WebSocket endpoints for real-time updates"""
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import Dict, Set
 import asyncio
 import json
@@ -191,7 +191,7 @@ async def websocket_metrics_endpoint(websocket: WebSocket):
         while True:
             try:
                 # Wait for message with timeout
-                data = await asyncio.wait_for(
+                await asyncio.wait_for(
                     websocket.receive_text(),
                     timeout=30.0
                 )
@@ -233,7 +233,7 @@ async def websocket_execution_endpoint(websocket: WebSocket, job_id: str):
         # Keep connection alive
         while True:
             try:
-                data = await asyncio.wait_for(
+                await asyncio.wait_for(
                     websocket.receive_text(),
                     timeout=30.0
                 )
@@ -297,7 +297,7 @@ async def websocket_pipeline_endpoint(websocket: WebSocket, pipeline_id: str):
         # Keep connection alive
         while True:
             try:
-                data = await asyncio.wait_for(
+                await asyncio.wait_for(
                     websocket.receive_text(),
                     timeout=30.0
                 )

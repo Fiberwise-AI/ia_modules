@@ -2,7 +2,6 @@
 Integration tests for pipeline importer with real file operations
 """
 
-import asyncio
 import json
 import tempfile
 from pathlib import Path
@@ -11,7 +10,6 @@ from unittest.mock import Mock
 import pytest
 
 from ia_modules.pipeline.importer import PipelineImportService
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 @pytest.mark.asyncio

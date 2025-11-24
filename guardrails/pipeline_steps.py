@@ -3,7 +3,7 @@ Pipeline Step wrappers for guardrails.
 
 Allows guardrails to be used as steps in ia_modules pipelines.
 """
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from ia_modules.pipeline.core import Step
 from .engine import GuardrailsEngine
 from .models import GuardrailConfig, RailType, RailAction
@@ -109,7 +109,7 @@ class GuardrailStep(Step):
         # Update content if modified
         if result["action"] == RailAction.MODIFY:
             data[self.content_field] = result["content"]
-            self.logger.info(f"Content modified by guardrails")
+            self.logger.info("Content modified by guardrails")
 
         # Log warnings
         if result.get("triggered_count", 0) > 0:

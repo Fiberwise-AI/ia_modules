@@ -6,7 +6,7 @@ Condition plugin for weather-based routing.
 
 from typing import Dict, Any
 from ..base import ConditionPlugin, PluginMetadata, PluginType
-from ..decorators import condition_plugin
+from ..decorators import condition_plugin, function_plugin
 
 
 @condition_plugin(
@@ -77,10 +77,6 @@ class WeatherCondition(ConditionPlugin):
         else:
             self.logger.warning(f"Unknown weather condition type: {condition_type}")
             return False
-
-
-# Example of function-based plugin
-from ..decorators import function_plugin
 
 
 @function_plugin(

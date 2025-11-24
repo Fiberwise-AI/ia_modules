@@ -6,9 +6,8 @@ rate limiting, cost tracking, and usage statistics.
 """
 
 import pytest
-import asyncio
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from backend.services.pattern_service import PatternService
 from ia_modules.pipeline.llm_provider_service import LLMResponse, LLMProvider
 
@@ -97,7 +96,7 @@ class TestPatternServiceMonitoring:
         service = pattern_service_with_mock
         
         # Run reflection pattern
-        result = await service.reflection_example(
+        await service.reflection_example(
             initial_output="This is a test output that needs improvement.",
             criteria={
                 "clarity": "Text should be clear and easy to understand",
@@ -214,7 +213,6 @@ class TestAPIEndpoints:
         """Status endpoint shows unconfigured when no API keys"""
         # Import here to avoid module-level import issues
         import sys
-        import os
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
         
         from backend.api.patterns import get_llm_status
@@ -252,7 +250,6 @@ class TestAPIEndpoints:
         """Status endpoint shows configured when API keys present"""
         # Import here to avoid module-level import issues
         import sys
-        import os
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
         
         from backend.api.patterns import get_llm_status
@@ -278,7 +275,6 @@ class TestAPIEndpoints:
         """Stats endpoint returns usage statistics"""
         # Import here to avoid module-level import issues
         import sys
-        import os
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
         
         from backend.api.patterns import get_llm_stats, monitoring_service

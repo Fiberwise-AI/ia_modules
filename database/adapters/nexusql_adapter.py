@@ -3,7 +3,6 @@ NexusQL adapter - wraps nexusql.DatabaseManager to implement DatabaseInterface
 """
 
 from typing import Optional, Dict, List, Any
-from pathlib import Path
 import logging
 
 try:
@@ -13,7 +12,7 @@ except ImportError:
     NEXUSQL_AVAILABLE = False
     NexuSQLManager = None
 
-from ..interfaces import DatabaseInterface, QueryResult, create_query_result, create_error_result
+from ..interfaces import DatabaseInterface, QueryResult
 
 logger = logging.getLogger(__name__)
 

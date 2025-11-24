@@ -15,9 +15,9 @@ ia_modules_dir = showcase_dir.parent
 sys.path.insert(0, str(ia_modules_dir))
 sys.path.insert(0, str(showcase_dir))
 
-from ia_modules.pipeline.runner import create_pipeline_from_json
-from ia_modules.pipeline.core import ExecutionContext
-from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.pipeline.runner import create_pipeline_from_json  # noqa: E402
+from ia_modules.pipeline.core import ExecutionContext  # noqa: E402
+from ia_modules.pipeline.services import ServiceRegistry  # noqa: E402
 
 
 async def test_parallel_pipeline_output():

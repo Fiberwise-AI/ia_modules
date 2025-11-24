@@ -5,12 +5,11 @@ Tests all methods and edge cases in PipelineImportService
 """
 
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import Mock, AsyncMock
 from pathlib import Path
 import json
 
 from ia_modules.pipeline.importer import PipelineImportService
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestPipelineImportServiceInit:
@@ -331,7 +330,7 @@ class TestImportAllPipelines:
         mock_db.execute_async = AsyncMock(return_value=mock_result)
 
         service = PipelineImportService(mock_db, "/nonexistent")
-        result = await service.import_all_pipelines(clear_existing=True)
+        await service.import_all_pipelines(clear_existing=True)
 
         # Should have called clear
         mock_db.execute_async.assert_called_once()

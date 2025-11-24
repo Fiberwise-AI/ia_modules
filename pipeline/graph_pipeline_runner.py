@@ -5,25 +5,24 @@ A comprehensive runner for executing graph-based pipelines with conditional flow
 parallel execution, and advanced routing capabilities.
 """
 
-import asyncio
-import json
 import sys
-import os
-import uuid
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Union
-from datetime import datetime
-from pydantic import BaseModel, Field, field_validator, ConfigDict  # Changed from validator to field_validator
 
-# Add parent directories to path for imports
 current_dir = Path(__file__).parent
-sys.path.insert(0, str(current_dir.parent.parent))
-sys.path.insert(0, str(current_dir))
+sys.path.insert(0, str(current_dir.parent.parent))  # noqa: E402
+sys.path.insert(0, str(current_dir))  # noqa: E402
 
-from ia_modules.pipeline.core import Pipeline, Step, ExecutionContext
-from ia_modules.pipeline.runner import create_pipeline_from_json
-from ia_modules.pipeline.services import ServiceRegistry
-from ia_modules.pipeline.in_memory_tracker import InMemoryExecutionTracker
+import asyncio  # noqa: E402
+import json  # noqa: E402
+import uuid  # noqa: E402
+from typing import Dict, Any, Optional, List, Union  # noqa: E402
+from datetime import datetime  # noqa: E402
+from pydantic import BaseModel, Field, field_validator, ConfigDict  # noqa: E402
+
+from ia_modules.pipeline.core import Pipeline, Step, ExecutionContext  # noqa: E402
+from ia_modules.pipeline.runner import create_pipeline_from_json  # noqa: E402
+from ia_modules.pipeline.services import ServiceRegistry  # noqa: E402
+from ia_modules.pipeline.in_memory_tracker import InMemoryExecutionTracker  # noqa: E402
 
 
 class AgentStepWrapper(Step):
@@ -245,7 +244,7 @@ class GraphPipelineRunner:
                 # Write central logs to database
                 await self._write_central_logs_to_database()
 
-                self._log_to_central_service("INFO", f"Pipeline paused for human input", data={
+                self._log_to_central_service("INFO", "Pipeline paused for human input", data={
                     "execution_stats": self.execution_stats,
                     "interaction_id": result.get('interaction_id'),
                     "waiting_step": result.get('waiting_step')
@@ -260,7 +259,7 @@ class GraphPipelineRunner:
             await self._write_central_logs_to_database()
 
             # Log successful execution end
-            self._log_to_central_service("SUCCESS", f"Pipeline execution completed successfully", data={"execution_stats": self.execution_stats})
+            self._log_to_central_service("SUCCESS", "Pipeline execution completed successfully", data={"execution_stats": self.execution_stats})
 
             return result
 
@@ -436,7 +435,6 @@ class GraphPipelineRunner:
         """Execute pipeline with real agent implementations"""
 
         # Create custom pipeline runner that uses real agents
-        from ia_modules.pipeline.core import Pipeline, Step
 
         # Convert config to format suitable for direct agent execution
         steps = []

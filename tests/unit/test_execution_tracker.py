@@ -3,17 +3,13 @@ Tests for pipeline.execution_tracker module - Pipeline execution tracking and mo
 """
 
 import pytest
-import asyncio
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock
 from ia_modules.pipeline.execution_tracker import (
     ExecutionTracker,
     ExecutionStatus,
-    StepStatus,
-    ExecutionRecord,
-    StepExecutionRecord
+    StepStatus
 )
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class MockDatabaseManager:

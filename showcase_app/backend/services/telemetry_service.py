@@ -1,7 +1,7 @@
 """Telemetry service for retrieving execution spans and metrics"""
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)

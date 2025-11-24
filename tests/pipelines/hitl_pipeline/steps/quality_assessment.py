@@ -17,7 +17,7 @@ class QualityAssessmentStep(Step):
         issues_detected = data.get("issues_detected", [])
         
         confidence_threshold = self.config.get("confidence_threshold", 0.85)
-        escalation_enabled = self.config.get("escalation_enabled", True)
+        self.config.get("escalation_enabled", True)
         
         # Determine if human review is required
         requires_human_review = False

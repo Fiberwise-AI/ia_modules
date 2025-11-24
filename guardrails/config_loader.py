@@ -3,7 +3,7 @@ Configuration loader for guardrails from YAML files.
 
 Allows declarative configuration of guardrails pipelines.
 """
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from pathlib import Path
 import json
 from .models import GuardrailConfig, GuardrailsConfig, RailType

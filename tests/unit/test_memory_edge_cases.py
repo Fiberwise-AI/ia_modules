@@ -3,7 +3,6 @@ Edge case tests for memory/core.py to improve coverage
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from datetime import datetime, timezone
 from ia_modules.memory.core import Message, MessageRole
 
@@ -123,9 +122,9 @@ class TestMessageEdgeCases:
             'thread_id': "thread-006"
         }
 
-        before = datetime.now()
+        datetime.now()
         message = Message.from_dict(data)
-        after = datetime.now()
+        datetime.now()
 
         # timestamp might be timezone-aware or naive depending on implementation
         # Just check it's a datetime object

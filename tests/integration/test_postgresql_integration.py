@@ -22,7 +22,6 @@ These tests will be SKIPPED if TEST_POSTGRESQL_URL is not set.
 
 import os
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from datetime import datetime, timezone
 from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
@@ -365,7 +364,7 @@ class TestPostgreSQLTransactions:
 
         # Try to insert duplicate (should raise exception)
         try:
-            result = db.execute(
+            db.execute(
                 f"INSERT INTO test_rollback_{test_id} (unique_value) VALUES (:value)",
                 {"value": "unique"}
             )

@@ -5,14 +5,16 @@ These functions demonstrate how to implement custom business logic
 for pipeline routing decisions.
 """
 
-from typing import Dict, Any, Optional
-from datetime import datetime, timedelta
+from typing import Dict, Any
+from datetime import datetime
 import re
 
+from .routing import RoutingContext
 
-def business_hours_condition(context: 'RoutingContext', parameters: Dict[str, Any]) -> bool:
+
+def business_hours_condition(context: RoutingContext, parameters: Dict[str, Any]) -> bool:
     """Check if current time is within business hours"""
-    timezone = parameters.get('timezone', 'UTC')
+    parameters.get('timezone', 'UTC')
     start_hour = parameters.get('start_hour', 9)
     end_hour = parameters.get('end_hour', 17)
     weekdays_only = parameters.get('weekdays_only', True)
@@ -27,7 +29,7 @@ def business_hours_condition(context: 'RoutingContext', parameters: Dict[str, An
     return start_hour <= now.hour < end_hour
 
 
-def data_quality_condition(context: 'RoutingContext', parameters: Dict[str, Any]) -> bool:
+def data_quality_condition(context: RoutingContext, parameters: Dict[str, Any]) -> bool:
     """Evaluate data quality metrics for routing decisions"""
     required_fields = parameters.get('required_fields', [])
     min_completeness = parameters.get('min_completeness', 0.8)
@@ -58,7 +60,7 @@ def data_quality_condition(context: 'RoutingContext', parameters: Dict[str, Any]
     return completeness >= min_completeness and error_rate <= max_error_rate
 
 
-def threshold_condition(context: 'RoutingContext', parameters: Dict[str, Any]) -> bool:
+def threshold_condition(context: RoutingContext, parameters: Dict[str, Any]) -> bool:
     """Generic threshold-based condition"""
     field_path = parameters.get('field_path', '')
     operator = parameters.get('operator', '>=')
@@ -83,10 +85,10 @@ def threshold_condition(context: 'RoutingContext', parameters: Dict[str, Any]) -
     return operators.get(operator, operators['>='])(value, threshold)
 
 
-def error_rate_condition(context: 'RoutingContext', parameters: Dict[str, Any]) -> bool:
+def error_rate_condition(context: RoutingContext, parameters: Dict[str, Any]) -> bool:
     """Check if error rate is below acceptable threshold"""
     max_error_rate = parameters.get('max_error_rate', 0.05)
-    window_minutes = parameters.get('window_minutes', 60)
+    parameters.get('window_minutes', 60)
 
     # This would typically check error logs or metrics
     # For demonstration, we'll check step results for errors
@@ -105,7 +107,7 @@ def error_rate_condition(context: 'RoutingContext', parameters: Dict[str, Any]) 
     return current_error_rate <= max_error_rate
 
 
-def regex_match_condition(context: 'RoutingContext', parameters: Dict[str, Any]) -> bool:
+def regex_match_condition(context: RoutingContext, parameters: Dict[str, Any]) -> bool:
     """Check if a field matches a regular expression pattern"""
     field_path = parameters.get('field_path', '')
     pattern = parameters.get('pattern', '')
@@ -122,7 +124,7 @@ def regex_match_condition(context: 'RoutingContext', parameters: Dict[str, Any])
         return False
 
 
-def cost_threshold_condition(context: 'RoutingContext', parameters: Dict[str, Any]) -> bool:
+def cost_threshold_condition(context: RoutingContext, parameters: Dict[str, Any]) -> bool:
     """Route based on cost considerations"""
     max_cost = parameters.get('max_cost', 100.0)
     cost_field = parameters.get('cost_field', 'estimated_cost')
@@ -135,7 +137,7 @@ def cost_threshold_condition(context: 'RoutingContext', parameters: Dict[str, An
     return float(cost) <= max_cost
 
 
-def approval_required_condition(context: 'RoutingContext', parameters: Dict[str, Any]) -> bool:
+def approval_required_condition(context: RoutingContext, parameters: Dict[str, Any]) -> bool:
     """Determine if human approval is required"""
     risk_threshold = parameters.get('risk_threshold', 0.7)
     auto_approve_limit = parameters.get('auto_approve_limit', 1000.0)
@@ -153,7 +155,7 @@ def approval_required_condition(context: 'RoutingContext', parameters: Dict[str,
     return False  # Can proceed without approval
 
 
-def retry_condition(context: 'RoutingContext', parameters: Dict[str, Any]) -> bool:
+def retry_condition(context: RoutingContext, parameters: Dict[str, Any]) -> bool:
     """Determine if a step should be retried"""
     max_retries = parameters.get('max_retries', 3)
     retry_on_errors = parameters.get('retry_on_errors', ['timeout', 'network_error'])
@@ -178,7 +180,7 @@ def retry_condition(context: 'RoutingContext', parameters: Dict[str, Any]) -> bo
     return False
 
 
-def load_balancing_condition(context: 'RoutingContext', parameters: Dict[str, Any]) -> bool:
+def load_balancing_condition(context: RoutingContext, parameters: Dict[str, Any]) -> bool:
     """Simple load balancing based on hash of execution ID"""
     route_percentage = parameters.get('route_percentage', 50)  # 0-100
 
@@ -188,7 +190,7 @@ def load_balancing_condition(context: 'RoutingContext', parameters: Dict[str, An
     return execution_hash < route_percentage
 
 
-def feature_flag_condition(context: 'RoutingContext', parameters: Dict[str, Any]) -> bool:
+def feature_flag_condition(context: RoutingContext, parameters: Dict[str, Any]) -> bool:
     """Route based on feature flags"""
     feature_name = parameters.get('feature_name', '')
     default_value = parameters.get('default_value', False)

@@ -9,7 +9,6 @@ Tests core benchmarking functionality including:
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
 import time
 from ia_modules.benchmarking.framework import (
@@ -239,8 +238,8 @@ class TestBenchmarkSuite:
         config = BenchmarkConfig(iterations=5, warmup_iterations=0)
         suite = BenchmarkSuite("test_suite", config)
 
-        result1 = await suite.add_benchmark("bench1", func1)
-        result2 = await suite.add_benchmark("bench2", func2)
+        await suite.add_benchmark("bench1", func1)
+        await suite.add_benchmark("bench2", func2)
 
         assert len(suite.results) == 2
         assert suite.results[0].name == "bench1"

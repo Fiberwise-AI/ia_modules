@@ -33,7 +33,7 @@ class APIStatusCondition(ConditionPlugin):
         """Check API status"""
         url = self.config.get('url') or data.get('api_url')
         expected_status = self.config.get('expected_status', 200)
-        timeout = self.config.get('timeout', 30)
+        self.config.get('timeout', 30)
 
         if not url:
             self.logger.error("No URL provided")
@@ -134,8 +134,8 @@ class APICallStep(StepPlugin):
         """Execute API call"""
         url = self.config.get('url')
         method = self.config.get('method', 'GET')
-        headers = self.config.get('headers', {})
-        timeout = self.config.get('timeout', 30)
+        self.config.get('headers', {})
+        self.config.get('timeout', 30)
 
         if not url:
             raise ValueError("URL is required")

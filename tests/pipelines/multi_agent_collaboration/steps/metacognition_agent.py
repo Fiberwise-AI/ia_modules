@@ -1,6 +1,6 @@
 """Metacognition Agent - Analyzes collaboration effectiveness"""
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from ia_modules.pipeline.core import PipelineStep
 
 

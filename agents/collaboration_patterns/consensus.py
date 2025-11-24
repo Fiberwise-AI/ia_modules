@@ -5,13 +5,12 @@ Implements a consensus-building structure where agents work together to
 reach agreement through discussion, voting, and iterative refinement.
 """
 
-import asyncio
-from typing import Dict, Any, List, Optional, Set
+from typing import Dict, Any, List
 from enum import Enum
 import logging
 
 from ..base_agent import BaseCollaborativeAgent
-from ..communication import MessageBus, MessageType, AgentMessage
+from ..communication import MessageBus
 from ..state import StateManager
 
 
@@ -571,7 +570,7 @@ class ConsensusAgent(BaseCollaborativeAgent):
 
     async def _make_proposal(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Make a proposal."""
-        context = data.get("context", {})
+        data.get("context", {})
 
         # Generate proposal based on context
         proposal = {
@@ -588,7 +587,7 @@ class ConsensusAgent(BaseCollaborativeAgent):
 
     async def _discuss_proposal(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Discuss a proposal."""
-        proposal = data.get("proposal", {})
+        data.get("proposal", {})
 
         # Analyze proposal and provide feedback
         feedback = {
@@ -614,7 +613,7 @@ class ConsensusAgent(BaseCollaborativeAgent):
         iteration = data.get("iteration", 1)
 
         # Evaluate proposal (simplified - would use actual analysis)
-        proposal_content = proposal.get("content", "")
+        proposal.get("content", "")
 
         # Decide vote based on analysis
         vote = VoteType.APPROVE.value

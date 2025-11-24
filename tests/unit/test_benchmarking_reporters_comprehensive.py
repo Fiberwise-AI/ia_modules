@@ -2,13 +2,11 @@
 Comprehensive tests for benchmarking/reporters.py
 """
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import json
 import tempfile
 from pathlib import Path
 from io import StringIO
 import sys
-from datetime import datetime, timezone
 
 from ia_modules.benchmarking.framework import BenchmarkResult
 from ia_modules.benchmarking.reporters import (

@@ -5,11 +5,10 @@ Provides database persistence and real-time monitoring of pipeline executions
 with WebSocket updates for live viewing.
 """
 
-import asyncio
 import json
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, asdict
 from enum import Enum
 import logging
@@ -472,7 +471,7 @@ class ExecutionTracker:
         logger.info(f"GET_RECENT: Returning {len(executions)} execution records")
         return executions
 
-    async def get_execution(self, execution_id: str) -> Optional[ExecutionRecord]:
+    async def get_execution_by_id(self, execution_id: str) -> Optional[ExecutionRecord]:
         """Get a single execution by ID"""
         logger.info(f"GET_EXECUTION: Querying execution_id={execution_id}")
         
@@ -514,7 +513,7 @@ class ExecutionTracker:
             metadata=json.loads(row['metadata_json']) if row.get('metadata_json') else None
         )
         
-        logger.info(f"GET_EXECUTION: Returning execution record")
+        logger.info("GET_EXECUTION: Returning execution record")
         return execution
 
     async def get_execution_statistics(self) -> Dict[str, Any]:

@@ -6,8 +6,7 @@ Provides HTTP client functionality with proper error handling and rate limiting.
 
 import asyncio
 import logging
-import json
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode

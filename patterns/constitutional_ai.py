@@ -6,7 +6,7 @@ based on predefined principles/constitution.
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any, Callable
+from typing import List, Dict, Optional, Any
 from enum import Enum
 import asyncio
 import logging

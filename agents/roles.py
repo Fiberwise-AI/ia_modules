@@ -11,6 +11,7 @@ Provides ready-to-use agents for common tasks:
 
 from typing import Dict, Any, List, Optional
 from .core import BaseAgent, AgentRole
+from .state import StateManager
 
 
 class PlannerAgent(BaseAgent):

@@ -35,7 +35,7 @@ if response.status_code == 200:
         if detail_response.status_code == 200:
             detail = detail_response.json()
             
-            print(f"\nExecution Details:")
+            print("\nExecution Details:")
             print(f"  Pipeline: {detail.get('pipeline_name')}")
             print(f"  Status: {detail.get('status')}")
             print(f"  Started: {detail.get('started_at')}")

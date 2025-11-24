@@ -3,12 +3,12 @@ Core Pipeline Implementation
 """
 
 from typing import Dict, Any, List, Optional
-import asyncio
 import logging
 from dataclasses import dataclass, field
 
 from ia_modules.pipeline.services import ServiceRegistry
 from ia_modules.telemetry.integration import get_telemetry
+from ia_modules.pipeline.errors import PipelineError
 
 
 @dataclass

@@ -9,16 +9,14 @@ Tests critical validation logic including:
 
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, patch
 from ia_modules.pipeline.execution_tracker import (
     ExecutionTracker,
     ExecutionRecord,
     ExecutionStatus,
-    StepExecutionRecord,
     StepStatus
 )
 from nexusql import DatabaseManager
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestExecutionTrackerValidation:
@@ -32,7 +30,7 @@ class TestExecutionTrackerValidation:
         """
         # Mock database manager
         db_manager = Mock(spec=DatabaseManager)
-        tracker = ExecutionTracker(db_manager)
+        ExecutionTracker(db_manager)
 
         # Create execution with COMPLETED status but 0 completed_steps
         execution_id = "test-exec-001"
@@ -66,7 +64,7 @@ class TestExecutionTrackerValidation:
         """
         # Mock database manager
         db_manager = Mock(spec=DatabaseManager)
-        tracker = ExecutionTracker(db_manager)
+        ExecutionTracker(db_manager)
 
         # Create execution with inconsistent step counts
         execution = ExecutionRecord(
@@ -96,7 +94,7 @@ class TestExecutionTrackerValidation:
         """
         # Mock database manager
         db_manager = Mock(spec=DatabaseManager)
-        tracker = ExecutionTracker(db_manager)
+        ExecutionTracker(db_manager)
 
         # Create completed execution with no output data
         execution = ExecutionRecord(
@@ -262,7 +260,7 @@ class TestExecutionTrackerValidation:
         """
         # Mock database manager
         db_manager = Mock(spec=DatabaseManager)
-        tracker = ExecutionTracker(db_manager)
+        ExecutionTracker(db_manager)
 
         # Create execution where all steps failed
         execution = ExecutionRecord(

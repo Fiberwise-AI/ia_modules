@@ -7,7 +7,6 @@ for multi-agent collaboration patterns.
 
 import asyncio
 from typing import Dict, Any, Optional, List, Callable
-import logging
 
 from .core import BaseAgent, AgentRole
 from .state import StateManager

@@ -6,7 +6,6 @@ point-in-time recovery, partial restore, and restore validation.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
 import os
 import tempfile
@@ -439,7 +438,7 @@ async def test_restore_with_existing_data(empty_database, backup_dir):
     backup_path = os.path.join(backup_dir, "test_backup.json")
 
     # Restore (may skip duplicates)
-    result = await restore_mgr.restore_full_backup(
+    await restore_mgr.restore_full_backup(
         empty_database,
         backup_path
     )

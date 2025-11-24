@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from enum import Enum
 import statistics
 
+from .models import BenchmarkResult
+
 
 class ComparisonMetric(Enum):
     """Metrics that can be compared"""
@@ -72,8 +74,8 @@ class BenchmarkComparator:
 
     def compare(
         self,
-        baseline: 'BenchmarkResult',
-        current: 'BenchmarkResult',
+        baseline: BenchmarkResult,
+        current: BenchmarkResult,
         metrics: Optional[List[ComparisonMetric]] = None
     ) -> List[ComparisonResult]:
         """
@@ -105,8 +107,8 @@ class BenchmarkComparator:
 
     def _compare_metric(
         self,
-        baseline: 'BenchmarkResult',
-        current: 'BenchmarkResult',
+        baseline: BenchmarkResult,
+        current: BenchmarkResult,
         metric: ComparisonMetric
     ) -> Optional[ComparisonResult]:
         """Compare a specific metric"""
@@ -160,7 +162,7 @@ class BenchmarkComparator:
 
     def _extract_metric(
         self,
-        result: 'BenchmarkResult',
+        result: BenchmarkResult,
         metric: ComparisonMetric
     ) -> Optional[float]:
         """Extract metric value from benchmark result"""
@@ -225,9 +227,9 @@ class HistoricalComparator:
     """
 
     def __init__(self):
-        self.results_history: List['BenchmarkResult'] = []
+        self.results_history: List[BenchmarkResult] = []
 
-    def add_result(self, result: 'BenchmarkResult') -> None:
+    def add_result(self, result: BenchmarkResult) -> None:
         """Add a benchmark result to history"""
         self.results_history.append(result)
 
@@ -300,7 +302,7 @@ class HistoricalComparator:
         self,
         metric: ComparisonMetric,
         std_dev_threshold: float = 2.0
-    ) -> List[Tuple[int, 'BenchmarkResult', float]]:
+    ) -> List[Tuple[int, BenchmarkResult, float]]:
         """
         Detect anomalous benchmark results
 

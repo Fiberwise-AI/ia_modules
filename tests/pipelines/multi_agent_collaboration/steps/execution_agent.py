@@ -22,7 +22,6 @@ class ExecutionAgentStep(PipelineStep):
         iteration = data.get("iteration", 1)
 
         # Simulate tool selection and execution
-        available_tools = ["research", "analyze", "synthesize", "validate"]
 
         execution_result = {
             "agent": "Execution Agent",

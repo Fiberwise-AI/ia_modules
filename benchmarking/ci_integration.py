@@ -4,14 +4,14 @@ CI/CD Integration for Benchmarking
 Provides tools for integrating benchmarks into CI/CD pipelines.
 """
 
-import os
 import sys
 import json
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 
-from .comparison import BenchmarkComparator, ComparisonMetric, PerformanceChange
+from .comparison import BenchmarkComparator, ComparisonMetric, PerformanceChange, ComparisonResult
+from .models import BenchmarkResult
 
 
 @dataclass
@@ -120,7 +120,7 @@ class CIIntegration:
             print(f"Error: Invalid JSON in {filepath}: {e}", file=sys.stderr)
             return None
 
-    def _dict_to_result(self, data: Dict[str, Any]) -> 'BenchmarkResult':
+    def _dict_to_result(self, data: Dict[str, Any]) -> BenchmarkResult:
         """Convert dictionary to BenchmarkResult-like object"""
         from .framework import BenchmarkResult
 
@@ -141,7 +141,7 @@ class CIIntegration:
 
     def _generate_report(
         self,
-        comparisons: List['ComparisonResult'],
+        comparisons: List[ComparisonResult],
         has_regression: bool
     ) -> None:
         """Generate CI report in configured format"""
@@ -156,7 +156,7 @@ class CIIntegration:
 
     def _generate_markdown_report(
         self,
-        comparisons: List['ComparisonResult'],
+        comparisons: List[ComparisonResult],
         has_regression: bool
     ) -> None:
         """Generate markdown report"""
@@ -187,7 +187,7 @@ class CIIntegration:
 
     def _generate_json_report(
         self,
-        comparisons: List['ComparisonResult'],
+        comparisons: List[ComparisonResult],
         has_regression: bool
     ) -> None:
         """Generate JSON report"""
@@ -210,7 +210,7 @@ class CIIntegration:
 
     def _generate_github_actions_report(
         self,
-        comparisons: List['ComparisonResult'],
+        comparisons: List[ComparisonResult],
         has_regression: bool
     ) -> None:
         """Generate GitHub Actions-compatible report"""

@@ -6,7 +6,6 @@ Provides sandboxed code execution with resource limits and security controls.
 
 import asyncio
 import logging
-import sys
 import io
 from typing import Any, Dict, Optional
 from contextlib import redirect_stdout, redirect_stderr

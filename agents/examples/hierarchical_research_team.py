@@ -285,7 +285,7 @@ async def run_research_team_example():
     research_topic = "Quantum Computing Applications in Machine Learning"
 
     print(f"Research Topic: {research_topic}")
-    print(f"Research Depth: comprehensive")
+    print("Research Depth: comprehensive")
     print("\nStarting research...\n")
 
     result = await collaboration.execute(

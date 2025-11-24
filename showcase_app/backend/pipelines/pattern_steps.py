@@ -13,9 +13,8 @@ Patterns:
 """
 
 from ia_modules.pipeline.core import Step
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 import os
-import time
 
 
 class ReflectionStep(Step):
@@ -377,7 +376,7 @@ Then explain your reasoning."""
 
         for step_num, step_text in matches:
             # Extract action (first line)
-            lines = [l.strip() for l in step_text.strip().split('\n') if l.strip()]
+            lines = [line.strip() for line in step_text.strip().split('\n') if line.strip()]
             action = lines[0] if lines else step_text.strip()
 
             # Look for "Expected:" and "Depends:" sections

@@ -8,6 +8,15 @@ The LLMProviderService has been simplified and no longer uses LLMProvider/LLMRes
 
 import pytest
 import os
+from datetime import datetime
+
+# These imports are for the old API that these tests use (tests are currently skipped)
+try:
+    from pipeline.llm_provider_service import LLMProviderService, LLMProvider, LLMResponse
+except ImportError:
+    LLMProviderService = None
+    LLMProvider = None
+    LLMResponse = None
 
 # Skip all tests in this module until they are updated for the new API
 pytestmark = pytest.mark.skip(reason="Tests need to be updated for new LLMProviderService API")

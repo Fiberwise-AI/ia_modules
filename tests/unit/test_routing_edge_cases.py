@@ -3,13 +3,11 @@ Edge case tests for pipeline/routing.py to improve coverage
 """
 
 import pytest
-from datetime import datetime
 from ia_modules.pipeline.routing import (
     RoutingContext,
     AgentConditionEvaluator,
     FunctionConditionEvaluator
 )
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestRoutingContextEdgeCases:

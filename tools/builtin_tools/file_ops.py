@@ -6,10 +6,9 @@ Provides safe file operations with access controls and validation.
 
 import asyncio
 import logging
-import os
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 
 class FileOperationsTool:

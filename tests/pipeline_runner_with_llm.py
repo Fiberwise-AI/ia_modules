@@ -15,7 +15,7 @@ from datetime import datetime
 # Add the parent directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from tests.pipeline_runner import run_pipeline_test, create_pipeline_from_json, run_with_new_schema
+from tests.pipeline_runner import create_pipeline_from_json, run_with_new_schema
 from ia_modules.pipeline.llm_provider_service import LLMProviderService, LLMProvider
 
 

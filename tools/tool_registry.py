@@ -4,13 +4,12 @@ Enhanced tool registry with versioning, capability indexing, and caching.
 Extends the basic tool registry with advanced features for production use.
 """
 
-import asyncio
 import hashlib
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Dict, List, Optional, Set
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Set
 from collections import defaultdict
 
 from .core import ToolDefinition
@@ -345,7 +344,7 @@ class AdvancedToolRegistry:
             stats["total_duration"] += time.time() - start_time
             return result
 
-        except Exception as e:
+        except Exception:
             stats["failed_calls"] += 1
             stats["total_duration"] += time.time() - start_time
             raise

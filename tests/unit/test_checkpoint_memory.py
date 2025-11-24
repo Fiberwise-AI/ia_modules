@@ -3,10 +3,9 @@ Tests for MemoryCheckpointer
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from datetime import datetime, timedelta
 
-from ia_modules.checkpoint import MemoryCheckpointer, CheckpointSaveError, CheckpointLoadError
+from ia_modules.checkpoint import MemoryCheckpointer
 
 
 class TestMemoryCheckpointerBasic:
@@ -15,7 +14,7 @@ class TestMemoryCheckpointerBasic:
     @pytest.mark.asyncio
     async def test_initialize(self):
         """Test checkpointer initialization"""
-        checkpointer = MemoryCheckpointer()
+        MemoryCheckpointer()
 
     @pytest.mark.asyncio
     async def test_save_checkpoint(self):
@@ -76,7 +75,7 @@ class TestMemoryCheckpointerBasic:
             state={'step': 1}
         )
 
-        ckpt2_id = await checkpointer.save_checkpoint(
+        await checkpointer.save_checkpoint(
             thread_id="test-thread",
             pipeline_id="test-pipeline",
             step_id="step2",
@@ -361,7 +360,7 @@ class TestMemoryCheckpointerMetadata:
 
         metadata = {'user': 'john@example.com', 'session': 'abc123'}
 
-        checkpoint_id = await checkpointer.save_checkpoint(
+        await checkpointer.save_checkpoint(
             thread_id="test-thread",
             pipeline_id="test-pipeline",
             step_id="step1",

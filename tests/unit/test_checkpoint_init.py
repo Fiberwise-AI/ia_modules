@@ -4,10 +4,6 @@ Unit tests for checkpoint package __init__.py
 Tests import behavior with and without optional dependencies.
 """
 
-import sys
-import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
-from unittest.mock import patch
 
 
 class TestCheckpointImports:

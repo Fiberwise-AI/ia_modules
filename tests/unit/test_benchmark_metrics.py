@@ -3,7 +3,6 @@ Tests for benchmark metrics (cost tracking, throughput, resource efficiency)
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.benchmarking import BenchmarkResult, BenchmarkRunner, BenchmarkConfig
 
 

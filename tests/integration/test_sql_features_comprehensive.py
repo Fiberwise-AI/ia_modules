@@ -6,9 +6,8 @@ proper translation across SQLite, PostgreSQL, MySQL, and MSSQL.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from nexusql import DatabaseManager
-from nexusql import ConnectionConfig, DatabaseType
+from nexusql import DatabaseType
 
 
 class TestForeignKeyConstraints:

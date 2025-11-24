@@ -38,7 +38,7 @@ async def test_source_validation():
     }
 
     result1 = await rail.execute(doc1, context=context1)
-    print(f"\nTest 1 - Valid source (Wikipedia):")
+    print("\nTest 1 - Valid source (Wikipedia):")
     print(f"  Action: {result1.action.value}")
     print(f"  Source: {result1.metadata.get('source', 'N/A')}")
 
@@ -52,7 +52,7 @@ async def test_source_validation():
     }
 
     result2 = await rail.execute(doc2, context=context2)
-    print(f"\nTest 2 - Invalid source:")
+    print("\nTest 2 - Invalid source:")
     print(f"  Action: {result2.action.value}")
     print(f"  Triggered: {result2.triggered}")
     print(f"  Reason: {result2.reason}")
@@ -66,7 +66,7 @@ async def test_source_validation():
     }
 
     result3 = await rail.execute(doc3, context=context3)
-    print(f"\nTest 3 - Missing metadata:")
+    print("\nTest 3 - Missing metadata:")
     print(f"  Action: {result3.action.value}")
     print(f"  Triggered: {result3.triggered}")
     print(f"  Missing fields: {result3.metadata.get('missing_fields', [])}")
@@ -88,7 +88,7 @@ async def test_relevance_filter():
     # Test 1: Single document with good score
     doc1 = {"content": "Python is a programming language", "score": 0.95}
     result1 = await rail.execute(doc1)
-    print(f"\nTest 1 - High relevance document:")
+    print("\nTest 1 - High relevance document:")
     print(f"  Action: {result1.action.value}")
     print(f"  Document count: {result1.metadata.get('document_count', 0)}")
 
@@ -102,7 +102,7 @@ async def test_relevance_filter():
     ]
 
     result2 = await rail.execute(docs2)
-    print(f"\nTest 2 - Mixed relevance documents:")
+    print("\nTest 2 - Mixed relevance documents:")
     print(f"  Action: {result2.action.value}")
     print(f"  Triggered: {result2.triggered}")
     print(f"  Original count: {result2.metadata.get('original_count', 0)}")
@@ -116,7 +116,7 @@ async def test_relevance_filter():
     ]
 
     result3 = await rail.execute(docs3)
-    print(f"\nTest 3 - All low-relevance:")
+    print("\nTest 3 - All low-relevance:")
     print(f"  Action: {result3.action.value}")
     print(f"  Triggered: {result3.triggered}")
     print(f"  Reason: {result3.reason}")
@@ -138,14 +138,14 @@ async def test_content_filter():
     # Test 1: Safe content
     doc1 = "Python is a high-level programming language known for its simplicity."
     result1 = await rail.execute(doc1)
-    print(f"\nTest 1 - Safe content:")
+    print("\nTest 1 - Safe content:")
     print(f"  Action: {result1.action.value}")
     print(f"  Triggered: {result1.triggered}")
 
     # Test 2: Harmful content
     doc2 = "This article discusses violent crime statistics and attack patterns."
     result2 = await rail.execute(doc2)
-    print(f"\nTest 2 - Harmful content:")
+    print("\nTest 2 - Harmful content:")
     print(f"  Action: {result2.action.value}")
     print(f"  Triggered: {result2.triggered}")
     print(f"  Reason: {result2.reason}")
@@ -157,7 +157,7 @@ async def test_content_filter():
         "source": "research.org"
     }
     result3 = await rail.execute(doc3)
-    print(f"\nTest 3 - Document object with harmful content:")
+    print("\nTest 3 - Document object with harmful content:")
     print(f"  Action: {result3.action.value}")
     print(f"  Triggered: {result3.triggered}")
 
@@ -168,7 +168,7 @@ async def test_content_filter():
     )
 
     result4 = await warn_rail.execute("Content about violent protests.")
-    print(f"\nTest 4 - Warning mode (not blocking):")
+    print("\nTest 4 - Warning mode (not blocking):")
     print(f"  Action: {result4.action.value}")
     print(f"  Triggered: {result4.triggered}")
 

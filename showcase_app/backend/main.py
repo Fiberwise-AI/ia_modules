@@ -2,12 +2,11 @@
 IA Modules Showcase App - FastAPI Backend
 Main application entry point
 """
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-import asyncio
 import logging
 import os
 from dotenv import load_dotenv
@@ -15,43 +14,43 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-from pathlib import Path
+from pathlib import Path  # noqa: E402
 
-from nexusql import DatabaseManager
-from ia_modules.reliability.decision_trail import DecisionTrailBuilder
-from ia_modules.pipeline.importer import PipelineImportService
+from nexusql import DatabaseManager  # noqa: E402
+from ia_modules.reliability.decision_trail import DecisionTrailBuilder  # noqa: E402
+from ia_modules.pipeline.importer import PipelineImportService  # noqa: E402
 
-from api.pipelines import router as pipelines_router
-from api.execution import router as execution_router
-from api.metrics import router as metrics_router
-from api.websocket import router as websocket_router
-from api.checkpoints import router as checkpoints_router
-from api.reliability import router as reliability_router
-from api.scheduler import router as scheduler_router
-from api.benchmarking import router as benchmarking_router
-from api.telemetry import router as telemetry_router
-from api.memory import router as memory_router
-from api.patterns import router as patterns_router
-from api.multi_agent import router as multi_agent_router
-from api.constitutional_ai_api import router as constitutional_ai_router
-from api.advanced_memory_api import router as advanced_memory_router
-from api.multimodal_api import router as multimodal_router
-from api.agents_api import router as agents_router
-from api.prompt_optimization_api import router as prompt_optimization_router
-from api.advanced_tools_api import router as advanced_tools_router
-from api.step_modules import router as step_modules_router
-from api.hitl import router as hitl_router
-from services.container import ServiceContainer
-from services.metrics_service import MetricsService
-from services.pipeline_service import PipelineService
-from services.reliability_service import ReliabilityService
-from services.scheduler_service import SchedulerService
-from services.benchmark_service import BenchmarkService
-from services.telemetry_service import TelemetryService
-from services.checkpoint_service import CheckpointService
-from services.memory_service import MemoryService
-from services.replay_service import ReplayService
-from services.decision_trail_service import DecisionTrailService
+from api.pipelines import router as pipelines_router  # noqa: E402
+from api.execution import router as execution_router  # noqa: E402
+from api.metrics import router as metrics_router  # noqa: E402
+from api.websocket import router as websocket_router  # noqa: E402
+from api.checkpoints import router as checkpoints_router  # noqa: E402
+from api.reliability import router as reliability_router  # noqa: E402
+from api.scheduler import router as scheduler_router  # noqa: E402
+from api.benchmarking import router as benchmarking_router  # noqa: E402
+from api.telemetry import router as telemetry_router  # noqa: E402
+from api.memory import router as memory_router  # noqa: E402
+from api.patterns import router as patterns_router  # noqa: E402
+from api.multi_agent import router as multi_agent_router  # noqa: E402
+from api.constitutional_ai_api import router as constitutional_ai_router  # noqa: E402
+from api.advanced_memory_api import router as advanced_memory_router  # noqa: E402
+from api.multimodal_api import router as multimodal_router  # noqa: E402
+from api.agents_api import router as agents_router  # noqa: E402
+from api.prompt_optimization_api import router as prompt_optimization_router  # noqa: E402
+from api.advanced_tools_api import router as advanced_tools_router  # noqa: E402
+from api.step_modules import router as step_modules_router  # noqa: E402
+from api.hitl import router as hitl_router  # noqa: E402
+from services.container import ServiceContainer  # noqa: E402
+from services.metrics_service import MetricsService  # noqa: E402
+from services.pipeline_service import PipelineService  # noqa: E402
+from services.reliability_service import ReliabilityService  # noqa: E402
+from services.scheduler_service import SchedulerService  # noqa: E402
+from services.benchmark_service import BenchmarkService  # noqa: E402
+from services.telemetry_service import TelemetryService  # noqa: E402
+from services.checkpoint_service import CheckpointService  # noqa: E402
+from services.memory_service import MemoryService  # noqa: E402
+from services.replay_service import ReplayService  # noqa: E402
+from services.decision_trail_service import DecisionTrailService  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -316,7 +315,6 @@ def get_db_manager() -> DatabaseManager:
 
 if __name__ == "__main__":
     import uvicorn
-    import sys
     import os
 
     # On Windows, uvicorn sometimes doesn't handle Ctrl+C well

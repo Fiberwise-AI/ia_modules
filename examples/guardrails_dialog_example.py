@@ -4,7 +4,7 @@ Dialog Rails Example
 Demonstrates conversation flow control with dialog rails.
 """
 import asyncio
-from ia_modules.guardrails import GuardrailConfig, RailType, RailAction
+from ia_modules.guardrails import GuardrailConfig, RailType
 from ia_modules.guardrails.dialog_rails import (
     ContextLengthRail,
     TopicAdherenceRail,
@@ -33,7 +33,7 @@ async def test_context_length():
     }
 
     result1 = await rail.execute("I'm doing great!", context=context1)
-    print(f"\nTest 1 - Short conversation:")
+    print("\nTest 1 - Short conversation:")
     print(f"  Action: {result1.action.value}")
     print(f"  Turn count: {result1.metadata.get('turn_count', 0)}")
     print(f"  Estimated tokens: {result1.metadata.get('estimated_tokens', 0)}")
@@ -46,7 +46,7 @@ async def test_context_length():
     }
 
     result2 = await rail.execute("Another message", context=context2)
-    print(f"\nTest 2 - Long conversation:")
+    print("\nTest 2 - Long conversation:")
     print(f"  Action: {result2.action.value}")
     print(f"  Triggered: {result2.triggered}")
     print(f"  Reason: {result2.reason}")
@@ -71,13 +71,13 @@ async def test_topic_adherence():
 
     # Test 1: On-topic message
     result1 = await rail.execute("How do I write a Python function?")
-    print(f"\nTest 1 - On-topic (Python):")
+    print("\nTest 1 - On-topic (Python):")
     print(f"  Action: {result1.action.value}")
     print(f"  Matched topics: {result1.metadata.get('matched_topics', [])}")
 
     # Test 2: Off-topic message
     result2 = await rail.execute("What's your favorite recipe?")
-    print(f"\nTest 2 - Off-topic (cooking):")
+    print("\nTest 2 - Off-topic (cooking):")
     print(f"  Action: {result2.action.value}")
     print(f"  Triggered: {result2.triggered}")
     print(f"  Reason: {result2.reason}")
@@ -90,7 +90,7 @@ async def test_topic_adherence():
     )
 
     result3 = await strict_rail.execute("Tell me about JavaScript")
-    print(f"\nTest 3 - Off-topic with strict mode:")
+    print("\nTest 3 - Off-topic with strict mode:")
     print(f"  Action: {result3.action.value}")
     print(f"  Triggered: {result3.triggered}")
 
@@ -118,7 +118,7 @@ async def test_conversation_flow():
     }
 
     result1 = await rail.execute("What's the weather?", context=context1)
-    print(f"\nTest 1 - Normal conversation:")
+    print("\nTest 1 - Normal conversation:")
     print(f"  Action: {result1.action.value}")
     print(f"  Similar count: {result1.metadata.get('similar_count', 0)}")
 
@@ -134,7 +134,7 @@ async def test_conversation_flow():
     }
 
     result2 = await rail.execute("What's the weather?", context=context2)
-    print(f"\nTest 2 - Repetitive conversation:")
+    print("\nTest 2 - Repetitive conversation:")
     print(f"  Action: {result2.action.value}")
     print(f"  Triggered: {result2.triggered}")
     print(f"  Reason: {result2.reason}")

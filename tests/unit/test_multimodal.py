@@ -5,11 +5,7 @@ Tests image, audio, video processing and cross-modal fusion.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
-import asyncio
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-import base64
-import io
+from unittest.mock import Mock, AsyncMock
 
 from ia_modules.multimodal.processor import (
     MultiModalProcessor,
@@ -463,7 +459,7 @@ class TestMultiModalProcessor:
             MultiModalInput(content=b"image", modality=ModalityType.IMAGE)
         ]
 
-        result = await processor.process(
+        await processor.process(
             inputs,
             global_prompt="Analyze this carefully"
         )

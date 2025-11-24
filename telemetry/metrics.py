@@ -4,8 +4,7 @@ Metrics Collection Interface
 Provides metric types and collection for monitoring pipelines.
 """
 
-from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, List, Optional, Union
 from dataclasses import dataclass, field
 from enum import Enum
 import time

@@ -5,10 +5,8 @@ Tests agent messaging, orchestration, and collaboration patterns.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
-from unittest.mock import Mock, AsyncMock, patch
-from datetime import datetime
+from unittest.mock import AsyncMock
 
 from ia_modules.agents.communication import (
     AgentMessage,
@@ -523,7 +521,8 @@ class TestEdge:
 
     def test_creation_full(self):
         """Edge can be created with all fields."""
-        condition = lambda state: True
+        def condition(state):
+            return True
 
         edge = Edge(
             to="agent2",
@@ -759,7 +758,7 @@ class TestIntegration:
     async def test_multi_agent_voting_pattern(self):
         """Test voting/consensus pattern."""
         bus = MessageBus()
-        state = StateManager(thread_id="voting")
+        StateManager(thread_id="voting")
 
         # Create voting agents
         agent_handlers = {}

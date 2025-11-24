@@ -6,7 +6,6 @@ agent lifecycle events.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.agents.orchestrator import AgentOrchestrator
 from ia_modules.agents.core import BaseAgent
 from ia_modules.agents.roles import AgentRole

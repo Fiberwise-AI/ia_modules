@@ -9,11 +9,10 @@ import asyncio
 import logging
 import re
 import time
-from typing import Any, Dict, List, Optional, Union
-from urllib.parse import urlparse, urljoin
+from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 import aiohttp
-import requests
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from datetime import datetime, timezone

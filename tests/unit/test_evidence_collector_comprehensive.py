@@ -1,7 +1,5 @@
 """Comprehensive tests for reliability.evidence_collector module"""
 
-import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.reliability.evidence_collector import EvidenceCollector
 from ia_modules.reliability.decision_trail import Evidence
 

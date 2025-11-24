@@ -4,7 +4,6 @@ Calculator tool for mathematical operations.
 Provides safe mathematical expression evaluation and advanced calculations.
 """
 
-import asyncio
 import logging
 import math
 import re

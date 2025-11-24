@@ -6,13 +6,12 @@ differential backups, scheduling, rotation, and backup validation.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
 import os
 import tempfile
 import shutil
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
 
@@ -590,7 +589,7 @@ async def test_differential_backup(test_database, backup_dir):
 @pytest.mark.disaster_recovery
 def test_backup_naming_convention(backup_dir):
     """Test that backups follow naming convention."""
-    backup_mgr = BackupManager(backup_dir)
+    BackupManager(backup_dir)
 
     # Expected naming pattern: {type}_{timestamp}_{identifier}
     now = datetime.now()

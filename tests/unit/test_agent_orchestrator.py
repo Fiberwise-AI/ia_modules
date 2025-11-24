@@ -4,10 +4,9 @@ Unit tests for agent orchestrator.
 Tests AgentOrchestrator with graph execution, feedback loops, and conditional branching.
 """
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.agents.core import AgentRole, BaseAgent
 from ia_modules.agents.state import StateManager
-from ia_modules.agents.orchestrator import AgentOrchestrator, Edge
+from ia_modules.agents.orchestrator import AgentOrchestrator
 
 
 # Test agents
@@ -139,7 +138,7 @@ class TestAgentOrchestrator:
         orchestrator.add_edge("setter", "path_b", condition=take_path_b)
 
         # Run with path A
-        result = await orchestrator.run("setter", {"value": "a"})
+        await orchestrator.run("setter", {"value": "a"})
 
         # path_a should have been executed with input value "a"
         assert await state.get("path_a") == "a"
@@ -167,7 +166,7 @@ class TestAgentOrchestrator:
         await state.set("approved", False)
 
         # Run
-        result = await orchestrator.run("worker", {})
+        await orchestrator.run("worker", {})
 
         # Should iterate 3 times
         iterations = await state.get("worker_iterations")
@@ -200,7 +199,7 @@ class TestAgentOrchestrator:
         orchestrator.add_feedback_loop("worker", "critic", max_iterations=5)
 
         # Run
-        result = await orchestrator.run("worker", {})
+        await orchestrator.run("worker", {})
 
         # Should iterate only 2 times (then approved)
         iterations = await state.get("worker_iterations")
@@ -244,7 +243,7 @@ class TestAgentOrchestrator:
         orchestrator.add_edge("agent2", "agent3")
 
         # Run
-        result = await orchestrator.run("agent1", {})
+        await orchestrator.run("agent1", {})
 
         # Check execution path
         path = await state.get("execution_path")

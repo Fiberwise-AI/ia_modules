@@ -68,7 +68,7 @@ def check_step_data():
         print(f"Retry Count: {row['retry_count']}")
         print(f"Error: {row['error_message']}")
         
-        print(f"\n--- INPUT DATA ---")
+        print("\n--- INPUT DATA ---")
         if row['input_data']:
             try:
                 input_data = json.loads(row['input_data']) if isinstance(row['input_data'], str) else row['input_data']
@@ -79,7 +79,7 @@ def check_step_data():
         else:
             print("(null)")
         
-        print(f"\n--- OUTPUT DATA ---")
+        print("\n--- OUTPUT DATA ---")
         if row['output_data']:
             try:
                 output_data = json.loads(row['output_data']) if isinstance(row['output_data'], str) else row['output_data']
@@ -90,7 +90,7 @@ def check_step_data():
         else:
             print("(null)")
         
-        print(f"\n--- METADATA ---")
+        print("\n--- METADATA ---")
         if row['metadata_json']:
             try:
                 metadata = json.loads(row['metadata_json']) if isinstance(row['metadata_json'], str) else row['metadata_json']

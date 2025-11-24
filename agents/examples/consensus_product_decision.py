@@ -15,12 +15,12 @@ Pattern: Consensus (Agreement-Based)
 
 import asyncio
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from enum import Enum
 
 from ..core import AgentRole
 from ..state import StateManager
-from ..communication import MessageBus, MessageType
+from ..communication import MessageBus
 from ..collaboration_patterns.consensus import (
     ConsensusCollaboration,
     ConsensusStrategy,
@@ -90,7 +90,7 @@ class StakeholderAgent(BaseCollaborativeAgent):
         await asyncio.sleep(0.1)  # Simulate thinking
 
         feature = proposal.get("content", {})
-        feature_name = feature.get("name", "Unknown Feature")
+        feature.get("name", "Unknown Feature")
 
         discussions = {
             StakeholderRole.ENGINEERING: {
@@ -211,7 +211,7 @@ class StakeholderAgent(BaseCollaborativeAgent):
 
     def _suggest_refinement(self, proposal: Dict[str, Any]) -> Dict[str, Any]:
         """Suggest refinements to proposal."""
-        feature = proposal.get("content", {})
+        proposal.get("content", {})
 
         refinements = {
             StakeholderRole.ENGINEERING: {
@@ -376,8 +376,8 @@ async def run_product_decision_consensus_example():
     print(f"Feature Proposal: {feature_proposal['name']}")
     print(f"Description: {feature_proposal['description']}")
     print(f"Complexity: {feature_proposal['complexity']}")
-    print(f"Consensus Strategy: MAJORITY")
-    print(f"Max Iterations: 3\n")
+    print("Consensus Strategy: MAJORITY")
+    print("Max Iterations: 3\n")
 
     print("Starting consensus process...\n")
 

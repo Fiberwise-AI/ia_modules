@@ -8,7 +8,7 @@ import importlib
 import importlib.util
 import sys
 from pathlib import Path
-from typing import List, Optional, Type, Dict, Any
+from typing import List, Optional, Dict, Any
 import logging
 import inspect
 

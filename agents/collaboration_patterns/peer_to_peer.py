@@ -6,7 +6,7 @@ sharing information and building on each other's work.
 """
 
 import asyncio
-from typing import Dict, Any, List, Optional, Set
+from typing import Dict, Any, List
 import logging
 
 from ..base_agent import BaseCollaborativeAgent
@@ -475,7 +475,7 @@ class PeerAgent(BaseCollaborativeAgent):
         reviews = []
         for contribution in contributions:
             peer_id = contribution.get("peer_id", "unknown")
-            content = contribution.get("content", {})
+            contribution.get("content", {})
 
             review = {
                 "reviewed_peer": peer_id,

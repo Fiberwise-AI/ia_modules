@@ -1,5 +1,5 @@
 """Simple keyword-based retriever for RAG pipeline."""
-from typing import Dict, Any, List
+from typing import Dict, Any
 from ia_modules.pipeline.core import Step
 
 

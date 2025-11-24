@@ -4,8 +4,7 @@ Unit tests for retry strategy system
 
 import pytest
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
-import time
+from unittest.mock import AsyncMock
 
 from ia_modules.pipeline.retry import (
     RetryConfig,
@@ -17,10 +16,8 @@ from ia_modules.pipeline.retry import (
 )
 from ia_modules.pipeline.errors import (
     NetworkError,
-    TimeoutError,
     ValidationError
 )
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestRetryConfig:

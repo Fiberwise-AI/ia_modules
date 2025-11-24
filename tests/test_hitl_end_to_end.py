@@ -81,7 +81,7 @@ async def test_hitl_pause_and_resume():
         use_enhanced_features=True
     )
 
-    print(f"\n3. Pipeline execution result:")
+    print("\n3. Pipeline execution result:")
     print(f"   Status: {result.get('status', 'unknown')}")
 
     if result.get('status') == 'waiting_for_human':
@@ -94,10 +94,10 @@ async def test_hitl_pause_and_resume():
         # Verify interaction was created
         interaction = await hitl_manager.get_interaction(interaction_id)
         if not interaction:
-            print(f"   [FAIL] Interaction not found in database")
+            print("   [FAIL] Interaction not found in database")
             return False
 
-        print(f"   [OK] Interaction found in database")
+        print("   [OK] Interaction found in database")
         print(f"      Prompt: {interaction.prompt}")
         print(f"      Status: {interaction.status}")
 
@@ -115,10 +115,10 @@ async def test_hitl_pause_and_resume():
         )
 
         if not success:
-            print(f"   [FAIL] Failed to record human response")
+            print("   [FAIL] Failed to record human response")
             return False
 
-        print(f"   [OK] Human response recorded")
+        print("   [OK] Human response recorded")
 
         # Test resume (simplified - in real app this would be triggered by API)
         print("\n5. Testing resume logic...")
@@ -126,12 +126,12 @@ async def test_hitl_pause_and_resume():
         # Get execution state
         exec_state = await hitl_manager.get_execution_state(interaction_id)
         if not exec_state:
-            print(f"   [FAIL] Could not retrieve execution state")
+            print("   [FAIL] Could not retrieve execution state")
             return False
 
-        print(f"   [OK] Retrieved execution state")
+        print("   [OK] Retrieved execution state")
         print(f"      Current step was: {exec_state.get('current_step')}")
-        print(f"      Would continue from next step")
+        print("      Would continue from next step")
 
         # In a full test, we would:
         # - Find next step after HITL step

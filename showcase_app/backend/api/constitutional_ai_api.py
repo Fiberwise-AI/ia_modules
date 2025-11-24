@@ -7,9 +7,8 @@ based on predefined principles.
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Request
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional
 from pydantic import BaseModel, Field
-from datetime import datetime
 from enum import Enum
 import logging
 
@@ -315,7 +314,7 @@ async def execute_constitutional_ai(
         )
 
         # Create and execute step
-        step = ConstitutionalAIStep(
+        ConstitutionalAIStep(
             name="constitutional_demo",
             prompt=request.prompt,
             config=config,

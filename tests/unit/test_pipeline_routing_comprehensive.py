@@ -3,8 +3,7 @@ Comprehensive tests for pipeline/routing.py
 """
 import pytest
 import asyncio
-from datetime import datetime
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock
 
 from ia_modules.pipeline.routing import (
     RoutingContext,
@@ -14,7 +13,6 @@ from ia_modules.pipeline.routing import (
     AdvancedRouter,
     ParallelExecutor
 )
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestRoutingContext:

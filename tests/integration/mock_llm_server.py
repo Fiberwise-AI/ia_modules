@@ -10,7 +10,6 @@ from typing import List, Optional, Dict, Any
 import time
 import os
 import random
-import base64
 
 app = FastAPI()
 

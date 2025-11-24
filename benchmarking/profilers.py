@@ -4,12 +4,11 @@ Performance Profilers
 Memory and CPU profiling integration for detailed performance analysis.
 """
 
-import os
 import time
 import asyncio
 import tracemalloc
 from typing import Dict, Any, Optional, Callable, List
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import logging
 
 
@@ -292,7 +291,7 @@ class CombinedProfiler:
         try:
             # Execute function
             start_time = time.time()
-            result = await func(*args, **kwargs)
+            await func(*args, **kwargs)
             duration = time.time() - start_time
 
             # Take final snapshot
@@ -315,7 +314,7 @@ class CombinedProfiler:
 
             return stats
 
-        except Exception as e:
+        except Exception:
             await self.cpu_profiler.stop()
             self.memory_profiler.stop()
             raise

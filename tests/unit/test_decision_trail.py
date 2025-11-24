@@ -5,18 +5,15 @@ Tests Evidence, StepRecord, DecisionTrail, and DecisionTrailBuilder.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
-from datetime import datetime, timezone
 from ia_modules.reliability.decision_trail import (
     Evidence,
     StepRecord,
     ToolCall,
-    StateDelta,
     DecisionTrail,
     DecisionTrailBuilder
 )
 from ia_modules.agents.state import StateManager
-from ia_modules.tools.core import ToolRegistry, ToolDefinition
+from ia_modules.tools.core import ToolRegistry
 
 
 class MockCheckpointer:
@@ -30,7 +27,7 @@ class MockCheckpointer:
 
     async def load_checkpoint(self, thread_id):
         # Return latest checkpoint for thread
-        checkpoints = [cp for tid, _ in self.checkpoints.keys() if tid == thread_id]
+        checkpoints = [tid for tid, _ in self.checkpoints.keys() if tid == thread_id]
         if checkpoints:
             return self.checkpoints[list(self.checkpoints.keys())[0]]
         return None
@@ -332,7 +329,7 @@ class TestDecisionTrailBuilder:
         # Tool fails
         try:
             await registry.execute("calculator", {"expression": "invalid"})
-        except:
+        except Exception:
             pass
 
         trail2 = await builder.build_trail("test")

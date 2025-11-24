@@ -8,7 +8,6 @@ import pytest
 import asyncio
 from datetime import datetime
 from ia_modules.pipeline.in_memory_tracker import InMemoryExecutionTracker
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestInMemoryExecutionTracker:

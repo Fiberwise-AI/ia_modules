@@ -5,7 +5,7 @@ Enables explicit step-by-step reasoning for improved accuracy on complex tasks.
 """
 
 from typing import Dict, Any, Optional, List
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import re
 
 

@@ -7,11 +7,10 @@ for robust tool execution.
 
 import asyncio
 import logging
-import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, List
+from typing import Any, Callable, Optional, List
 from functools import wraps
 
 
@@ -142,7 +141,7 @@ class CircuitBreaker:
             result = await func(*args, **kwargs)
             self._on_success()
             return result
-        except Exception as e:
+        except Exception:
             self._on_failure()
             raise
 
@@ -418,7 +417,7 @@ class CompositeErrorHandler:
         if self.circuit_breaker:
             try:
                 return await self.circuit_breaker.call(wrapped_func, *args, **kwargs)
-            except (CircuitBreakerError, Exception) as e:
+            except (CircuitBreakerError, Exception):
                 # Circuit breaker open or function failed
                 if self.fallback_executor and self.fallback_executor.config.fallback_functions:
                     self.logger.info("Primary function failed, trying fallback chain")

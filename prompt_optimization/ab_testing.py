@@ -2,10 +2,8 @@
 A/B testing optimizer with multi-armed bandit algorithms.
 """
 
-import asyncio
 import random
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 import math
 
@@ -284,7 +282,7 @@ class ABTester(PromptOptimizer):
             Cumulative probability
         """
         # Very rough approximation
-        x = df / (df + t ** 2)
+        df / (df + t ** 2)
         # Using normal approximation for large df
         if df > 30:
             return 0.5 * (1 + math.erf(t / math.sqrt(2)))

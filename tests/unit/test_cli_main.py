@@ -9,7 +9,6 @@ Tests command-line interface including:
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import json
 import tempfile
 from pathlib import Path
@@ -186,7 +185,7 @@ class TestValidateCommand:
             temp_file = f.name
 
         try:
-            result = cli(['validate', temp_file, '--json'])
+            cli(['validate', temp_file, '--json'])
             captured = capsys.readouterr()
             output = json.loads(captured.out)
             assert 'is_valid' in output
@@ -260,7 +259,6 @@ class TestFormatCommand:
 
     def test_format_in_place(self, capsys):
         """Test formatting file in place"""
-        pipeline = {"name": "test", "steps": [], "flow": {}}
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
             # Write unformatted JSON

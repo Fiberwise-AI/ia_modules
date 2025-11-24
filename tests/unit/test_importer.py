@@ -3,13 +3,11 @@ Unit tests for pipeline importer
 """
 
 import asyncio
-from unittest.mock import Mock, patch
-import json
+from unittest.mock import Mock
 
 import pytest
 
 from ia_modules.pipeline.importer import PipelineImportService
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 def test_pipeline_import_service_creation():

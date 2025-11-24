@@ -8,12 +8,10 @@ Tests system behavior under concurrent load:
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
 import time
 import psutil
 import os
-from typing import List
 
 from ia_modules.patterns import ConstitutionalAIStep, ConstitutionalConfig, Principle
 from ia_modules.memory import MemoryManager, MemoryConfig
@@ -75,7 +73,7 @@ async def test_100_concurrent_constitutional_ai(mock_llm):
     errors = sum(1 for r in results if isinstance(r, Exception))
     error_rate = errors / len(results)
 
-    print(f"\n100 Concurrent Executions:")
+    print("\n100 Concurrent Executions:")
     print(f"  Duration: {duration:.2f}s")
     print(f"  Memory Used: {memory_used:.2f}MB")
     print(f"  Error Rate: {error_rate:.2%}")
@@ -119,7 +117,7 @@ async def test_1000_concurrent_memory_operations():
     memory_used = end_memory - start_memory
     errors = sum(1 for r in results if isinstance(r, Exception))
 
-    print(f"\n1000 Memory Operations:")
+    print("\n1000 Memory Operations:")
     print(f"  Duration: {duration:.2f}s")
     print(f"  Memory Used: {memory_used:.2f}MB")
     print(f"  Errors: {errors}")
@@ -153,7 +151,7 @@ async def test_sustained_load():
     ops_per_sec = operations / duration
     error_rate = errors / operations if operations > 0 else 0
 
-    print(f"\nSustained Load Test:")
+    print("\nSustained Load Test:")
     print(f"  Duration: {duration:.2f}s")
     print(f"  Operations: {operations}")
     print(f"  Ops/sec: {ops_per_sec:.2f}")
@@ -194,7 +192,7 @@ async def test_memory_leak_detection():
         growth = memory_samples[-1] - memory_samples[0]
         growth_per_iteration = growth / len(memory_samples)
 
-        print(f"\nMemory Leak Detection:")
+        print("\nMemory Leak Detection:")
         print(f"  Baseline: {baseline_memory:.2f}MB")
         print(f"  Final: {memory_samples[-1]:.2f}MB")
         print(f"  Growth: {growth:.2f}MB")
@@ -227,7 +225,7 @@ async def test_parallel_agent_execution():
     duration = time.time() - start_time
     errors = sum(1 for r in results if isinstance(r, Exception))
 
-    print(f"\n50 Parallel Agent Tasks:")
+    print("\n50 Parallel Agent Tasks:")
     print(f"  Duration: {duration:.2f}s")
     print(f"  Errors: {errors}")
 

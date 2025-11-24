@@ -9,12 +9,9 @@ Tests comprehensive validation including:
 - Error/warning reporting
 """
 
-import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.cli.validate import (
     validate_pipeline,
-    ValidationResult,
-    PipelineValidator
+    ValidationResult
 )
 
 

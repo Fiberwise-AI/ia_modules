@@ -10,10 +10,7 @@ Run with: pytest -m observability
 import os
 import time
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import requests
-import json
-from datetime import datetime
 from ia_modules.telemetry.metrics import MetricsCollector, Metric, MetricType
 
 
@@ -778,7 +775,7 @@ class TestStatsDExporter:
         # Export doesn't raise
         try:
             exporter.export(metrics)
-        except Exception as e:
+        except Exception:
             # Network errors are ok, we're testing formatting
             pass
 

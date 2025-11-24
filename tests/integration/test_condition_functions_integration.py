@@ -2,8 +2,6 @@
 Integration tests for condition functions with real scenarios
 """
 
-import asyncio
-from datetime import datetime, timedelta
 from unittest.mock import Mock
 
 import pytest
@@ -20,7 +18,6 @@ from ia_modules.pipeline.condition_functions import (
     load_balancing_condition,
     feature_flag_condition
 )
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.pipeline.routing import RoutingContext
 
 

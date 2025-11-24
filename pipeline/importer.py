@@ -360,7 +360,6 @@ class PipelineImportService:
             pipeline_id: ID of the pipeline in database
             pipeline_data: Parsed pipeline JSON data
         """
-        import uuid
 
         pipeline_dir = pipeline_file.parent
         steps_dir = pipeline_dir / "steps"

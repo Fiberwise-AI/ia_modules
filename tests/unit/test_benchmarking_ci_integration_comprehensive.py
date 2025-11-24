@@ -2,7 +2,6 @@
 Comprehensive tests for benchmarking/ci_integration.py
 """
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import json
 import tempfile
 from pathlib import Path
@@ -15,7 +14,7 @@ from ia_modules.benchmarking.ci_integration import (
     github_actions_workflow,
     gitlab_ci_config
 )
-from ia_modules.benchmarking.comparison import ComparisonMetric, PerformanceChange
+from ia_modules.benchmarking.comparison import ComparisonMetric
 from ia_modules.benchmarking.framework import BenchmarkResult
 
 

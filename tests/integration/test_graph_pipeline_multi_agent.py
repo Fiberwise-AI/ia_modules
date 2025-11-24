@@ -6,15 +6,11 @@ and parallel execution capabilities for agentic workflows.
 """
 
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
 from ia_modules.pipeline.graph_pipeline_runner import (
     GraphPipelineRunner,
-    AgentStepWrapper,
-    PipelineConfig
+    AgentStepWrapper
 )
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.pipeline.services import ServiceRegistry
-from ia_modules.pipeline.core import Step
 from ia_modules.agents.state import StateManager
 from typing import Dict, Any
 
@@ -51,7 +47,7 @@ class PlannerAgent:
         self.name = "planner"
 
     async def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        task = data.get("task", "")
+        data.get("task", "")
         plan = {
             "steps": ["research", "implement", "test"],
             "estimated_time": "2 hours",
@@ -72,7 +68,7 @@ class ResearcherAgent:
         self.name = "researcher"
 
     async def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        plan = data.get("plan", {})
+        data.get("plan", {})
         research = {
             "findings": ["Finding 1", "Finding 2", "Finding 3"],
             "sources": ["source1.com", "source2.com"],
@@ -93,8 +89,8 @@ class CoderAgent:
         self.name = "coder"
 
     async def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        plan = data.get("plan", {})
-        research = data.get("research", {})
+        data.get("plan", {})
+        data.get("research", {})
 
         code = {
             "implementation": "def solution(): pass",
@@ -163,39 +159,9 @@ class TestGraphPipelineMultiAgent:
     async def test_sequential_agent_execution(self):
         """Agents execute sequentially and share state."""
         services = ServiceRegistry()
-        runner = GraphPipelineRunner(services)
+        GraphPipelineRunner(services)
 
         # Create pipeline with sequential agent steps
-        config_dict = {
-            "name": "Sequential Agent Pipeline",
-            "steps": [
-                {
-                    "id": "planner",
-                    "name": "planner",
-                    "step_class": "PlannerAgent",
-                    "module": "test.module"
-                },
-                {
-                    "id": "researcher",
-                    "name": "researcher",
-                    "step_class": "ResearcherAgent",
-                    "module": "test.module"
-                },
-                {
-                    "id": "coder",
-                    "name": "coder",
-                    "step_class": "CoderAgent",
-                    "module": "test.module"
-                }
-            ],
-            "flow": {
-                "start_at": "planner",
-                "paths": [
-                    {"from": "planner", "to": "researcher", "condition": {"type": "always"}},
-                    {"from": "researcher", "to": "coder", "condition": {"type": "always"}}
-                ]
-            }
-        }
 
         # Create real agent instances and test with wrapper
         planner = PlannerAgent({})
@@ -312,7 +278,7 @@ class TestGraphPipelineMultiAgent:
 
     async def test_agent_state_sharing(self):
         """Multiple agents share state correctly."""
-        services = ServiceRegistry()
+        ServiceRegistry()
 
         # Create agents with shared state
         planner = PlannerAgent({})

@@ -33,7 +33,7 @@ class DatabaseRecordExists(ConditionPlugin):
         """Check if record exists"""
         # Get configuration
         table = self.config.get('table')
-        id_field = self.config.get('id_field', 'id')
+        self.config.get('id_field', 'id')
         id_key = self.config.get('id_key', 'id')
 
         if not table:

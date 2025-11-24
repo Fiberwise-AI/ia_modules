@@ -106,7 +106,7 @@ async def db_manager(request):
                 db.execute(f'DROP TABLE IF EXISTS {table} CASCADE')
             else:
                 db.execute(f'DROP TABLE IF EXISTS {table}')
-        except:
+        except Exception:
             pass
 
     yield db

@@ -5,7 +5,6 @@ import sqlite3
 import json
 import logging
 import pickle
-import os
 
 logger = logging.getLogger(__name__)
 

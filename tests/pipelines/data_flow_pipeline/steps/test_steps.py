@@ -1,7 +1,6 @@
 """Test steps for data flow pipeline testing"""
 
 from ia_modules.pipeline.core import Step
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from typing import Dict, Any
 
 

@@ -4,7 +4,7 @@ ReAct (Reasoning + Acting) pattern implementation.
 Interleaves reasoning and acting in a loop for tool-using agents.
 """
 
-from typing import Dict, Any, List, Optional, Callable
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
 import json
@@ -239,7 +239,7 @@ What should you do next?
                     if match:
                         try:
                             action_input = json.loads('{' + match.group(1) + '}')
-                        except:
+                        except json.JSONDecodeError:
                             action_input = {"raw": input_str}
                     else:
                         action_input = {"raw": input_str}

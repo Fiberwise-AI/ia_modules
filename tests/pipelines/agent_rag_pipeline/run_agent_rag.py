@@ -13,18 +13,18 @@ ia_modules_dir = tests_dir.parent
 sys.path.insert(0, str(ia_modules_dir))
 sys.path.insert(0, str(tests_dir))
 
-from dotenv import load_dotenv
-from ia_modules.agents.orchestrator import AgentOrchestrator
-from ia_modules.agents.state import StateManager
-from ia_modules.pipeline.llm_provider_service import LLMProviderService, LLMProvider
-from ia_modules.pipeline.services import ServiceRegistry
-from ia_modules.guardrails.pipeline_steps import InputGuardrailStep, OutputGuardrailStep
+from dotenv import load_dotenv  # noqa: E402
+from ia_modules.agents.orchestrator import AgentOrchestrator  # noqa: E402
+from ia_modules.agents.state import StateManager  # noqa: E402
+from ia_modules.pipeline.llm_provider_service import LLMProviderService, LLMProvider  # noqa: E402
+from ia_modules.pipeline.services import ServiceRegistry  # noqa: E402
+from ia_modules.guardrails.pipeline_steps import InputGuardrailStep, OutputGuardrailStep  # noqa: E402
 
 # Import agents
 sys.path.insert(0, str(current_dir))
-from ia_modules.agents.query_analyzer_agent import QueryAnalyzerAgent
-from ia_modules.agents.retriever_agent import RetrieverAgent
-from ia_modules.agents.answer_generator_agent import AnswerGeneratorAgent
+from ia_modules.agents.query_analyzer_agent import QueryAnalyzerAgent  # noqa: E402
+from ia_modules.agents.retriever_agent import RetrieverAgent  # noqa: E402
+from ia_modules.agents.answer_generator_agent import AnswerGeneratorAgent  # noqa: E402
 
 
 class AgentRAGRunner:
@@ -98,7 +98,7 @@ class AgentRAGRunner:
         orchestrator.add_hook("agent_complete", self._on_agent_complete)
         orchestrator.add_hook("agent_error", self._on_agent_error)
 
-        print(f"\n=== Agentic RAG Pipeline ===")
+        print("\n=== Agentic RAG Pipeline ===")
         print(f"Thread ID: {thread_id}")
         print(f"Query: {query}\n")
 
@@ -191,7 +191,7 @@ class AgentRAGRunner:
                 is_default=True
             )
             providers_registered += 1
-            print(f"Registered OpenAI provider")
+            print("Registered OpenAI provider")
 
         if os.getenv('ANTHROPIC_API_KEY'):
             llm_service.register_provider(
@@ -201,7 +201,7 @@ class AgentRAGRunner:
                 model=os.getenv('ANTHROPIC_MODEL', 'claude-sonnet-4-5-20250929')
             )
             providers_registered += 1
-            print(f"Registered Anthropic provider")
+            print("Registered Anthropic provider")
 
         if providers_registered == 0:
             print("WARNING: No LLM providers configured")
@@ -215,29 +215,29 @@ class AgentRAGRunner:
         print("RESULTS")
         print("=" * 60)
 
-        print(f"\nQuery Analysis:")
+        print("\nQuery Analysis:")
         if "query_analysis" in result:
             analysis = result["query_analysis"]
             print(f"  Intent: {analysis.get('intent')}")
             print(f"  Keywords: {', '.join(analysis.get('keywords', []))}")
             print(f"  Analysis Type: {analysis.get('analysis_type')}")
 
-        print(f"\nRetrieval:")
+        print("\nRetrieval:")
         print(f"  Retrieved: {result.get('num_retrieved', 0)} documents")
         print(f"  Total Available: {result.get('total_docs', 0)} documents")
 
-        print(f"\nAnswer:")
+        print("\nAnswer:")
         print(f"  {result.get('answer', 'No answer generated')}")
 
         if "llm_metadata" in result:
             meta = result["llm_metadata"]
-            print(f"\nLLM Metadata:")
+            print("\nLLM Metadata:")
             print(f"  Provider: {meta.get('provider')}")
             print(f"  Model: {meta.get('model')}")
             if "usage" in meta:
                 print(f"  Tokens: {meta['usage'].get('total_tokens', 'N/A')}")
 
-        print(f"\nExecution Statistics:")
+        print("\nExecution Statistics:")
         for agent_id, stats in self.agent_stats.items():
             avg_time = stats["total_time"] / stats["executions"]
             print(f"  {agent_id}: {stats['executions']} exec, avg {avg_time:.3f}s")

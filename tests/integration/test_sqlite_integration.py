@@ -15,9 +15,7 @@ Run:
     pytest tests/integration/test_sqlite_integration.py -v
 """
 
-import os
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import tempfile
 import shutil
 from pathlib import Path
@@ -504,7 +502,7 @@ class TestSQLiteConstraints:
 
         # Try to insert duplicate primary key - should raise exception
         try:
-            result = db.execute("INSERT INTO test_pk (id, name) VALUES (:id, :name)", {"id": 1, "name": "second"})
+            db.execute("INSERT INTO test_pk (id, name) VALUES (:id, :name)", {"id": 1, "name": "second"})
             assert False, "Expected IntegrityError for duplicate primary key"
         except Exception as e:
             # Constraint violation is expected
@@ -525,7 +523,7 @@ class TestSQLiteConstraints:
 
         # Try to insert duplicate email - should raise exception
         try:
-            result = db.execute("INSERT INTO test_unique (email) VALUES (:email)", {"email": "test@example.com"})
+            db.execute("INSERT INTO test_unique (email) VALUES (:email)", {"email": "test@example.com"})
             assert False, "Expected IntegrityError for duplicate email"
         except Exception as e:
             # Constraint violation is expected
@@ -539,7 +537,7 @@ class TestSQLiteConstraints:
 
         # Try to insert NULL - should raise exception
         try:
-            result = db.execute("INSERT INTO test_notnull (name) VALUES (:name)", {"name": None})
+            db.execute("INSERT INTO test_notnull (name) VALUES (:name)", {"name": None})
             assert False, "Expected IntegrityError for NULL in NOT NULL column"
         except Exception as e:
             # Constraint violation is expected

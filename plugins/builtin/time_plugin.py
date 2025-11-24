@@ -5,7 +5,7 @@ Time-based condition plugins.
 """
 
 from typing import Dict, Any
-from datetime import datetime, time as dt_time
+from datetime import datetime
 from ..base import ConditionPlugin, PluginMetadata, PluginType
 
 

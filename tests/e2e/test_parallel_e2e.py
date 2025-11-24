@@ -3,19 +3,16 @@ End-to-end tests focused on parallel pipeline execution patterns
 """
 
 import pytest
-import asyncio
 import json
 import time
 import sys
 from pathlib import Path
-from unittest.mock import patch, AsyncMock
 
 # Add the parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
-from ia_modules.pipeline.test_utils import create_test_execution_context
-from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.pipeline.runner import create_pipeline_from_json
 
 
 class TestParallelE2E:

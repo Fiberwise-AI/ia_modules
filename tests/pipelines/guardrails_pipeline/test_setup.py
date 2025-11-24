@@ -35,7 +35,7 @@ def test_env_loading():
             print(f"  ✓ .env file loaded from {env_path}")
         else:
             print(f"  ⚠ .env file not found at {env_path}")
-            print(f"    Copy tests/.env.example to tests/.env and add your API keys")
+            print("    Copy tests/.env.example to tests/.env and add your API keys")
             return False
 
     except ImportError:
@@ -124,7 +124,7 @@ def test_llm_service_setup():
                 model='llama2',
                 base_url='http://localhost:11434'
             )
-            print(f"    ✓ Registered Ollama")
+            print("    ✓ Registered Ollama")
 
         print(f"  ✓ LLM service created with {len(providers_available)} provider(s)")
         return True
@@ -141,11 +141,6 @@ def test_guardrails_imports():
     print("\nTesting guardrails imports...")
 
     try:
-        from ia_modules.guardrails.pipeline_steps import (
-            InputGuardrailStep,
-            OutputGuardrailStep,
-            GuardrailStep
-        )
         print("  ✓ Guardrails pipeline steps imported successfully")
         return True
     except Exception as e:
@@ -160,7 +155,7 @@ def test_pipeline_runner():
     print("\nTesting pipeline runner import...")
 
     try:
-        from pipeline_runner import setup_llm_service, run_pipeline_test
+        from pipeline_runner import setup_llm_service
         print("  ✓ Pipeline runner imported successfully")
 
         # Test setup_llm_service function

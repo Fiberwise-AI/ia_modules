@@ -6,7 +6,7 @@ including tool execution, tool chaining, dynamic tool creation, and tool registr
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Request
-from typing import List, Dict, Optional, Any, Callable
+from typing import List, Dict, Optional, Any
 from pydantic import BaseModel, Field
 from datetime import datetime
 from enum import Enum
@@ -359,7 +359,7 @@ BUILTIN_TOOLS = {
 
 
 # Initialize registry with built-in tools
-import time
+import time  # noqa: E402
 for tool_id, tool_def in BUILTIN_TOOLS.items():
     tool_registry[tool_id] = ToolRegistryEntry(
         tool=tool_def,

@@ -2,7 +2,6 @@
 Redis-based conversation memory for high-performance ephemeral storage
 """
 
-import uuid
 import json
 from typing import Dict, List, Optional, Any
 from datetime import datetime

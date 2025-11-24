@@ -1,7 +1,7 @@
 """Reliability and replay API endpoints"""
 
 from fastapi import APIRouter, HTTPException, Depends, Request
-from typing import List, Optional
+from typing import Optional
 from models import ReplayExecutionResponse, ReplayHistoryItem
 
 router = APIRouter()

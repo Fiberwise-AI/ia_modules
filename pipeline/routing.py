@@ -8,11 +8,10 @@ for complex pipeline routing and flow control.
 import asyncio
 import importlib
 import inspect
-import json
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union, Callable
+from typing import Any, Dict, List, Optional, Callable
 from datetime import datetime
 
 from .core import TemplateParameterResolver
@@ -188,7 +187,7 @@ class FunctionConditionEvaluator(ConditionEvaluator):
 
         except ImportError as e:
             raise ImportError(f"Cannot import module {self.module_path}: {str(e)}")
-        except AttributeError as e:
+        except AttributeError:
             raise AttributeError(f"Function {self.function_name} not found in {self.module_path}")
 
     def _prepare_arguments(self, context: RoutingContext) -> Dict[str, Any]:

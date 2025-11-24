@@ -2,8 +2,6 @@
 Unit tests for condition functions
 """
 
-import asyncio
-from datetime import datetime, timedelta
 from unittest.mock import Mock
 
 import pytest
@@ -21,7 +19,6 @@ from ia_modules.pipeline.condition_functions import (
     feature_flag_condition
 )
 from ia_modules.pipeline.routing import RoutingContext
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 def test_business_hours_condition():
@@ -212,32 +209,32 @@ def test_threshold_condition_all_operators():
 
     # Test ==
     context.step_results = {'step1': {'result': {'value': 10}}}
-    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '==', 'threshold': 10}) == True
-    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '==', 'threshold': 5}) == False
+    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '==', 'threshold': 10})
+    assert not threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '==', 'threshold': 5})
 
     # Test !=
-    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '!=', 'threshold': 5}) == True
-    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '!=', 'threshold': 10}) == False
+    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '!=', 'threshold': 5})
+    assert not threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '!=', 'threshold': 10})
 
     # Test >
-    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '>', 'threshold': 5}) == True
-    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '>', 'threshold': 15}) == False
+    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '>', 'threshold': 5})
+    assert not threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '>', 'threshold': 15})
 
     # Test >=
-    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '>=', 'threshold': 10}) == True
-    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '>=', 'threshold': 15}) == False
+    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '>=', 'threshold': 10})
+    assert not threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '>=', 'threshold': 15})
 
     # Test <
-    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '<', 'threshold': 15}) == True
-    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '<', 'threshold': 5}) == False
+    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '<', 'threshold': 15})
+    assert not threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '<', 'threshold': 5})
 
     # Test <=
-    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '<=', 'threshold': 10}) == True
-    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '<=', 'threshold': 5}) == False
+    assert threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '<=', 'threshold': 10})
+    assert not threshold_condition(context, {'field_path': 'step1.result.value', 'operator': '<=', 'threshold': 5})
 
     # Test missing value (None)
     context.step_results = {'step1': {'result': {}}}
-    assert threshold_condition(context, {'field_path': 'step1.result.missing', 'operator': '>=', 'threshold': 10}) == False
+    assert not threshold_condition(context, {'field_path': 'step1.result.missing', 'operator': '>=', 'threshold': 10})
 
 
 def test_retry_condition_scenarios():
@@ -256,7 +253,7 @@ def test_retry_condition_scenarios():
         'max_retries': 3,
         'retry_on_errors': ['timeout', 'network_error']
     }
-    assert retry_condition(context, parameters) == True
+    assert retry_condition(context, parameters)
 
     # Test: Max retries reached
     context.step_results = {
@@ -265,7 +262,7 @@ def test_retry_condition_scenarios():
         'step1_retry_2': {'error': 'Still failing'},
         'step1_retry_3': {'error': 'Still failing'}
     }
-    assert retry_condition(context, parameters) == False
+    assert not retry_condition(context, parameters)
 
     # Test: Error type not retryable
     context.step_results = {
@@ -274,13 +271,13 @@ def test_retry_condition_scenarios():
             'error_type': 'validation_error'
         }
     }
-    assert retry_condition(context, parameters) == False
+    assert not retry_condition(context, parameters)
 
     # Test: No error (shouldn't retry)
     context.step_results = {
         'step1': {'result': 'success'}
     }
-    assert retry_condition(context, parameters) == False
+    assert not retry_condition(context, parameters)
 
 
 def test_business_hours_condition_edge_cases():
@@ -338,7 +335,7 @@ def test_data_quality_condition_edge_cases():
     }
     result = data_quality_condition(context, parameters)
     # Should fail due to high error rate
-    assert result == False
+    assert not result
 
 
 def test_regex_match_condition_no_match():
@@ -358,7 +355,7 @@ def test_regex_match_condition_no_match():
     }
 
     result = regex_match_condition(context, parameters)
-    assert result == False
+    assert not result
 
 
 def test_cost_threshold_exceeded():
@@ -378,7 +375,7 @@ def test_cost_threshold_exceeded():
     }
 
     result = cost_threshold_condition(context, parameters)
-    assert result == False
+    assert not result
 
 
 def test_approval_required_multiple_conditions():
@@ -395,7 +392,7 @@ def test_approval_required_multiple_conditions():
         'auto_approve_limit': 1000.0
     }
     result = approval_required_condition(context, parameters)
-    assert result == True
+    assert result
 
     # Test: Low risk, low amount - no approval needed
     context.step_results = {
@@ -403,7 +400,7 @@ def test_approval_required_multiple_conditions():
         'amount': 500.0
     }
     result = approval_required_condition(context, parameters)
-    assert result == False
+    assert not result
 
 
 def test_business_hours_weekend():
@@ -434,7 +431,7 @@ def test_data_quality_empty_results():
     }
 
     result = data_quality_condition(context, parameters)
-    assert result == False
+    assert not result
 
 
 def test_error_rate_no_errors():
@@ -451,7 +448,7 @@ def test_error_rate_no_errors():
     }
 
     result = error_rate_condition(context, parameters)
-    assert result == True
+    assert result
 
 
 def test_error_rate_high_error_rate():
@@ -468,7 +465,7 @@ def test_error_rate_high_error_rate():
     }
 
     result = error_rate_condition(context, parameters)
-    assert result == False
+    assert not result
 
 
 def test_regex_invalid_pattern():
@@ -484,7 +481,7 @@ def test_regex_invalid_pattern():
     }
 
     result = regex_match_condition(context, parameters)
-    assert result == False
+    assert not result
 
 
 def test_approval_required_high_amount_only():
@@ -501,7 +498,7 @@ def test_approval_required_high_amount_only():
     }
 
     result = approval_required_condition(context, parameters)
-    assert result == True
+    assert result
 
 
 def test_extract_nested_value_empty_path():

@@ -11,12 +11,8 @@ Tests security across the entire ia_modules system:
 - Resource limits
 """
 
-import pytest
 import os
-import sys
-import tempfile
 import json
-from pathlib import Path
 
 
 class TestInputValidation:
@@ -25,7 +21,6 @@ class TestInputValidation:
     def test_pipeline_step_name_validation(self):
         """Test pipeline step names reject malicious characters"""
         from ia_modules.pipeline.core import Pipeline
-        from ia_modules.pipeline.test_utils import create_test_execution_context
 
         malicious_names = [
             "../../../etc/passwd",  # Path traversal
@@ -40,7 +35,7 @@ class TestInputValidation:
         for name in malicious_names:
             # Pipeline should either reject or sanitize
             try:
-                pipeline = Pipeline(steps=[])
+                Pipeline(steps=[])
                 # If it accepts, verify it's sanitized
                 assert "/" not in name or "../" not in name
             except (ValueError, Exception):
@@ -108,7 +103,7 @@ class TestInjectionPrevention:
 
         # Example: if we had a feature that processes filenames
         for dangerous in dangerous_inputs:
-            filename = f"test{dangerous}.json"
+            pass
             # Should either reject or escape
             # subprocess.run(["cat", filename]) # This would be safe (array args)
             # subprocess.run(f"cat {filename}", shell=True) # This would be UNSAFE
@@ -135,24 +130,12 @@ class TestInjectionPrevention:
 
     def test_ldap_injection_prevention(self):
         """Test LDAP injection prevention (if we use LDAP)"""
-        ldap_payloads = [
-            "*",
-            "admin*",
-            "admin)(uid=*",
-            "*)(uid=*))(&(uid=*",
-        ]
 
         # If we integrate with LDAP, test these
         # For now, document the patterns to block
 
     def test_xml_injection_prevention(self):
         """Test XML/XXE injection prevention"""
-        xxe_payload = """<?xml version="1.0"?>
-        <!DOCTYPE foo [
-        <!ENTITY xxe SYSTEM "file:///etc/passwd">
-        ]>
-        <foo>&xxe;</foo>
-        """
 
         # If we parse XML, ensure external entities are disabled
         # Example with defusedxml:
@@ -176,13 +159,12 @@ class TestSecretsHandling:
         logger.setLevel(logging.DEBUG)
 
         # Simulate logging connection string
-        connection_string = "postgresql://user:SecretPassword123@localhost/db"
 
         # Should mask password
         # Good: postgresql://user:***@localhost/db
         # Bad: postgresql://user:SecretPassword123@localhost/db
 
-        logger.info(f"Connecting to database")
+        logger.info("Connecting to database")
         # Don't log the full connection string
 
         log_output = log_stream.getvalue()
@@ -203,7 +185,7 @@ class TestSecretsHandling:
             # Simulate API call error
             raise ValueError(f"API request failed for key: {api_key}")
         except ValueError as e:
-            error_msg = str(e)
+            str(e)
             # Error should mask the key
             # Good: "API request failed for key: sk_test_***"
             # Bad: "API request failed for key: sk_test_1234567890abcdef"
@@ -215,7 +197,6 @@ class TestAuthenticationSecurity:
     def test_password_hashing(self):
         """Test that passwords are hashed, not stored plaintext"""
         # If we store passwords, verify they're hashed
-        password = "MyPassword123!"
 
         # Should use bcrypt, argon2, or similar
         # NOT: password_hash = password  # BAD
@@ -231,12 +212,6 @@ class TestAuthenticationSecurity:
     def test_no_default_credentials(self):
         """Test that there are no hardcoded default credentials"""
         # Scan for common issues
-        default_creds = [
-            ("admin", "admin"),
-            ("admin", "password"),
-            ("root", "root"),
-            ("user", "user"),
-        ]
 
         # Code should not contain these patterns
 
@@ -253,7 +228,6 @@ class TestAPISecurityRate:
     def test_request_size_limits(self):
         """Test that request payloads have size limits"""
         # Prevent DoS via huge payloads
-        huge_payload = {"data": "A" * 100_000_000}  # 100MB
 
         # Should reject or limit
         # Good: MAX_REQUEST_SIZE = 10MB
@@ -275,7 +249,7 @@ class TestErrorMessageSafety:
             with open("/nonexistent/file.txt") as f:
                 f.read()
         except Exception as e:
-            error_msg = str(e)
+            str(e)
             # User-facing error should be generic
             # Good: "File not found"
             # Bad: "FileNotFoundError: /nonexistent/file.txt at line 123 in module.py"
@@ -304,7 +278,6 @@ class TestResourceLimits:
     def test_execution_time_limits(self):
         """Test that long-running operations timeout"""
         # Prevent infinite loops or long-running attacks
-        import time
 
         # Simulate long operation
         # Should timeout after reasonable period (e.g., 30 seconds)
@@ -342,7 +315,6 @@ class TestCryptographicSecurity:
 
     def test_random_number_generation(self):
         """Test using cryptographically secure random"""
-        import secrets
 
         # Good: secrets.token_bytes()
         # Bad: random.random()
@@ -368,39 +340,16 @@ class TestDataValidation:
 
     def test_email_validation(self):
         """Test email validation is robust"""
-        invalid_emails = [
-            "notanemail",
-            "@nodomain.com",
-            "user@",
-            "user@.com",
-            "user@domain",
-            "user space@domain.com",
-            "user@domain..com",
-        ]
 
         # Should reject invalid emails
 
     def test_url_validation(self):
         """Test URL validation prevents SSRF"""
-        dangerous_urls = [
-            "file:///etc/passwd",
-            "http://localhost/admin",
-            "http://169.254.169.254/latest/meta-data/",  # AWS metadata
-            "http://metadata.google.internal/",  # GCP metadata
-            "ftp://internal.server/",
-            "dict://localhost:11211/",  # Memcached
-        ]
 
         # Should block internal URLs if making external requests
 
     def test_integer_overflow_prevention(self):
         """Test that integer overflows are handled"""
-        huge_numbers = [
-            2**63,  # Max signed 64-bit
-            2**64,  # Overflow
-            -2**63,
-            10**100,  # Googol
-        ]
 
         # Should handle or reject gracefully
 

@@ -11,7 +11,6 @@ Tests that GraphPipelineRunner correctly executes all 6 pipeline types:
 """
 
 import pytest
-import asyncio
 import json
 import sys
 from pathlib import Path
@@ -20,7 +19,6 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
-from ia_modules.pipeline.test_utils import create_test_execution_context
 
 
 class TestUnifiedExecutionEngine:
@@ -144,10 +142,10 @@ class TestUnifiedExecutionEngine:
         
         # Run pipeline twice
         runner1 = GraphPipelineRunner()
-        result1 = await runner1.run_pipeline_from_json(pipeline_config, {"topic": "run1"})
+        await runner1.run_pipeline_from_json(pipeline_config, {"topic": "run1"})
         
         runner2 = GraphPipelineRunner()
-        result2 = await runner2.run_pipeline_from_json(pipeline_config, {"topic": "run2"})
+        await runner2.run_pipeline_from_json(pipeline_config, {"topic": "run2"})
         
         # Each runner should have its own tracker
         tracker1 = runner1.services.get('execution_tracker')
@@ -169,7 +167,7 @@ class TestUnifiedExecutionEngine:
             pipeline_config = json.load(f)
         
         runner = GraphPipelineRunner()
-        result = await runner.run_pipeline_from_json(pipeline_config, {"topic": "query_test"})
+        await runner.run_pipeline_from_json(pipeline_config, {"topic": "query_test"})
         
         tracker = runner.services.get('execution_tracker')
         

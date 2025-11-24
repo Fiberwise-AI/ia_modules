@@ -3,7 +3,6 @@ Tests for Chain-of-Thought pattern.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.patterns import ChainOfThoughtStep, CoTConfig
 
 
@@ -113,7 +112,7 @@ async def test_chain_of_thought_invalid_reasoning():
         config=CoTConfig(validation_step=True, retry_on_validation_failure=True)
     )
     
-    result = await step.execute(context)
+    await step.execute(context)
     
     # Should have made 2 calls (original + retry)
     assert len(llm.calls) == 2
@@ -150,6 +149,6 @@ async def test_chain_of_thought_context_formatting():
         config=CoTConfig(validation_step=False)
     )
     
-    result = await step.execute(context)
+    await step.execute(context)
     
     assert 'What is 5 times 2?' in llm.calls[0]['prompt']

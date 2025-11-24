@@ -5,7 +5,7 @@ Pipeline Scheduler - Schedule pipeline execution with various triggers
 import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict, Any, Optional, List, Callable
+from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 import logging
 

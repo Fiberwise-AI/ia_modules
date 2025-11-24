@@ -5,9 +5,7 @@ Tests central logger, execution tracker, and service registry integration.
 """
 
 import pytest
-from unittest.mock import Mock, AsyncMock, MagicMock, call
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.pipeline.services import ServiceRegistry
 from typing import Dict, Any, List
 import uuid

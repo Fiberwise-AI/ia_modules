@@ -1,8 +1,5 @@
 """Tests for circuit breaker."""
 
-import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
-from datetime import datetime, timedelta, timezone
 import time
 
 from ia_modules.reliability.circuit_breaker import (
@@ -315,7 +312,7 @@ def test_registry_get_status():
     registry = CircuitBreakerRegistry()
 
     breaker1 = registry.get_breaker("agent1", config)
-    breaker2 = registry.get_breaker("agent2", config)
+    registry.get_breaker("agent2", config)
 
     # Open one circuit
     breaker1.record_failure()
@@ -375,7 +372,7 @@ def test_registry_get_open_breakers():
 
     breaker1 = registry.get_breaker("agent1", config)
     breaker2 = registry.get_breaker("agent2", config)
-    breaker3 = registry.get_breaker("agent3", config)
+    registry.get_breaker("agent3", config)
 
     # Open two circuits
     for _ in range(2):

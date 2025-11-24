@@ -4,8 +4,6 @@ Unit tests for telemetry metrics edge cases
 Tests uncovered edge cases to reach 100% coverage.
 """
 
-import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.telemetry.metrics import Metric, MetricType
 
 

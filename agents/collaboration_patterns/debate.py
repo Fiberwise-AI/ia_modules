@@ -5,13 +5,12 @@ Implements an adversarial structure where agents argue different perspectives
 and refine their positions through structured debate.
 """
 
-import asyncio
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from enum import Enum
 import logging
 
 from ..base_agent import BaseCollaborativeAgent
-from ..communication import MessageBus, MessageType, AgentMessage
+from ..communication import MessageBus
 from ..state import StateManager
 from ..core import AgentRole
 
@@ -578,7 +577,7 @@ class DebateAgent(BaseCollaborativeAgent):
 
     async def _make_argument(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Make argument in debate round."""
-        topic = data.get("topic", "")
+        data.get("topic", "")
         round_num = data.get("round", 1)
         context = data.get("context", [])
 
@@ -611,15 +610,15 @@ class DebateAgent(BaseCollaborativeAgent):
 
     async def _make_closing_statement(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Make closing statement."""
-        topic = data.get("topic", "")
+        data.get("topic", "")
 
         # Summarize position and strongest arguments
         statement = {
             "position": self.debate_role.value,
             "summary": f"Closing summary from {self.agent_id}",
             "strongest_arguments": [
-                f"Strong point 1 from debate",
-                f"Strong point 2 from debate"
+                "Strong point 1 from debate",
+                "Strong point 2 from debate"
             ],
             "conclusion": f"Final conclusion from {self.debate_role.value} side"
         }

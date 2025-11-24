@@ -8,7 +8,6 @@ Supports PostgreSQL, MySQL, SQLite, and DuckDB.
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 import logging
-import json
 
 from ia_modules.reliability.metrics import MetricStorage
 from nexusql import DatabaseManager

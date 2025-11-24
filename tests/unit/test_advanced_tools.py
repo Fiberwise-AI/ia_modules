@@ -5,9 +5,7 @@ Tests tool registry, tool chains, and parallel execution.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
-from unittest.mock import Mock, AsyncMock, patch
 from datetime import datetime
 
 from ia_modules.tools.tool_registry import (
@@ -19,8 +17,7 @@ from ia_modules.tools.tool_registry import (
 from ia_modules.tools.tool_chain import (
     ToolChain,
     ChainStep,
-    ChainResult,
-    ChainMode
+    ChainResult
 )
 from ia_modules.tools.parallel_executor import (
     ParallelExecutor,
@@ -576,7 +573,7 @@ class TestParallelExecutor:
         executor.add_task("task1", "tool1", {})
         executor.add_task("task2", "tool2", {}, dependencies=["task1"])
 
-        results = await executor.execute_all()
+        await executor.execute_all()
 
         task1 = executor.tasks["task1"]
         task2 = executor.tasks["task2"]

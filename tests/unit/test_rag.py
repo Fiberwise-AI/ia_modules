@@ -4,8 +4,7 @@ Unit tests for RAG system.
 Tests Document and VectorStore.
 """
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
-from ia_modules.rag.core import Document, VectorStore, MemoryVectorStore
+from ia_modules.rag.core import Document, MemoryVectorStore
 
 
 class TestDocument:
@@ -51,7 +50,7 @@ class TestMemoryVectorStore:
 
     async def test_initialize(self):
         """Store can be initialized."""
-        store = MemoryVectorStore()
+        MemoryVectorStore()
 
 
         # No-op for memory store

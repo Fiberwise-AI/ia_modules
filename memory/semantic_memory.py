@@ -2,6 +2,7 @@
 Semantic Memory - Long-term knowledge storage with vector search.
 """
 
+import asyncio
 from typing import List, Optional, Any, Dict
 import logging
 
@@ -67,7 +68,7 @@ class SemanticMemory:
 
         # Try OpenAI
         try:
-            import openai
+            import openai  # noqa: F401
             if not self.embedding_model:
                 raise ValueError(
                     "embedding_model must be specified when using OpenAI embeddings. "
@@ -199,6 +200,3 @@ class SemanticMemory:
         """Clear all semantic memories."""
         self.memories.clear()
         self.embeddings.clear()
-
-
-import asyncio

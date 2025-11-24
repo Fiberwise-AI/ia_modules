@@ -332,27 +332,27 @@ class DecisionTrailBuilder:
 
         # Goal
         if trail.goal:
-            lines.append(f"## Goal")
+            lines.append("## Goal")
             lines.append(trail.goal)
             lines.append("")
 
         # Input
         if trail.input_data:
-            lines.append(f"## Input Data")
+            lines.append("## Input Data")
             for key, value in trail.input_data.items():
                 lines.append(f"- **{key}**: {value}")
             lines.append("")
 
         # Execution path
         if trail.execution_path:
-            lines.append(f"## Execution Path")
+            lines.append("## Execution Path")
             for i, agent in enumerate(trail.execution_path, 1):
                 lines.append(f"{i}. {agent}")
             lines.append("")
 
         # Steps taken
         if trail.steps_taken:
-            lines.append(f"## Steps Executed")
+            lines.append("## Steps Executed")
             for step in trail.steps_taken:
                 status = "✓" if step.success else "✗"
                 lines.append(f"{status} **{step.agent}** (step {step.step_index})")
@@ -403,13 +403,13 @@ class DecisionTrailBuilder:
             lines.append("")
 
         # Outcome
-        lines.append(f"## Outcome")
+        lines.append("## Outcome")
         for key, value in trail.outcome.items():
             lines.append(f"- **{key}**: {value}")
         lines.append("")
 
         # Metrics
-        lines.append(f"## Metrics")
+        lines.append("## Metrics")
         lines.append(f"- Duration: {trail.duration_ms}ms")
         if trail.tokens_used:
             lines.append(f"- Tokens: {trail.tokens_used}")

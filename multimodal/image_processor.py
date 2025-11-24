@@ -1,7 +1,6 @@
 """Image processing with vision models via LLMProviderService."""
 
 from typing import Union, List, Optional
-import base64
 import logging
 import io
 

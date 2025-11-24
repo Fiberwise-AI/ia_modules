@@ -53,7 +53,7 @@ class VideoProcessor:
         for i, frame in enumerate(frames):
             analysis = await image_processor.process(
                 frame,
-                prompt or f"Describe what's happening in this frame"
+                prompt or "Describe what's happening in this frame"
             )
             frame_analyses.append(f"Frame {i+1}: {analysis}")
 
@@ -82,7 +82,7 @@ class VideoProcessor:
         """
         try:
             import cv2
-            import numpy as np
+            import numpy as np  # noqa: F401
             import tempfile
         except ImportError as e:
             raise ImportError(

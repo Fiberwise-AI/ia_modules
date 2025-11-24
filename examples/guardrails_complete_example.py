@@ -137,7 +137,7 @@ class GuardrailsPipeline:
         print("  Output rails: PASSED")
 
         # Success!
-        print(f"\n[FINAL RESPONSE]")
+        print("\n[FINAL RESPONSE]")
         print(f"{processed_output[:200]}...")
 
         return {

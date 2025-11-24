@@ -183,7 +183,7 @@ def _format_condition_label(condition: Optional[Dict[str, Any]]) -> str:
         value = condition.get('value', '')
         return f"{field} < {value}"
     elif condition_type == 'not':
-        return f"NOT"
+        return "NOT"
     elif condition_type == 'all':
         return "ALL"
     elif condition_type == 'any':

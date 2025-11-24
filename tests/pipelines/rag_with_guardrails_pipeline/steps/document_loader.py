@@ -1,7 +1,5 @@
 """Document loader step for RAG pipeline."""
 from typing import Dict, Any
-import os
-import json
 from pathlib import Path
 from ia_modules.pipeline.core import Step
 

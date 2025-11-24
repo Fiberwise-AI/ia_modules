@@ -19,13 +19,13 @@ __all__ = [
 
 # Optional backends (import only if dependencies available)
 try:
-    from .sql import SQLCheckpointer
+    from .sql import SQLCheckpointer  # noqa: F401
     __all__.append('SQLCheckpointer')
 except ImportError:
     pass
 
 try:
-    from .redis import RedisCheckpointer
+    from .redis import RedisCheckpointer  # noqa: F401
     __all__.append('RedisCheckpointer')
 except ImportError:
     pass

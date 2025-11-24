@@ -1,7 +1,5 @@
 """Tests for cost tracking."""
 
-import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from datetime import datetime, timedelta, timezone
 
 from ia_modules.reliability.cost_tracker import (
@@ -171,7 +169,7 @@ def test_get_report_with_time_filter():
 
     # Get report for last hour
     since = datetime.now(timezone.utc) - timedelta(hours=1)
-    report = tracker.get_report(since=since)
+    tracker.get_report(since=since)
 
     # Should only include recent cost
     assert len([c for c in tracker._costs if c.timestamp >= since]) == 1

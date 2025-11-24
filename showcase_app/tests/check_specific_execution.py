@@ -124,7 +124,7 @@ def check_execution(execution_id=None):
         if step['error_message']:
             print(f"\nERROR: {step['error_message']}")
         
-        print(f"\nInput Data:")
+        print("\nInput Data:")
         if step['input_data']:
             try:
                 input_data = json.loads(step['input_data']) if isinstance(step['input_data'], str) else step['input_data']
@@ -136,7 +136,7 @@ def check_execution(execution_id=None):
         else:
             print("  (null or empty)")
         
-        print(f"\nOutput Data:")
+        print("\nOutput Data:")
         if step['output_data']:
             try:
                 output_data = json.loads(step['output_data']) if isinstance(step['output_data'], str) else step['output_data']
@@ -149,7 +149,7 @@ def check_execution(execution_id=None):
             print("  (null or empty)")
         
         if step['metadata_json']:
-            print(f"\nMetadata:")
+            print("\nMetadata:")
             try:
                 metadata = json.loads(step['metadata_json']) if isinstance(step['metadata_json'], str) else step['metadata_json']
                 print(json.dumps(metadata, indent=2))

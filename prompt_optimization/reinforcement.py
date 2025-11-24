@@ -2,11 +2,10 @@
 Reinforcement learning optimizer for prompt selection.
 """
 
-import asyncio
 import random
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 from .optimizer import OptimizationStrategy, PromptOptimizer, OptimizationResult
 from .evaluators import PromptEvaluator

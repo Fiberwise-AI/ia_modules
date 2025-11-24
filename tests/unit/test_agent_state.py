@@ -4,7 +4,6 @@ Unit tests for state management.
 Tests StateManager functionality including versioning and persistence.
 """
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from ia_modules.agents.state import StateManager
 from ia_modules.checkpoint.memory import MemoryCheckpointer
 

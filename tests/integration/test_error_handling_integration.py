@@ -3,7 +3,6 @@ Integration tests for error handling in pipeline execution
 """
 
 import pytest
-import asyncio
 from typing import Dict, Any
 
 from ia_modules.pipeline.core import Step, Pipeline
@@ -12,10 +11,8 @@ from ia_modules.pipeline.services import ServiceRegistry
 from ia_modules.pipeline.errors import (
     NetworkError,
     ValidationError,
-    TimeoutError,
     ErrorCategory
 )
-from ia_modules.pipeline.retry import RetryConfig
 
 
 class FlakyNetworkStep(Step):

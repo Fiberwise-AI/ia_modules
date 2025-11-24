@@ -5,7 +5,7 @@ Handles token tracking, cost calculation, and rate limiting for LLM usage.
 """
 
 import time
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from collections import deque
 from datetime import datetime, timedelta
 import os

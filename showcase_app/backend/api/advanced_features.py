@@ -13,7 +13,6 @@ Provides endpoints for:
 from fastapi import APIRouter, HTTPException, UploadFile, File, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
-from enum import Enum
 import asyncio
 
 # Import advanced features
@@ -44,8 +43,7 @@ from ia_modules.prompt_optimization import (
 )
 from ia_modules.tools import (
     AdvancedToolExecutor,
-    AdvancedToolConfig,
-    Tool
+    AdvancedToolConfig
 )
 
 router = APIRouter(prefix="/api/advanced", tags=["advanced-features"])

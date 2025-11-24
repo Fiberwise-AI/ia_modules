@@ -6,11 +6,7 @@ Tests all OWASP SQL injection vectors and database-specific attacks.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
-import asyncio
-from typing import List
-from sqlalchemy import create_engine, text, inspect
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import inspect
 
 from nexusql import DatabaseManager
 
@@ -478,7 +474,6 @@ async def test_sql_injection_in_order_by(test_database):
         )
 
     # Malicious ORDER BY attempts
-    malicious_order = "1; DROP TABLE pipelines--"
 
     try:
         # Order by should use whitelisted columns only
@@ -509,7 +504,6 @@ async def test_sql_injection_in_limit_offset(test_database):
         )
 
     # Malicious LIMIT attempts
-    malicious_limit = "1; DROP TABLE pipelines"
 
     try:
         # LIMIT should only accept integers

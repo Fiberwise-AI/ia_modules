@@ -100,7 +100,6 @@ async def respond_to_interaction(
         raise HTTPException(status_code=404, detail="Interaction not found")
 
     execution_id = interaction.execution_id
-    pipeline_id = interaction.pipeline_id
 
     # Record the human response
     success = await hitl_manager.respond_to_interaction(

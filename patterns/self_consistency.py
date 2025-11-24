@@ -145,7 +145,7 @@ class SelfConsistencyStep:
                     return answer
         
         # Fallback: use last non-empty line
-        lines = [l.strip() for l in sample.strip().split('\n') if l.strip()]
+        lines = [line.strip() for line in sample.strip().split('\n') if line.strip()]
         if lines:
             return lines[-1]
         
@@ -265,7 +265,7 @@ class SelfConsistencyStep:
         score = 0.0
         
         # Count reasoning steps
-        lines = [l.strip() for l in sample.split('\n') if l.strip()]
+        lines = [line.strip() for line in sample.split('\n') if line.strip()]
         score += min(len(lines) * 0.1, 0.5)
         
         # Look for structured reasoning indicators

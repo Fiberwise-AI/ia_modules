@@ -26,7 +26,7 @@ class ReviewContentStep(Step):
                 - feedback: str - Feedback for improvement (if not approved)
                 - quality_score: float - Quality score (0-100)
         """
-        draft = data.get('draft', '')
+        data.get('draft', '')
         revision_count = data.get('revision_count', 0)
         
         # Simulate quality assessment

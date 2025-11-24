@@ -7,7 +7,6 @@ discovers and includes all Python packages in the built wheel.
 
 import subprocess
 import sys
-import tempfile
 import zipfile
 from pathlib import Path
 
@@ -108,7 +107,25 @@ class TestPackageBuild:
             assert not missing_packages, f"Missing packages in wheel: {missing_packages}"
             
             # Verify no test files leaked in
-            test_files = [f for f in all_files if 'test' in f.lower() and f.endswith('.py')]
+            # Look for actual test files: test_*.py (but not *_test_utils.py or *_testing.py)
+            # or files in tests/ directories
+            test_files = []
+            for f in all_files:
+                if not f.endswith('.py'):
+                    continue
+                # Skip build artifacts
+                if f.startswith('build/'):
+                    continue
+                # Check if it's in a tests directory
+                if '/tests/' in f or f.startswith('tests/'):
+                    test_files.append(f)
+                    continue
+                # Check if it's a test_*.py file (but not utility modules like test_utils.py)
+                parts = f.split('/')
+                filename = parts[-1] if parts else f
+                if filename.startswith('test_') and filename not in ['test_utils.py', 'test_helpers.py']:
+                    test_files.append(f)
+            
             assert not test_files, f"Test files should not be in wheel: {test_files[:5]}"
 
     @pytest.mark.slow
@@ -167,12 +184,20 @@ class TestPackageBuild:
         Skip if not installed.
         """
         try:
-            # Try importing various submodules
-            import agents.core
-            import pipeline.core
-            import pipeline.services
-            import tools.core
-            import memory.core
+            # Try importing various submodules using importlib
+            import importlib.util
+            
+            modules_to_check = [
+                'agents.core',
+                'pipeline.core', 
+                'pipeline.services',
+                'tools.core',
+                'memory.core'
+            ]
+            
+            for module_name in modules_to_check:
+                spec = importlib.util.find_spec(module_name)
+                assert spec is not None, f"Module {module_name} not found"
             
             # If we get here, imports work
             assert True

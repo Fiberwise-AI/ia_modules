@@ -7,7 +7,6 @@ Provides ToolDefinition and ToolRegistry for managing agent tools.
 from dataclasses import dataclass, field
 from typing import Dict, Any, Callable, Optional, List
 import logging
-import json
 import inspect
 from functools import wraps
 
@@ -344,17 +343,17 @@ def tool(
 
             # Determine type from annotation
             if param.annotation != inspect.Parameter.empty:
-                if param.annotation == str:
+                if param.annotation is str:
                     param_schema["type"] = "string"
-                elif param.annotation == int:
+                elif param.annotation is int:
                     param_schema["type"] = "integer"
-                elif param.annotation == float or param.annotation == "float":
+                elif param.annotation is float or param.annotation == "float":
                     param_schema["type"] = "number"
-                elif param.annotation == bool:
+                elif param.annotation is bool:
                     param_schema["type"] = "boolean"
-                elif param.annotation == list or param.annotation == List:
+                elif param.annotation is list or param.annotation is List:
                     param_schema["type"] = "array"
-                elif param.annotation == dict or param.annotation == Dict:
+                elif param.annotation is dict or param.annotation is Dict:
                     param_schema["type"] = "object"
                 else:
                     param_schema["type"] = "string"  # Default

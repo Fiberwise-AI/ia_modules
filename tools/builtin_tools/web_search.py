@@ -114,7 +114,7 @@ class WebSearchTool:
 
         # Generate mock results
         results = []
-        query_lower = query.lower()
+        query.lower()
 
         # Generate relevant-looking results based on query
         for i in range(min(max_results, 10)):

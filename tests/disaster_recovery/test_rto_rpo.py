@@ -9,16 +9,13 @@ RPO: Maximum acceptable amount of data loss measured in time
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
-import os
 import tempfile
 import shutil
 import json
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 from nexusql import DatabaseManager
 
@@ -285,8 +282,8 @@ async def test_rpo_with_incremental_backups(production_database, backup_dir):
     metrics = RecoveryMetrics()
 
     # T0: Full backup
-    t0 = datetime.now()
-    backup_t0 = await simulator.create_backup(production_database, "full_t0")
+    datetime.now()
+    await simulator.create_backup(production_database, "full_t0")
 
     # T0 + 30min: Add more data
     await asyncio.sleep(0.1)  # Simulate time passing
@@ -416,7 +413,7 @@ async def test_rto_scaling_with_data_size(backup_dir):
     ratio = rto_times[-1] / rto_times[1] if rto_times[1] > 0 else 0
     assert ratio < 10, f"RTO scaling poor: {ratio:.2f}x increase"
 
-    print(f"RTO scaling:")
+    print("RTO scaling:")
     for size, rto in zip(data_sizes, rto_times):
         print(f"  {size} records: {rto:.3f}s")
 
@@ -648,7 +645,7 @@ async def test_recovery_sla_compliance(production_database, backup_dir):
     # Recovery rate may be less if data was added after backup
     # This is expected for RPO testing
 
-    print(f"SLA Compliance Report:")
+    print("SLA Compliance Report:")
     print(f"  RTO: {rto_minutes:.2f} min (target: <5 min) - {' PASS' if sla_compliance['rto_met'] else ' FAIL'}")
     print(f"  RPO: {rpo_minutes:.2f} min (target: <15 min) - {' PASS' if sla_compliance['rpo_met'] else ' FAIL'}")
     print(f"  Recovery Rate: {recovery_rate:.2f}% (target: >99.9%) - {' PASS' if sla_compliance['recovery_rate_met'] else ' FAIL'}")

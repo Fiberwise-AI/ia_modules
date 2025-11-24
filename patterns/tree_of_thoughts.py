@@ -7,7 +7,6 @@ Explores multiple reasoning paths systematically using tree search.
 from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass, field
 from enum import Enum
-import asyncio
 import re
 
 
@@ -229,7 +228,7 @@ Respond with just a number from 0-10:"""
             if match:
                 score = float(match.group(1))
                 return min(score / 10.0, 1.0)
-        except:
+        except (ValueError, AttributeError):
             pass
         
         return 0.5  # Default middle score if parsing fails

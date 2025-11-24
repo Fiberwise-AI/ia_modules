@@ -9,7 +9,6 @@ Provides ready-to-use agents with collaboration capabilities:
 """
 
 from typing import Dict, Any, List, Optional
-import logging
 
 from .base_agent import BaseCollaborativeAgent
 from .core import AgentRole
@@ -212,7 +211,7 @@ class AnalysisAgent(BaseCollaborativeAgent):
             self.logger.warning("No data provided for analysis")
             return {"status": "error", "message": "No data provided"}
 
-        self.logger.info(f"Analyzing data...")
+        self.logger.info("Analyzing data...")
 
         # Phase 1: Perform analysis
         analysis_results = await self._perform_analysis(data)
@@ -551,7 +550,7 @@ class CriticAgent(BaseCollaborativeAgent):
             artifact = await self.read_state(artifact_key)
 
         if not artifact:
-            self.logger.warning(f"No artifact found for review")
+            self.logger.warning("No artifact found for review")
             return {"status": "error", "message": "No artifact to review"}
 
         self.logger.info(f"Reviewing artifact against {len(self.criteria)} criteria")
@@ -701,7 +700,7 @@ class CriticAgent(BaseCollaborativeAgent):
 
         if action == "verify":
             # Verify a fact
-            fact = query.get("fact", "")
+            query.get("fact", "")
             confidence = 0.8  # Would use actual verification in production
 
             await self.send_message(
@@ -713,7 +712,7 @@ class CriticAgent(BaseCollaborativeAgent):
 
         elif action == "review_analysis":
             # Review analysis results
-            analysis = query.get("analysis", {})
+            query.get("analysis", {})
             insight = "Analysis appears sound with good methodology"
             agreement = 0.85
 

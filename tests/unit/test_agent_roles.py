@@ -3,8 +3,6 @@ Tests for agents.roles module
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
-from unittest.mock import AsyncMock, MagicMock
 from ia_modules.agents.core import AgentRole
 from ia_modules.agents.roles import (
     PlannerAgent,
@@ -495,7 +493,7 @@ class TestFormatterAgent:
         }
         agent = FormatterAgent(role, state_manager)
 
-        result = await agent.execute({"format": "json"})
+        await agent.execute({"format": "json"})
 
         final_answer = state_manager.state["final_answer"]
         assert "plan" in final_answer

@@ -6,7 +6,7 @@ Analyzes tasks and creates execution plans using available tools.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Callable
+from typing import Any, Dict, List, Optional, Set
 from enum import Enum
 
 
@@ -463,7 +463,7 @@ class ToolPlanner:
                 groups[pg] += 1
 
         # Time saved by parallelization
-        sequential_time = len(plan.steps) * 2.0
+        len(plan.steps) * 2.0
         parallel_time = (len(plan.steps) - sum(max(0, count - 1) for count in groups.values())) * 2.0
 
         return ExecutionPlan(

@@ -17,13 +17,13 @@ class CollaborativeDecisionStep(Step):
         stakeholders = self.config.get("stakeholders", ["reviewer1", "reviewer2", "manager"])
         decision_type = self.config.get("decision_type", "majority") # all, majority, any
         timeout_hours = self.config.get("timeout_hours", 24)
-        voting_options = self.config.get("voting_options", ["approve", "reject", "request_changes"])
+        self.config.get("voting_options", ["approve", "reject", "request_changes"])
         
         decision_id = str(uuid.uuid4())
         
         # Extract content for collaborative review
-        content = data.get("processed_content", "")
-        quality_assessment = data.get("quality_assessment", {})
+        data.get("processed_content", "")
+        data.get("quality_assessment", {})
         human_feedback = data.get("human_feedback", "")
         
         # Create collaborative decision UI schema

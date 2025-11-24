@@ -18,6 +18,11 @@ from datetime import datetime
 from pydantic import BaseModel
 from enum import Enum
 
+try:
+    from pipeline.graph_runner import Pipeline
+except ImportError:
+    Pipeline = None
+
 # Add the IA modules to the path
 current_dir = Path(__file__).parent
 ia_modules_path = current_dir.parent
@@ -27,10 +32,10 @@ sys.path.insert(0, str(ia_modules_path))
 project_root = current_dir.parent
 sys.path.insert(0, str(project_root))
 
-from ia_modules.pipeline.services import ServiceRegistry
-from nexusql import DatabaseManager
-from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
-from ia_modules.pipeline.llm_provider_service import LLMProviderService, LLMProvider
+from ia_modules.pipeline.services import ServiceRegistry  # noqa: E402
+from nexusql import DatabaseManager  # noqa: E402
+from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner  # noqa: E402
+from ia_modules.pipeline.llm_provider_service import LLMProviderService, LLMProvider  # noqa: E402
 
 # Load environment variables
 try:
@@ -44,7 +49,7 @@ try:
         # Try .env.example as fallback
         env_example_path = current_dir / '.env.example'
         if env_example_path.exists():
-            logging.info(f"Note: .env not found, using .env.example. Copy .env.example to .env and add your API keys.")
+            logging.info("Note: .env not found, using .env.example. Copy .env.example to .env and add your API keys.")
 except ImportError:
     logging.warning("python-dotenv not installed. Install with: pip install python-dotenv")
 except Exception as e:
@@ -318,7 +323,6 @@ def main():
     pipeline_file = None
     slug = None
     input_data = {}
-    parameter_values = {}
     db_url = None
     output_file = None
 

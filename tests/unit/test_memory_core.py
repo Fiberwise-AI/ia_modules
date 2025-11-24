@@ -4,9 +4,8 @@ Unit tests for Memory system core functionality.
 Tests the Message dataclass, MessageRole enum, and ConversationMemory interfaces.
 """
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from datetime import datetime
-from ia_modules.memory.core import Message, MessageRole, ConversationMemory
+from ia_modules.memory.core import Message, MessageRole
 from ia_modules.memory.memory_backend import MemoryConversationMemory
 
 
@@ -119,7 +118,7 @@ class TestMemoryConversationMemory:
 
         metadata = {"source": "web", "ip": "192.168.1.1"}
 
-        message_id = await memory.add_message(
+        await memory.add_message(
             thread_id="thread-1",
             role="user",
             content="Hello!",
@@ -136,7 +135,7 @@ class TestMemoryConversationMemory:
 
         function_call = {"name": "get_weather", "arguments": '{"city": "SF"}'}
 
-        message_id = await memory.add_message(
+        await memory.add_message(
             thread_id="thread-1",
             role="assistant",
             content="Calling weather API...",

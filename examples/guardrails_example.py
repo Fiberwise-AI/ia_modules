@@ -67,7 +67,7 @@ async def main():
 
         # Check jailbreak
         jailbreak_result = await jailbreak_rail.execute(user_input)
-        print(f"\n[Jailbreak Detection]")
+        print("\n[Jailbreak Detection]")
         print(f"   Action: {jailbreak_result.action.value}")
         print(f"   Triggered: {jailbreak_result.triggered}")
         if jailbreak_result.triggered:
@@ -75,7 +75,7 @@ async def main():
 
         # Check toxicity
         toxicity_result = await toxicity_rail.execute(user_input)
-        print(f"\n[Toxicity Detection]")
+        print("\n[Toxicity Detection]")
         print(f"   Action: {toxicity_result.action.value}")
         print(f"   Triggered: {toxicity_result.triggered}")
         if toxicity_result.triggered:
@@ -84,7 +84,7 @@ async def main():
 
         # Check PII
         pii_result = await pii_rail.execute(user_input)
-        print(f"\n[PII Detection]")
+        print("\n[PII Detection]")
         print(f"   Action: {pii_result.action.value}")
         print(f"   Triggered: {pii_result.triggered}")
         if pii_result.triggered:

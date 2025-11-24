@@ -20,7 +20,7 @@ from enum import Enum
 
 from ..core import AgentRole
 from ..state import StateManager
-from ..communication import MessageBus, MessageType
+from ..communication import MessageBus
 from ..collaboration_patterns.peer_to_peer import PeerToPeerCollaboration
 from ..base_agent import BaseCollaborativeAgent
 
@@ -338,7 +338,7 @@ Cross-Domain Synthesis:
     async def _refine_contribution(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Refine contribution based on peer feedback."""
         original = context.get("original_contribution", "")
-        feedback = context.get("peer_feedback", [])
+        context.get("peer_feedback", [])
 
         refined = f"{original}\n\nREFINED BASED ON PEER FEEDBACK:\n"
         refined += "- Incorporated cross-domain perspectives\n"
@@ -409,8 +409,8 @@ async def run_knowledge_sharing_example():
     knowledge_topic = "The Nature and Implications of Consciousness"
 
     print(f"Knowledge Topic: {knowledge_topic}")
-    print(f"Collaboration Rounds: 2")
-    print(f"Peer Structure: Equal collaboration (no hierarchy)\n")
+    print("Collaboration Rounds: 2")
+    print("Peer Structure: Equal collaboration (no hierarchy)\n")
 
     print("Starting knowledge sharing...\n")
 
@@ -434,7 +434,7 @@ async def run_knowledge_sharing_example():
             round_num = round_data.get('round', 0)
             contributions = round_data.get('contributions', [])
 
-            print(f"\n" + "-"*80)
+            print("\n" + "-"*80)
             print(f"ROUND {round_num}")
             print("-"*80 + "\n")
 

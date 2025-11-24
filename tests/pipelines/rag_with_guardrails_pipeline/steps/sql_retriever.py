@@ -1,5 +1,5 @@
 """SQL-based retriever for RAG pipeline."""
-from typing import Dict, Any, List
+from typing import Dict, Any
 from ia_modules.pipeline.core import Step
 
 
@@ -112,7 +112,6 @@ class SQLRetrieverStep(Step):
 
     def _build_vector_query(self, query: str):
         """Build vector similarity search query."""
-        from sqlalchemy import text
 
         # This requires an embedding column and pgvector extension
         # For now, return a placeholder - user needs to implement embedding logic

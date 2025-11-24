@@ -6,8 +6,6 @@ safety features, and error handling.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
-import asyncio
 from unittest.mock import Mock, patch, AsyncMock
 import aiohttp
 from ia_modules.tools.builtin_tools.web_scraper import (
@@ -112,7 +110,6 @@ class TestWebScraperTool:
     @pytest.mark.asyncio
     async def test_rate_limiting(self, scraper):
         """Test rate limiting functionality."""
-        import time
 
         # First call should set the timestamp
         await scraper._rate_limit()

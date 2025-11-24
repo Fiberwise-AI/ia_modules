@@ -7,7 +7,7 @@ Clean implementation without POC dependencies.
 
 import json
 import importlib
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from pathlib import Path
 
 from .core import Step, Pipeline, TemplateParameterResolver
@@ -113,9 +113,8 @@ def create_pipeline_from_json(pipeline_config: Dict[str, Any], services: Optiona
         steps.append(step)
 
     # Extract structure for graph-based execution (if present)
-    structure = None
     if 'flow' in pipeline_config:
-        structure = {
+        {
             'steps': pipeline_config.get('steps', []),
             'flow': pipeline_config['flow'],
             'parameters': pipeline_config.get('parameters', {})

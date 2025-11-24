@@ -6,10 +6,8 @@ Tests use a separate Redis database (db=15) to avoid conflicts.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
-import json
+from unittest.mock import patch
 
 # Check if redis is available
 try:
@@ -29,13 +27,13 @@ if REDIS_AVAILABLE:
                 await client.ping()
                 await client.aclose()
                 return True
-            except:
+            except Exception:
                 return False
         REDIS_SERVER_AVAILABLE = asyncio.run(check_redis())
-    except:
+    except Exception:
         REDIS_SERVER_AVAILABLE = False
 
-from ia_modules.reliability.redis_metric_storage import RedisMetricStorage
+from ia_modules.reliability.redis_metric_storage import RedisMetricStorage  # noqa: E402
 
 
 pytestmark = [

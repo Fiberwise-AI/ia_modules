@@ -24,9 +24,8 @@ Example:
 """
 
 import ast
-import hashlib
 import logging
-from typing import Dict, Any, Optional, Type
+from typing import Dict, Optional, Type
 from nexusql import DatabaseInterface
 from ia_modules.pipeline.core import Step
 

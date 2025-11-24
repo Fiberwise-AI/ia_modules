@@ -1,9 +1,7 @@
 """Memory service for conversation history and agent memory"""
 
-import asyncio
 import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 

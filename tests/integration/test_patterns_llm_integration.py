@@ -7,6 +7,31 @@ The LLMProviderService has been simplified and no longer uses LLMProvider/LLMRes
 """
 
 import pytest
+import os
+
+# These imports are for the old API that these tests use (tests are currently skipped)
+try:
+    from pipeline.llm_provider_service import LLMProviderService, LLMProvider
+    from pipeline.patterns.chain_of_thought import ChainOfThoughtStep, CoTConfig
+    from pipeline.patterns.self_consistency import SelfConsistencyStep, SelfConsistencyConfig, VotingStrategy
+    from pipeline.patterns.react import ReActAgent, ReActConfig
+    from pipeline.patterns.tree_of_thoughts import TreeOfThoughtsStep, ToTConfig, PruningStrategy
+    from pipeline.llm_adapter import LLMProviderAdapter
+except ImportError:
+    LLMProviderService = None
+    LLMProvider = None
+    ChainOfThoughtStep = None
+    CoTConfig = None
+    SelfConsistencyStep = None
+    SelfConsistencyConfig = None
+    VotingStrategy = None
+    ReActAgent = None
+    ReActConfig = None
+    LLMProviderAdapter = None
+    TreeOfThoughtsStep = None
+    ToTConfig = None
+    PruningStrategy = None
+
 
 # Skip all tests in this module until they are updated for the new API
 pytestmark = pytest.mark.skip(reason="Tests need to be updated for new LLMProviderService API")
@@ -221,7 +246,7 @@ async def test_react_agent_openai():
                 try:
                     result = eval(tool_input, {"__builtins__": {}}, {})
                     return f"Result: {result}"
-                except:
+                except Exception:
                     return "Error calculating"
             return f"Tool {tool_name} not available"
     
@@ -264,7 +289,7 @@ async def test_react_agent_anthropic():
                 try:
                     result = eval(tool_input, {"__builtins__": {}}, {})
                     return f"Result: {result}"
-                except:
+                except Exception:
                     return "Error calculating"
             return f"Tool {tool_name} not available"
     
@@ -307,7 +332,7 @@ async def test_react_agent_google():
                 try:
                     result = eval(tool_input, {"__builtins__": {}}, {})
                     return f"Result: {result}"
-                except:
+                except Exception:
                     return "Error calculating"
             return f"Tool {tool_name} not available"
     
@@ -584,4 +609,4 @@ async def test_cross_provider_consistency():
         results[name] = result['answer']
         assert '56' in result['answer'], f"{name} should get 56"
     
-    print(f"✓ Cross-provider consistency: All got 56")
+    print("✓ Cross-provider consistency: All got 56")

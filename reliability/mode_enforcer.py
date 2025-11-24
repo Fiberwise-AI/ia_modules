@@ -5,7 +5,7 @@ Enforces agent modes (explore/execute/escalate) to ensure predictable behavior.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Any, List, Optional, Literal, Callable
+from typing import Dict, List, Optional, Callable
 from enum import Enum
 import logging
 

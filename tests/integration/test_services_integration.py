@@ -3,12 +3,10 @@ Integration tests for service system with real service interactions
 """
 
 import asyncio
-from unittest.mock import Mock
 
 import pytest
 
-from ia_modules.pipeline.services import ServiceRegistry, CentralLoggingService
-from ia_modules.pipeline.test_utils import create_test_execution_context
+from ia_modules.pipeline.services import ServiceRegistry
 
 
 class MockService:
@@ -190,7 +188,7 @@ async def test_service_registry_with_real_pipeline():
 
             # Simulate getting another service
             if self.services.has("data_validator"):
-                validator = self.services.get("data_validator")
+                self.services.get("data_validator")
                 # Use validator if available
 
             result = {"step": self.name, "processed": True, "input": data}

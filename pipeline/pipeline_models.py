@@ -2,7 +2,7 @@
 Pydantic models for pipeline configurations and executions
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator, ConfigDict, field_serializer
 import json

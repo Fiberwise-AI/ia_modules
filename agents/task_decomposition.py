@@ -4,9 +4,8 @@ Task decomposition and dependency management for multi-agent collaboration.
 Provides strategies for breaking down complex tasks and managing dependencies.
 """
 
-import asyncio
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional, Set, Callable
+from typing import Dict, Any, List, Optional, Set
 from enum import Enum
 import logging
 
@@ -366,7 +365,7 @@ class TaskDecomposer:
             ValueError: If circular dependency detected
         """
         # Build task map
-        task_map = {task.task_id: task for task in tasks}
+        {task.task_id: task for task in tasks}
 
         # Track completed and in-progress tasks
         completed = set()

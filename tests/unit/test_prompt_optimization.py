@@ -5,9 +5,7 @@ Tests genetic algorithms, A/B testing, and reinforcement learning.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
-from unittest.mock import Mock, AsyncMock, patch
 import random
 
 from ia_modules.prompt_optimization.genetic import (

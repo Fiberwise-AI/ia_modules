@@ -11,7 +11,7 @@ Comprehensive validation for pipeline definitions including:
 
 import importlib
 import re
-from typing import Dict, Any, List, Set, Optional, Tuple
+from typing import Dict, Any, List, Set, Tuple
 from dataclasses import dataclass, field
 
 # Import loop detection
@@ -80,9 +80,9 @@ class PipelineValidator:
         """Validate basic pipeline structure"""
         # Check required top-level fields
         required_fields = ['name', 'steps', 'flow']
-        for field in required_fields:
-            if field not in self.pipeline_data:
-                self.result.add_error(f"Missing required field: '{field}'")
+        for req_field in required_fields:
+            if req_field not in self.pipeline_data:
+                self.result.add_error(f"Missing required field: '{req_field}'")
 
         # Validate name
         if 'name' in self.pipeline_data:

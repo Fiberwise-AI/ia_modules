@@ -19,7 +19,7 @@ from typing import Dict, Any, List
 
 from ..core import AgentRole
 from ..state import StateManager
-from ..communication import MessageBus, MessageType
+from ..communication import MessageBus
 from ..collaboration_patterns.debate import (
     DebateCollaboration,
     DebateRole,
@@ -83,7 +83,7 @@ class CodeReviewDebateAgent(BaseCollaborativeAgent):
         await asyncio.sleep(0.1)  # Simulate thinking
 
         statements = {
-            (DebateRole.PROPONENT, "security"): f"""
+            (DebateRole.PROPONENT, "security"): """
 OPENING STATEMENT - PROPONENT (Security Focus):
 
 I argue IN FAVOR of accepting this code change.
@@ -96,7 +96,7 @@ Security Analysis:
 
 The security posture of this code meets our standards.
 """,
-            (DebateRole.PROPONENT, "performance"): f"""
+            (DebateRole.PROPONENT, "performance"): """
 OPENING STATEMENT - PROPONENT (Performance Focus):
 
 I argue IN FAVOR of accepting this code change.
@@ -109,7 +109,7 @@ Performance Analysis:
 
 The performance characteristics are sound.
 """,
-            (DebateRole.OPPONENT, "security"): f"""
+            (DebateRole.OPPONENT, "security"): """
 OPENING STATEMENT - OPPONENT (Security Focus):
 
 I argue AGAINST accepting this code change in its current form.
@@ -122,7 +122,7 @@ Security Concerns:
 
 These security gaps must be addressed before merging.
 """,
-            (DebateRole.OPPONENT, "performance"): f"""
+            (DebateRole.OPPONENT, "performance"): """
 OPENING STATEMENT - OPPONENT (Performance Focus):
 
 I argue AGAINST accepting this code change in its current form.

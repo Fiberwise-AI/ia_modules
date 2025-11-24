@@ -35,13 +35,13 @@ __all__ = [
 
 # Optional backends
 try:
-    from .sql import SQLConversationMemory
+    from .sql import SQLConversationMemory  # noqa: F401
     __all__.append('SQLConversationMemory')
 except ImportError:
     pass
 
 try:
-    from .redis import RedisConversationMemory
+    from .redis import RedisConversationMemory  # noqa: F401
     __all__.append('RedisConversationMemory')
 except ImportError:
     pass

@@ -5,12 +5,11 @@ SQLAlchemy adapter - wraps SQLAlchemy to implement DatabaseInterface
 from typing import Optional, Dict, List, Any
 from pathlib import Path
 import logging
-import re
 
 try:
     from sqlalchemy import create_engine, text, inspect
     from sqlalchemy.orm import sessionmaker, Session
-    from sqlalchemy.pool import NullPool
+    from sqlalchemy.pool import NullPool  # noqa: F401
     SQLALCHEMY_AVAILABLE = True
 except ImportError:
     SQLALCHEMY_AVAILABLE = False

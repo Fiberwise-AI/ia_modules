@@ -6,14 +6,12 @@ agents, prompt optimization, and tools.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
 import asyncio
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock
 import time
 
 from ia_modules.patterns.constitutional_ai import (
     Principle,
-    PrincipleCategory,
     ConstitutionalConfig,
     ConstitutionalAIStep
 )
@@ -30,7 +28,7 @@ from ia_modules.multimodal.processor import (
 from ia_modules.agents.communication import MessageBus, AgentMessage, MessageType
 from ia_modules.agents.orchestrator import AgentOrchestrator
 from ia_modules.agents.state import StateManager
-from ia_modules.agents.core import BaseAgent, AgentRole
+from ia_modules.agents.core import BaseAgent
 from ia_modules.prompt_optimization.genetic import GeneticOptimizer, GeneticConfig
 from ia_modules.prompt_optimization.evaluators import PromptEvaluator
 from ia_modules.tools.tool_registry import AdvancedToolRegistry
@@ -285,7 +283,7 @@ class TestAgentCollaborationWithTools:
         """Agent orchestrator uses tool chains."""
         # Setup
         state = StateManager(thread_id="test")
-        orchestrator = AgentOrchestrator(state)
+        AgentOrchestrator(state)
 
         # Mock tool executor
         async def tool_executor(tool_name, params):
@@ -672,7 +670,7 @@ class TestErrorHandlingIntegration:
             inputs = [
                 MultiModalInput(content=b"bad", modality=ModalityType.IMAGE)
             ]
-            result = await processor.process(inputs)
+            await processor.process(inputs)
             # May return partial results or error indication
         except Exception:
             # Error handling is acceptable

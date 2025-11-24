@@ -343,8 +343,8 @@ def main():
                 f.write(f"{rec['description']}\n\n")
                 f.write("```python\n")
                 f.write(f"async def {rec['test']}():\n")
-                f.write(f"    # TODO: Implement test\n")
-                f.write(f"    pass\n")
+                f.write("    # TODO: Implement test\n")
+                f.write("    pass\n")
                 f.write("```\n\n")
             
             f.write("### Integration Tests\n\n")
@@ -353,8 +353,8 @@ def main():
                 f.write(f"{rec['description']}\n\n")
                 f.write("```python\n")
                 f.write(f"async def {rec['test']}():\n")
-                f.write(f"    # TODO: Implement test\n")
-                f.write(f"    pass\n")
+                f.write("    # TODO: Implement test\n")
+                f.write("    pass\n")
                 f.write("```\n\n")
         else:
             f.write("No additional tests recommended at this time.\n\n")

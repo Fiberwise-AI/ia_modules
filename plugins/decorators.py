@@ -5,7 +5,6 @@ Convenient decorators for creating plugins.
 """
 
 from typing import Type, Optional, Dict, Any, Callable
-from functools import wraps
 
 from .base import (
     Plugin,

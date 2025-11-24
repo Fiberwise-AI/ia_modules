@@ -2,7 +2,6 @@
 Genetic algorithm optimizer for prompt optimization.
 """
 
-import asyncio
 import random
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple

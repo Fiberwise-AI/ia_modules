@@ -5,10 +5,8 @@ Tests all methods and edge cases in agents/state.py to achieve 100% coverage
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import Mock, AsyncMock
 import asyncio
-from datetime import datetime
 
 from ia_modules.agents.state import StateManager
 

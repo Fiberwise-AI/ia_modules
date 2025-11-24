@@ -6,9 +6,7 @@ from typing import Dict, Any, Optional, List
 from ia_modules.benchmarking import (
     BenchmarkRunner,
     BenchmarkConfig,
-    BenchmarkComparator,
-    HTMLReporter,
-    JSONReporter
+    BenchmarkComparator
 )
 
 logger = logging.getLogger(__name__)

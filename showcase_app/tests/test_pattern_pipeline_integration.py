@@ -13,7 +13,6 @@ from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
-from ia_modules.pipeline.services import ServiceRegistry
 from ia_modules.pipeline.llm_provider_service import LLMResponse, LLMProvider
 from backend.pipelines.pattern_steps import ReflectionStep, PlanningStep, ToolUseStep
 
@@ -86,7 +85,7 @@ async def test_pipeline_json_structure_validation():
         }
     }
 
-    runner = GraphPipelineRunner()
+    GraphPipelineRunner()
 
     # Should validate without errors
     from ia_modules.pipeline.graph_pipeline_runner import PipelineConfig
@@ -167,7 +166,6 @@ async def test_pattern_step_execution_in_pipeline():
     """Test that pattern steps execute correctly in pipeline context"""
 
     # Inject mock LLM into pattern steps
-    import showcase_app.backend.pipelines.pattern_steps as pattern_module
 
     # Temporarily replace LLM initialization
     original_init = ReflectionStep._init_llm
@@ -300,7 +298,7 @@ async def test_multi_pattern_pipeline():
 async def test_pipeline_json_field_names():
     """Test that correct field names are used (id, step_class, module)"""
 
-    from ia_modules.pipeline.graph_pipeline_runner import PipelineConfig, PipelineStep
+    from ia_modules.pipeline.graph_pipeline_runner import PipelineConfig
 
     # Correct structure
     config = PipelineConfig(**{

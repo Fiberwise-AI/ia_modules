@@ -5,7 +5,6 @@ This step uses the actual LLM service infrastructure already in ia_modules.
 """
 from typing import Dict, Any
 from ia_modules.pipeline.core import Step
-from ia_modules.pipeline.llm_provider_service import LLMProviderService
 
 
 class LLMStep(Step):

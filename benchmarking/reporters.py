@@ -5,9 +5,11 @@ Generate reports in various formats (console, JSON, HTML).
 """
 
 import json
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from pathlib import Path
 from datetime import datetime, timezone
+
+from .models import BenchmarkResult
 
 
 class ConsoleReporter:
@@ -20,7 +22,7 @@ class ConsoleReporter:
     def __init__(self, use_colors: bool = True):
         self.use_colors = use_colors
 
-    def report(self, results: List['BenchmarkResult']) -> None:
+    def report(self, results: List[BenchmarkResult]) -> None:
         """Print benchmark results to console"""
         if not results:
             print("No benchmark results to report")
@@ -40,7 +42,7 @@ class ConsoleReporter:
         print("=" * 70)
         print()
 
-    def _print_result(self, result: 'BenchmarkResult') -> None:
+    def _print_result(self, result: BenchmarkResult) -> None:
         """Print a single benchmark result"""
         print(f"📊 {result.name}")
         print(f"   Iterations: {result.iterations}")
@@ -90,7 +92,7 @@ class JSONReporter:
 
     def report(
         self,
-        results: List['BenchmarkResult'],
+        results: List[BenchmarkResult],
         output_file: Optional[Path] = None
     ) -> str:
         """
@@ -133,7 +135,7 @@ class HTMLReporter:
 
     def report(
         self,
-        results: List['BenchmarkResult'],
+        results: List[BenchmarkResult],
         output_file: Path,
         include_charts: bool = True
     ) -> None:
@@ -150,7 +152,7 @@ class HTMLReporter:
 
     def _generate_html(
         self,
-        results: List['BenchmarkResult'],
+        results: List[BenchmarkResult],
         include_charts: bool
     ) -> str:
         """Generate HTML content"""
@@ -258,7 +260,7 @@ tr:hover {
 }
 </style>'''
 
-    def _html_summary(self, results: List['BenchmarkResult']) -> str:
+    def _html_summary(self, results: List[BenchmarkResult]) -> str:
         """Generate summary cards"""
         if not results:
             return '<p>No results</p>'
@@ -290,7 +292,7 @@ tr:hover {
     </div>
 </div>'''
 
-    def _html_results_table(self, results: List['BenchmarkResult']) -> str:
+    def _html_results_table(self, results: List[BenchmarkResult]) -> str:
         """Generate results table"""
         rows = []
         for result in results:
@@ -324,7 +326,7 @@ tr:hover {
     </tbody>
 </table>'''
 
-    def _html_charts(self, results: List['BenchmarkResult']) -> str:
+    def _html_charts(self, results: List[BenchmarkResult]) -> str:
         """Generate charts"""
         # Prepare data for Chart.js
         labels = [r.name for r in results]
@@ -392,7 +394,7 @@ class MarkdownReporter:
 
     def report(
         self,
-        results: List['BenchmarkResult'],
+        results: List[BenchmarkResult],
         output_file: Optional[Path] = None
     ) -> str:
         """

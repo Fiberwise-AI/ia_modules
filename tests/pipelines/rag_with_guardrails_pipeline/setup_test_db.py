@@ -9,7 +9,7 @@ tests_dir = current_dir.parent.parent
 ia_modules_dir = tests_dir.parent
 sys.path.insert(0, str(ia_modules_dir))
 
-from nexusql import DatabaseManager
+from nexusql import DatabaseManager  # noqa: E402
 
 
 async def setup_test_database():

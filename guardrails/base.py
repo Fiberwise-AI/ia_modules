@@ -1,7 +1,7 @@
 """Base guardrail implementation."""
 from typing import Any, Optional, Dict
 from abc import ABC, abstractmethod
-from .models import RailResult, RailAction, RailType, GuardrailConfig
+from .models import RailResult, GuardrailConfig
 
 
 class BaseGuardrail(ABC):

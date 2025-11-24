@@ -5,19 +5,15 @@ Tests semantic, episodic, working memory, and compression.
 """
 
 import pytest
-from ia_modules.pipeline.test_utils import create_test_execution_context
-import asyncio
 import time
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from collections import deque
 
 from ia_modules.memory.semantic_memory import SemanticMemory
 from ia_modules.memory.episodic_memory import EpisodicMemory
 from ia_modules.memory.working_memory import WorkingMemory
 from ia_modules.memory.compression import (
     MemoryCompressor,
-    CompressionStrategy,
-    CompressionResult
+    CompressionStrategy
 )
 
 

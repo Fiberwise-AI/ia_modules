@@ -52,14 +52,14 @@ async def test_pipeline_import():
     print("\n3. Importing pipelines...")
     results = await importer.import_all_pipelines(clear_existing=True)
 
-    print(f"\n   Import Results:")
+    print("\n   Import Results:")
     print(f"   - Imported: {results['imported']}")
     print(f"   - Updated:  {results['updated']}")
     print(f"   - Skipped:  {results['skipped']}")
     print(f"   - Errors:   {results['errors']}")
 
     if results['details']:
-        print(f"\n   Details:")
+        print("\n   Details:")
         for detail in results['details']:
             action = detail['action']
             file_name = detail['file']
@@ -120,11 +120,11 @@ async def test_pipeline_import():
 
             # Try to instantiate
             step_instance = step_class("test_step", {})
-            print(f"   [OK] Successfully instantiated step")
+            print("   [OK] Successfully instantiated step")
 
             # Try to run
             result = await step_instance.run({"topic": "database test"})
-            print(f"   [OK] Successfully executed step")
+            print("   [OK] Successfully executed step")
             print(f"   Output: {result}")
 
         except Exception as e:

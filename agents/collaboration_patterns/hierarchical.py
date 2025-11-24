@@ -6,13 +6,12 @@ to worker agents and synthesizes their results.
 """
 
 import asyncio
-from typing import Dict, Any, List, Optional, Set
+from typing import Dict, Any, List, Set
 import logging
 
 from ..base_agent import BaseCollaborativeAgent
-from ..communication import MessageBus, MessageType, AgentMessage
-from ..task_decomposition import Task, TaskDecomposer, DependencyGraph, DecompositionStrategy
-from ..state import StateManager
+from ..communication import MessageBus, MessageType
+from ..task_decomposition import Task, TaskDecomposer, DecompositionStrategy
 
 
 class HierarchicalCollaboration:
@@ -352,7 +351,7 @@ class WorkerAgent(BaseCollaborativeAgent):
             Task results
         """
         task_id = input_data.get("task_id", "unknown")
-        description = input_data.get("description", "")
+        input_data.get("description", "")
 
         self.logger.info(f"Worker executing task: {task_id}")
 

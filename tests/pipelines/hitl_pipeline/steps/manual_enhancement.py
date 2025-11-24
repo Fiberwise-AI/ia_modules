@@ -14,7 +14,7 @@ class ManualEnhancementStep(Step):
     """
     
     async def run(self, data: Dict[str, Any]) -> Any:
-        enhancement_type = self.config.get("enhancement_type", "iterative")
+        self.config.get("enhancement_type", "iterative")
         max_iterations = self.config.get("max_iterations", 3)
         timeout_seconds = self.config.get("timeout_seconds", 600)
         

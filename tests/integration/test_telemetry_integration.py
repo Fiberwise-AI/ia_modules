@@ -15,7 +15,7 @@ from ia_modules.telemetry import (
     SimpleTracer,
     PrometheusExporter
 )
-from ia_modules.telemetry.integration import get_telemetry, configure_telemetry
+from ia_modules.telemetry.integration import configure_telemetry
 from ia_modules.benchmarking import BenchmarkResult, BenchmarkTelemetryBridge
 
 

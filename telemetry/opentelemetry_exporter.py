@@ -5,17 +5,16 @@ Export metrics using OpenTelemetry Protocol (OTLP).
 Supports gRPC and HTTP protocols.
 """
 
-import logging
 from typing import List, Optional, Dict, Any
 from .metrics import Metric, MetricType
 from .exporters import MetricsExporter
 
 try:
-    from opentelemetry import metrics as otel_metrics
+    from opentelemetry import metrics as otel_metrics  # noqa: F401
     from opentelemetry.sdk.metrics import MeterProvider
     from opentelemetry.sdk.metrics.export import (
         PeriodicExportingMetricReader,
-        MetricExporter as OTelMetricExporter
+        MetricExporter as OTelMetricExporter  # noqa: F401
     )
     from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter as GRPCExporter
     from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter as HTTPExporter

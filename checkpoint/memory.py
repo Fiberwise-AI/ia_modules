@@ -12,9 +12,6 @@ from collections import defaultdict
 from .core import (
     BaseCheckpointer,
     Checkpoint,
-    CheckpointSaveError,
-    CheckpointLoadError,
-    CheckpointDeleteError,
     CheckpointStatus
 )
 

@@ -6,7 +6,7 @@ Optimized for high-throughput, low-latency metric storage and retrieval.
 """
 
 from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import json
 import logging
 

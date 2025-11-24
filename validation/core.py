@@ -4,9 +4,8 @@ Structured output validation.
 Validates agent outputs against Pydantic schemas with automatic retry.
 """
 
-from typing import Type, Callable, Any, Dict, Optional
+from typing import Type, Callable, Any, Dict
 from pydantic import BaseModel, ValidationError
-import json
 import logging
 
 
