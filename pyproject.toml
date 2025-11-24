@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ia_modules"
-version = "0.1.1"
+version = "0.1.2"
 description = "Production-ready AI agent framework with enterprise-grade reliability and observability"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -126,15 +126,24 @@ Repository = "https://github.com/Fiberwise-AI/ia_modules"
 Issues = "https://github.com/Fiberwise-AI/ia_modules/issues"
 
 [project.scripts]
-ia-modules = "ia_modules.cli.main:main"
+ia-modules = "cli.main:main"
 
 [tool.setuptools.packages.find]
+# Find all packages in the current directory
 where = ["."]
-include = ["ia_modules*"]
-exclude = ["tests*", "docs*", "showcase_app*"]
+# Exclude test and documentation directories
+exclude = [
+    "tests*",
+    "docs*",
+    "showcase_app*",
+    "benchmarking*",
+    "examples*",
+    "release_notes*",
+]
 
 [tool.setuptools.package-data]
-ia_modules = ["*"]
+# Include SQL, JSON, YAML files in all packages
+"*" = ["*.sql", "*.json", "*.yaml", "*.yml"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
