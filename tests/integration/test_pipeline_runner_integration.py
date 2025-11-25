@@ -84,7 +84,8 @@ async def test_create_pipeline_from_json_integration():
         mock_module.IntegrationTestStep = IntegrationTestStep
         mock_import.return_value = mock_module
         
-        pipeline = create_pipeline_from_json(pipeline_config)
+        services = ServiceRegistry()
+        pipeline = create_pipeline_from_json(pipeline_config, services)
         
         assert len(pipeline.steps) == 1
         assert pipeline.steps[0].name == "step1"

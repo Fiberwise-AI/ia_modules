@@ -81,7 +81,7 @@ class TestPipelineTelemetryIntegration:
         """Test that pipeline execution generates metrics"""
         # Run pipeline
         input_data = {"input": 5}
-        result = await simple_pipeline.run(input_data)
+        result = await simple_pipeline.run(input_data, create_test_execution_context())
 
         # Verify pipeline completed (step1: 5*2=10, step2: 10*2=20, step3: 20*2=40)
         assert "output" in result
@@ -102,8 +102,8 @@ class TestPipelineTelemetryIntegration:
     async def test_pipeline_execution_traces(self, simple_pipeline, telemetry):
         """Test that pipeline execution generates traces"""
         # Run pipeline
-        input_data = {"input": 10}
-        await simple_pipeline.run(input_data)
+        input_data = {"input": 7}
+        await simple_pipeline.run(input_data, create_test_execution_context())
 
         # Get all spans
         spans = telemetry.get_spans()
@@ -387,7 +387,7 @@ class TestTelemetryPerformance:
         )
 
         start = time.time()
-        await pipeline_with_telemetry.run({"input": 1})
+        await pipeline_with_telemetry.run({"input": 1}, create_test_execution_context())
         with_telemetry_time = time.time() - start
 
         # Run without telemetry
@@ -400,7 +400,7 @@ class TestTelemetryPerformance:
         )
 
         start = time.time()
-        await pipeline_without_telemetry.run({"input": 1})
+        await pipeline_without_telemetry.run({"input": 1}, create_test_execution_context())
         without_telemetry_time = time.time() - start
 
         # Telemetry overhead should be minimal (< 20%)

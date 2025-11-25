@@ -405,8 +405,10 @@ class GraphPipelineRunner:
         except Exception as e:
             raise ValueError(f"Invalid pipeline configuration: {e}")
 
-        # Log execution start
-        execution_id = await self._start_execution_logging(config, input_data)
+        # Generate execution ID and log execution start
+        import uuid
+        execution_id = str(uuid.uuid4())
+        await self._start_execution_logging(config, input_data, execution_id)
 
         try:
             self.execution_stats['start_time'] = datetime.now()
@@ -492,8 +494,9 @@ class GraphPipelineRunner:
         # Execute pipeline
         self._log_to_central_service("INFO", f"Executing pipeline with {len(steps)} real agents")
 
+        from ia_modules.pipeline.test_utils import create_test_execution_context
         start_time = datetime.now()
-        result = await pipeline.run(input_data)
+        result = await pipeline.run(input_data, create_test_execution_context())
         end_time = datetime.now()
 
         duration = (end_time - start_time).total_seconds()
