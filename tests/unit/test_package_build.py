@@ -24,7 +24,7 @@ class TestPackageBuild:
 
     @pytest.fixture
     def expected_packages(self):
-        """List of expected top-level packages that should be in the wheel."""
+        """List of expected subpackages under ia_modules/ that should be in the wheel."""
         return {
             'agents',
             'checkpoint',
@@ -94,16 +94,18 @@ class TestPackageBuild:
         
         # Extract and check contents
         with zipfile.ZipFile(wheel_path, 'r') as whl:
-            # Get all top-level directories in the wheel
+            # Get all files under ia_modules/
             all_files = whl.namelist()
-            top_level_dirs = {
-                name.split('/')[0] 
-                for name in all_files 
-                if '/' in name and not name.startswith('ia_modules-')
+            
+            # Get subdirectories under ia_modules/
+            ia_modules_subdirs = {
+                parts[1]
+                for name in all_files
+                if name.startswith('ia_modules/') and len(parts := name.split('/')) > 1 and parts[1]
             }
             
-            # Verify all expected packages are present
-            missing_packages = expected_packages - top_level_dirs
+            # Verify all expected packages are present under ia_modules/
+            missing_packages = expected_packages - ia_modules_subdirs
             assert not missing_packages, f"Missing packages in wheel: {missing_packages}"
             
             # Verify no test files leaked in
@@ -167,10 +169,10 @@ class TestPackageBuild:
             
             # Verify core modules are present
             core_files = {
-                'pipeline/core.py',
-                'agents/core.py',
-                'pipeline/runner.py',
-                'pipeline/services.py',
+                'ia_modules/pipeline/core.py',
+                'ia_modules/agents/core.py',
+                'ia_modules/pipeline/runner.py',
+                'ia_modules/pipeline/services.py',
             }
             
             for core_file in core_files:
@@ -188,11 +190,11 @@ class TestPackageBuild:
             import importlib.util
             
             modules_to_check = [
-                'agents.core',
-                'pipeline.core', 
-                'pipeline.services',
-                'tools.core',
-                'memory.core'
+                'ia_modules.agents.core',
+                'ia_modules.pipeline.core', 
+                'ia_modules.pipeline.services',
+                'ia_modules.tools.core',
+                'ia_modules.memory.core'
             ]
             
             for module_name in modules_to_check:
