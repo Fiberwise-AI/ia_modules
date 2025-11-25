@@ -2,6 +2,7 @@
 Tests for MemoryCheckpointer
 """
 
+import asyncio
 import pytest
 from datetime import datetime, timedelta
 
@@ -117,6 +118,7 @@ class TestMemoryCheckpointerList:
                 step_index=i,
                 state={'step': i}
             )
+            await asyncio.sleep(0.001)  # Ensure distinct timestamps
 
         checkpoints = await checkpointer.list_checkpoints("test-thread")
 
@@ -139,6 +141,7 @@ class TestMemoryCheckpointerList:
                 step_index=i,
                 state={'step': i}
             )
+            await asyncio.sleep(0.001)  # Ensure distinct timestamps
 
         checkpoints = await checkpointer.list_checkpoints("test-thread", limit=3)
 
@@ -159,6 +162,7 @@ class TestMemoryCheckpointerList:
                 step_index=i,
                 state={'step': i}
             )
+            await asyncio.sleep(0.001)  # Ensure distinct timestamps
 
         # Get second page
         checkpoints = await checkpointer.list_checkpoints("test-thread", limit=3, offset=3)
@@ -208,6 +212,7 @@ class TestMemoryCheckpointerDelete:
                 step_index=i,
                 state={'step': i}
             )
+            await asyncio.sleep(0.001)  # Ensure distinct timestamps
 
         # Delete all but keep latest 3
         count = await checkpointer.delete_checkpoints("test-thread", keep_latest=3)

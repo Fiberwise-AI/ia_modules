@@ -3,6 +3,7 @@ Unit tests for Memory system core functionality.
 
 Tests the Message dataclass, MessageRole enum, and ConversationMemory interfaces.
 """
+import asyncio
 import pytest
 from datetime import datetime
 from ia_modules.memory.core import Message, MessageRole
@@ -154,7 +155,9 @@ class TestMemoryConversationMemory:
 
         # Add multiple messages
         await memory.add_message("thread-1", role="user", content="Hello")
+        await asyncio.sleep(0.001)  # Ensure distinct timestamps
         await memory.add_message("thread-1", role="assistant", content="Hi there!")
+        await asyncio.sleep(0.001)  # Ensure distinct timestamps
         await memory.add_message("thread-1", role="user", content="How are you?")
 
         messages = await memory.get_messages("thread-1")
@@ -182,6 +185,7 @@ class TestMemoryConversationMemory:
         # Add 5 messages
         for i in range(5):
             await memory.add_message("thread-1", role="user", content=f"Message {i}")
+            await asyncio.sleep(0.001)  # Ensure distinct timestamps
 
         messages = await memory.get_messages("thread-1", offset=2, limit=2)
         assert len(messages) == 2
@@ -217,7 +221,9 @@ class TestMemoryConversationMemory:
 
         # Add messages for user-123 across different threads
         await memory.add_message("thread-1", user_id="user-123", role="user", content="Message 1")
+        await asyncio.sleep(0.001)  # Ensure distinct timestamps
         await memory.add_message("thread-2", user_id="user-123", role="user", content="Message 2")
+        await asyncio.sleep(0.001)  # Ensure distinct timestamps
         await memory.add_message("thread-3", user_id="user-456", role="user", content="Message 3")
 
         user_messages = await memory.get_user_messages("user-123")

@@ -398,8 +398,8 @@ class TestFlowValidation:
         pipeline = {
             "name": "test",
             "steps": [
-                {"name": "step1", "module": "test", "class": "Step"},
-                {"name": "step2", "module": "test", "class": "Step"}
+                {"name": "step1", "module": "ia_modules.pipeline.core", "class": "Step"},
+                {"name": "step2", "module": "ia_modules.pipeline.core", "class": "Step"}
             ],
             "flow": {
                 "start_at": "step1",
@@ -417,8 +417,8 @@ class TestFlowValidation:
         pipeline = {
             "name": "test",
             "steps": [
-                {"name": "step1", "module": "test", "class": "Step"},
-                {"name": "step2", "module": "test", "class": "Step"}
+                {"name": "step1", "module": "ia_modules.pipeline.core", "class": "Step"},
+                {"name": "step2", "module": "ia_modules.pipeline.core", "class": "Step"}
             ],
             "flow": {
                 "start_at": "step1",
@@ -546,8 +546,8 @@ class TestConditionValidation:
         pipeline = {
             "name": "test",
             "steps": [
-                {"name": "step1", "module": "test", "class": "Step"},
-                {"name": "step2", "module": "test", "class": "Step"}
+                {"name": "step1", "module": "ia_modules.pipeline.core", "class": "Step"},
+                {"name": "step2", "module": "ia_modules.pipeline.core", "class": "Step"}
             ],
             "flow": {
                 "start_at": "step1",
@@ -740,10 +740,10 @@ class TestComplexPipelines:
         pipeline = {
             "name": "parallel_test",
             "steps": [
-                {"name": "step1", "module": "test", "class": "Step"},
-                {"name": "step2", "module": "test", "class": "Step", "parallel": True},
-                {"name": "step3", "module": "test", "class": "Step", "parallel": True},
-                {"name": "step4", "module": "test", "class": "Step"}
+                {"name": "step1", "module": "ia_modules.pipeline.core", "class": "Step"},
+                {"name": "step2", "module": "ia_modules.pipeline.core", "class": "Step", "parallel": True},
+                {"name": "step3", "module": "ia_modules.pipeline.core", "class": "Step", "parallel": True},
+                {"name": "step4", "module": "ia_modules.pipeline.core", "class": "Step"}
             ],
             "flow": {
                 "start_at": "step1",
@@ -765,7 +765,7 @@ class TestComplexPipelines:
             "steps": [
                 {
                     "name": "step1",
-                    "module": "test",
+                    "module": "ia_modules.pipeline.core",
                     "class": "Step",
                     "config": {
                         "error_handling": {
@@ -789,9 +789,9 @@ class TestComplexPipelines:
         pipeline = {
             "name": "conditional_test",
             "steps": [
-                {"name": "validate", "module": "test", "class": "Step"},
-                {"name": "process_success", "module": "test", "class": "Step"},
-                {"name": "process_failure", "module": "test", "class": "Step"}
+                {"name": "validate", "module": "ia_modules.pipeline.core", "class": "Step"},
+                {"name": "process_success", "module": "ia_modules.pipeline.core", "class": "Step"},
+                {"name": "process_failure", "module": "ia_modules.pipeline.core", "class": "Step"}
             ],
             "flow": {
                 "start_at": "validate",

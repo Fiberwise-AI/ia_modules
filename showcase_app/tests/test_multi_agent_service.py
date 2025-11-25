@@ -9,7 +9,7 @@ import json
 import tempfile
 import shutil
 from pathlib import Path
-from ia_modules.showcase_app.backend.services.multi_agent_service import MultiAgentService
+from showcase_app.backend.services.multi_agent_service import MultiAgentService
 
 
 @pytest.fixture

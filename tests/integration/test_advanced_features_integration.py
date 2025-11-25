@@ -473,10 +473,8 @@ class TestMultiAgentWithMessageBus:
         # Wait for processing (message routing takes time)
         await asyncio.sleep(1.0)
 
-        # Verify result in state
-        result = await state.get("agent1_result")
-        # May be None due to async timing - just verify no crashes
-        # assert result is not None
+        # Verify no crashes - result may be None due to async timing
+        _ = await state.get("agent1_result")
 
 
 @pytest.mark.asyncio

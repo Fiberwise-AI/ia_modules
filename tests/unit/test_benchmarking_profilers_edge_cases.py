@@ -10,6 +10,11 @@ from ia_modules.benchmarking.profilers import (
     CPUProfiler,
 )
 
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 
 class TestMemoryProfilerEdgeCases:
     """Test edge cases in MemoryProfiler"""
@@ -35,7 +40,6 @@ class TestMemoryProfilerEdgeCases:
         profiler = MemoryProfiler()
 
         # Mock psutil (imported inside the method)
-        import psutil
         with patch('psutil.Process') as mock_process_cls:
             mock_process = MagicMock()
             mock_process.memory_full_info.side_effect = psutil.AccessDenied("Permission denied")
