@@ -11,7 +11,6 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
-from ia_modules.pipeline.runner import create_pipeline_from_json
 
 
 class TestE2EPipelines:
@@ -170,11 +169,10 @@ class TestE2EPipelines:
         # Test with missing required input
         invalid_input = {}  # No topic provided
 
-        pipeline = create_pipeline_from_json(pipeline_config)
-
         # Should handle gracefully - might return default values or raise appropriate error
         try:
-            result = await run_with_new_schema(pipeline, pipeline_config, invalid_input, None)
+            runner = GraphPipelineRunner()
+            result = await runner.run_pipeline_from_json(pipeline_config, invalid_input)
             # If it doesn't raise an error, verify it handles missing input gracefully
             assert result is not None
             assert isinstance(result, dict)

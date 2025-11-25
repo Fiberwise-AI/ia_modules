@@ -12,7 +12,6 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
-from ia_modules.pipeline.runner import create_pipeline_from_json
 
 
 class TestParallelE2E:
@@ -154,11 +153,10 @@ class TestParallelE2E:
             "loaded_data": []  # Empty data
         }
 
-        pipeline = create_pipeline_from_json(pipeline_config)
-
         # Should either handle gracefully or provide meaningful error
         try:
-            result = await run_with_new_schema(pipeline, pipeline_config, edge_case_data, None)
+            runner = GraphPipelineRunner()
+            result = await runner.run_pipeline_from_json(pipeline_config, edge_case_data)
             # If successful, verify it handled empty data appropriately
             assert result is not None
             assert "steps" in result
