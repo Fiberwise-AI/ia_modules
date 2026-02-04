@@ -275,7 +275,7 @@ class PipelineImportService:
         SELECT id, slug, name, description, version, pipeline_json,
                file_path, is_active, created_at, updated_at
         FROM pipelines
-        WHERE slug = :slug AND is_active = 1
+        WHERE slug = :slug AND is_active = TRUE
         """
 
         result = self.db_provider.fetch_one(query, {'slug': slug})

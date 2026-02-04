@@ -109,7 +109,7 @@ class DatabaseStepLoader:
         FROM pipeline_step_modules
         WHERE module_path = :module_path
           AND class_name = :class_name
-          AND is_active = 1
+          AND is_active = TRUE
         """
 
         params = {
