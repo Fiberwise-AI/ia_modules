@@ -12,6 +12,7 @@ import logging
 from ..base_agent import BaseCollaborativeAgent
 from ..communication import MessageBus, MessageType
 from ..task_decomposition import Task, TaskDecomposer, DecompositionStrategy
+from ia_modules.telemetry.integration import get_agent_telemetry
 
 
 class HierarchicalCollaboration:
@@ -119,26 +120,30 @@ class HierarchicalCollaboration:
         """
         self.logger.info("Starting hierarchical task execution")
 
-        # Phase 1: Leader decomposes task
-        description = task_description.get("task", str(task_description))
-        subtasks = await self.task_decomposer.decompose(
-            description=description,
-            strategy=strategy,
-            context=task_description
-        )
+        telemetry = get_agent_telemetry()
+        participants = [self.leader.agent_id] + [w.agent_id for w in self.workers]
 
-        self.logger.info(f"Task decomposed into {len(subtasks)} subtasks")
+        with telemetry.trace_collaboration(pattern="hierarchical", participants=participants):
+            # Phase 1: Leader decomposes task
+            description = task_description.get("task", str(task_description))
+            subtasks = await self.task_decomposer.decompose(
+                description=description,
+                strategy=strategy,
+                context=task_description
+            )
 
-        # Phase 2: Leader assigns tasks to workers
-        assignments = await self._assign_tasks(subtasks)
+            self.logger.info(f"Task decomposed into {len(subtasks)} subtasks")
 
-        # Phase 3: Workers execute tasks
-        results = await self._execute_assigned_tasks(assignments)
+            # Phase 2: Leader assigns tasks to workers
+            assignments = await self._assign_tasks(subtasks)
 
-        # Phase 4: Leader synthesizes results
-        final_result = await self._synthesize_results(results, task_description)
+            # Phase 3: Workers execute tasks
+            results = await self._execute_assigned_tasks(assignments)
 
-        self.logger.info("Hierarchical task execution complete")
+            # Phase 4: Leader synthesizes results
+            final_result = await self._synthesize_results(results, task_description)
+
+            self.logger.info("Hierarchical task execution complete")
 
         return final_result
 

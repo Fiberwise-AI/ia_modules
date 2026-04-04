@@ -8,7 +8,7 @@ AI Agent = LLM + System Prompt + Tools + Memory + Reasoning Pattern
 
 Patterns Implemented:
 1. Reflection: Self-critique and iterative improvement
-2. Planning: Multi-step goal decomposition  
+2. Planning: Multi-step goal decomposition
 3. Tool Use: Dynamic capability selection
 4. Agentic RAG: Query refinement and relevance evaluation
 5. Metacognition: Self-monitoring and strategy adjustment
@@ -21,53 +21,66 @@ Reference: Building agents from scratch to understand what frameworks abstract a
 
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+import json
 import os
+import re
 import time
-from ia_modules.pipeline.llm_provider_service import LLMProviderService
+from ia_modules.utils.llm_adapters import SubprocessAgentAdapter
 from .llm_monitoring_service import LLMMonitoringService
+
+
+def _make_adapter() -> SubprocessAgentAdapter:
+    """Create a SubprocessAgentAdapter with sensible defaults.
+
+    Module-level factory so tests can mock it via unittest.mock.patch.
+    """
+    return SubprocessAgentAdapter(
+        cwd=os.getcwd(),
+        timeout_seconds=120.0,
+    )
+
+
+def _parse_json_response(text: str) -> Any:
+    """Extract and parse JSON from an agent's text response.
+
+    Handles responses that wrap JSON in markdown code fences or include
+    surrounding prose.
+    """
+    # Try direct parse first
+    try:
+        return json.loads(text)
+    except (json.JSONDecodeError, TypeError):
+        pass
+
+    # Try extracting from markdown code fence
+    match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1).strip())
+        except json.JSONDecodeError:
+            pass
+
+    # Try finding first [ or { and parse from there
+    for start_char, end_char in [('[', ']'), ('{', '}')]:
+        start = text.find(start_char)
+        if start >= 0:
+            end = text.rfind(end_char)
+            if end > start:
+                try:
+                    return json.loads(text[start:end + 1])
+                except json.JSONDecodeError:
+                    pass
+
+    return {}
 
 
 class PatternService:
     """Service for demonstrating agentic design patterns"""
-    
+
     def __init__(self):
         self.pattern_history: Dict[str, List[Dict]] = {}
-        self.llm_service = None
+        self.adapter = _make_adapter()
         self.monitoring_service = LLMMonitoringService()
-        
-        # Initialize LLM provider service
-        try:
-            self.llm_service = LLMProviderService()
-            
-            # Register providers based on available API keys
-            if os.getenv("OPENAI_API_KEY"):
-                self.llm_service.register_provider(
-                    name="openai",
-                    model=os.getenv("OPENAI_MODEL", "gpt-4-turbo-preview"),
-                    api_key=os.getenv("OPENAI_API_KEY"),
-                    is_default=True
-                )
-
-            if os.getenv("ANTHROPIC_API_KEY"):
-                self.llm_service.register_provider(
-                    name="anthropic",
-                    model=os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
-                    api_key=os.getenv("ANTHROPIC_API_KEY")
-                )
-
-            if os.getenv("GEMINI_API_KEY"):
-                self.llm_service.register_provider(
-                    name="google",
-                    model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
-                    api_key=os.getenv("GEMINI_API_KEY")
-                )
-            
-            if not self.llm_service._providers:
-                self.llm_service = None
-                    
-        except Exception as e:
-            print(f"⚠ Failed to initialize LLM provider service: {e}")
-            self.llm_service = None
     
     async def _monitored_llm_call(
         self,
@@ -75,27 +88,24 @@ class PatternService:
         temperature: float = 0.7,
         max_tokens: int = 1000,
         **kwargs
-    ) -> Any:
+    ) -> str:
         """
-        Wrapper for LLM calls with rate limiting and usage tracking
-        
+        Wrapper for agent calls with rate limiting and duration tracking.
+
         Args:
             prompt: The prompt to send
-            temperature: Temperature parameter
-            max_tokens: Max tokens to generate
+            temperature: Temperature hint (CLI agents may ignore)
+            max_tokens: Max tokens hint (CLI agents may ignore)
             **kwargs: Additional parameters
-            
+
         Returns:
-            LLMResponse with usage data
-            
+            Plain text response string
+
         Raises:
-            HTTPException: If rate limited or cost limit exceeded
+            HTTPException: If rate limited
         """
         from fastapi import HTTPException
-        
-        if self.llm_service is None:
-            raise RuntimeError("LLM service not configured. Please set API keys in .env file.")
-        
+
         # Check rate limits
         rate_check = self.monitoring_service.check_rate_limits(max_tokens)
         if not rate_check["allowed"]:
@@ -104,42 +114,27 @@ class PatternService:
                 detail=f"Rate limit exceeded: {rate_check['reason']}",
                 headers={"Retry-After": str(int(rate_check["retry_after"]))}
             )
-        
-        # Make LLM call and track time
+
+        # Make agent call and track time
         start_time = time.time()
-        response = await self.llm_service.generate_completion(
+        result = await self.adapter.generate(
             prompt=prompt,
             temperature=temperature,
             max_tokens=max_tokens,
             **kwargs
         )
         duration = time.time() - start_time
-        
-        # Extract token counts from response
-        usage = response.usage
-        input_tokens = usage.get("prompt_tokens", 0) or usage.get("input_tokens", 0) or usage.get("prompt_token_count", 0)
-        output_tokens = usage.get("completion_tokens", 0) or usage.get("output_tokens", 0) or usage.get("candidates_token_count", 0)
-        
-        # Track usage and calculate cost
-        usage_stats = self.monitoring_service.track_usage(
-            provider=response.provider.value,
-            model=response.model,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
+
+        # Track usage (no token counts from subprocess agents)
+        self.monitoring_service.track_usage(
+            provider="subprocess",
+            model="cli_agent",
+            input_tokens=0,
+            output_tokens=0,
             duration_seconds=duration
         )
-        
-        # Check if we exceeded cost limits (warn but don't block)
-        if usage_stats.get("over_request_limit"):
-            print(f"⚠ Warning: Request cost ${usage_stats['cost_usd']:.4f} exceeded limit ${self.monitoring_service.max_cost_per_request}")
-        
-        if usage_stats.get("over_daily_limit"):
-            print(f"⚠ Warning: Daily spending ${usage_stats['daily_total_cost']:.2f} exceeded limit ${self.monitoring_service.daily_spending_limit}")
-        
-        # Attach usage stats to response
-        response.usage_stats = usage_stats
-        
-        return response
+
+        return result
     
     # ==================== REFLECTION PATTERN ====================
     
@@ -195,12 +190,9 @@ class PatternService:
         }
     
     async def _llm_generate_critique(self, output: str, criteria: Dict[str, str]) -> str:
-        """Generate self-critique using real LLM"""
-        if self.llm_service is None:
-            raise RuntimeError("LLM service not configured. Please set API keys in .env file.")
-            
+        """Generate self-critique using agent"""
         criteria_text = "\n".join([f"- {name}: {desc}" for name, desc in criteria.items()])
-        
+
         prompt = f"""You are a critical evaluator analyzing text quality.
 Provide honest, constructive critique based on the given criteria.
 Focus on specific issues and be direct about weaknesses.
@@ -214,23 +206,18 @@ CRITERIA:
 {criteria_text}
 
 Provide a detailed critique addressing each criterion. Be specific about what works and what doesn't."""
-        
-        response = await self._monitored_llm_call(
+
+        return await self._monitored_llm_call(
             prompt=prompt,
             temperature=0.3,
             max_tokens=500
         )
-        
-        return response.content
     
     async def _llm_apply_improvements(self, output: str, improvements: List[str], criteria: Dict[str, str]) -> str:
-        """Apply improvements to output using real LLM"""
-        if self.llm_service is None:
-            raise RuntimeError("LLM service not configured. Please set API keys in .env file.")
-            
+        """Apply improvements to output using agent"""
         improvements_text = "\n".join([f"- {imp}" for imp in improvements])
         criteria_text = "\n".join([f"- {name}: {desc}" for name, desc in criteria.items()])
-        
+
         prompt = f"""You are an expert editor improving text quality.
 Apply the suggested improvements while maintaining the core message.
 Make specific, measurable improvements.
@@ -247,14 +234,14 @@ CRITERIA TO MEET:
 {criteria_text}
 
 Provide the improved version directly, without explanations."""
-        
-        response = await self._monitored_llm_call(
+
+        result = await self._monitored_llm_call(
             prompt=prompt,
             temperature=0.7,
             max_tokens=1000
         )
-        
-        return response.content.strip()
+
+        return result.strip()
     
     def _generate_critique(self, output: str, criteria: Dict[str, str]) -> str:
         """Simulate LLM generating self-critique"""
@@ -371,14 +358,11 @@ Provide the improved version directly, without explanations."""
         }
     
     async def _llm_decompose_goal(self, goal: str, constraints: Optional[Dict]) -> List[Dict]:
-        """Decompose goal into actionable steps using real LLM"""
-        if self.llm_service is None:
-            raise RuntimeError("LLM service not configured. Please set API keys in .env file.")
-            
+        """Decompose goal into actionable steps using agent"""
         constraints_text = ""
         if constraints:
             constraints_text = "\n".join([f"- {k}: {v}" for k, v in constraints.items()])
-        
+
         prompt = f"""You are an expert planner who breaks down complex goals into actionable steps.
 Create a detailed, realistic plan with clear dependencies and success criteria.
 
@@ -405,31 +389,19 @@ Return valid JSON in this format:
     "success_criteria": ["Criterion 1", "Criterion 2"]
   }}
 ]"""
-        
-        result = await self.llm_service.generate_structured_output(
-            prompt=prompt,
-            schema={
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "description": {"type": "string"},
-                        "reasoning": {"type": "string"},
-                        "duration": {"type": "number"},
-                        "dependencies": {"type": "array"},
-                        "success_criteria": {"type": "array"}
-                    }
-                }
-            }
-        )
-        
-        # LLM response should be deterministic - expect dict with "steps" or "plan" key
-        if "steps" in result:
-            return result["steps"]
-        elif "plan" in result:
-            return result["plan"]
-        elif isinstance(result, list):
-            return result
+
+        result = await self._monitored_llm_call(prompt=prompt, temperature=0.5, max_tokens=1000)
+        parsed = _parse_json_response(result)
+
+        # Expect list or dict with "steps"/"plan" key
+        if isinstance(parsed, dict):
+            if "steps" in parsed:
+                return parsed["steps"]
+            elif "plan" in parsed:
+                return parsed["plan"]
+            return []
+        elif isinstance(parsed, list):
+            return parsed
         else:
             return []
     
@@ -556,12 +528,9 @@ Return valid JSON in this format:
         task: str,
         available_tools: List[str]
     ) -> Dict[str, Any]:
-        """Analyze task and select appropriate tools using real LLM"""
-        if self.llm_service is None:
-            raise RuntimeError("LLM service not configured. Please set API keys in .env file.")
-            
+        """Analyze task and select appropriate tools using agent"""
         tools_list = ", ".join(available_tools)
-        
+
         prompt = f"""You are an expert task analyzer selecting the right tools for a job.
 
 TASK: {task}
@@ -598,21 +567,20 @@ Return valid JSON in this format:
   ],
   "reasoning": "overall strategy explanation"
 }}"""
-        
-        result = await self.llm_service.generate_structured_output(
-            prompt=prompt,
-            schema={
-                "type": "object",
-                "properties": {
-                    "analysis": {"type": "object"},
-                    "selected_tools": {"type": "array"},
-                    "execution_plan": {"type": "array"},
-                    "reasoning": {"type": "string"}
-                }
-            }
-        )
-        
-        return result
+
+        result = await self._monitored_llm_call(prompt=prompt, temperature=0.5, max_tokens=1000)
+        parsed = _parse_json_response(result)
+
+        if not isinstance(parsed, dict):
+            parsed = {}
+
+        # Ensure expected keys exist
+        return {
+            "analysis": parsed.get("analysis", {}),
+            "selected_tools": parsed.get("selected_tools", []),
+            "execution_plan": parsed.get("execution_plan", []),
+            "reasoning": parsed.get("reasoning", "")
+        }
     
     def _analyze_task_requirements(self, task: str) -> List[str]:
         """Analyze what capabilities are needed for task"""
@@ -767,15 +735,12 @@ Return valid JSON in this format:
         query: str,
         documents: List[Dict]
     ) -> Dict[str, Any]:
-        """Use real LLM to evaluate document relevance"""
-        if self.llm_service is None:
-            raise RuntimeError("LLM service not configured. Please set API keys in .env file.")
-            
+        """Use agent to evaluate document relevance"""
         docs_text = "\n\n".join([
             f"DOCUMENT {i+1}:\nTitle: {doc['title']}\nContent: {doc['content']}"
             for i, doc in enumerate(documents)
         ])
-        
+
         prompt = f"""You are an expert at evaluating document relevance for search queries.
 
 QUERY: {query}
@@ -805,21 +770,16 @@ Return valid JSON:
   "reasoning": "overall assessment",
   "refinement_suggestion": "how to improve query if needed"
 }}"""
-        
-        result = await self.llm_service.generate_structured_output(
-            prompt=prompt,
-            schema={
-                "type": "object",
-                "properties": {
-                    "document_scores": {"type": "array"},
-                    "average_relevance": {"type": "number"},
-                    "reasoning": {"type": "string"},
-                    "refinement_suggestion": {"type": "string"}
-                }
-            }
-        )
-        
-        return result
+
+        result = await self._monitored_llm_call(prompt=prompt, temperature=0.3, max_tokens=1000)
+        parsed = _parse_json_response(result)
+
+        return {
+            "document_scores": parsed.get("document_scores", []),
+            "average_relevance": parsed.get("average_relevance", 0.5),
+            "reasoning": parsed.get("reasoning", ""),
+            "refinement_suggestion": parsed.get("refinement_suggestion", "")
+        }
     
     async def _llm_refine_query(
         self,
@@ -827,10 +787,7 @@ Return valid JSON:
         documents: List[Dict],
         evaluation: Dict[str, Any]
     ) -> str:
-        """Use real LLM to refine search query based on results"""
-        if self.llm_service is None:
-            raise RuntimeError("LLM service not configured. Please set API keys in .env file.")
-            
+        """Use agent to refine search query based on results"""
         prompt = f"""You are an expert at refining search queries to improve results.
 
 ORIGINAL QUERY: {original_query}
@@ -843,14 +800,14 @@ Create an improved search query that will retrieve more relevant documents.
 The refined query should be more specific, use better keywords, or focus on a particular aspect.
 
 Return only the refined query text, no explanation."""
-        
-        response = await self._monitored_llm_call(
+
+        result = await self._monitored_llm_call(
             prompt=prompt,
             temperature=0.5,
             max_tokens=100
         )
-        
-        return response.content.strip()
+
+        return result.strip()
     
     def _retrieve_documents(self, query: str) -> List[Dict]:
         """Retrieve documents based on query"""
@@ -973,20 +930,17 @@ Return only the refined query text, no explanation."""
         execution_trace: List[Dict],
         performance_metrics: Dict[str, float]
     ) -> Dict[str, Any]:
-        """Use real LLM to analyze performance and suggest improvements"""
-        if self.llm_service is None:
-            raise RuntimeError("LLM service not configured. Please set API keys in .env file.")
-            
+        """Use agent to analyze performance and suggest improvements"""
         trace_text = "\n".join([
             f"Step {i+1}: {step}"
             for i, step in enumerate(execution_trace)
         ])
-        
+
         metrics_text = "\n".join([
             f"- {metric}: {value:.2f}"
             for metric, value in performance_metrics.items()
         ])
-        
+
         prompt = f"""You are an AI agent analyzing your own performance to improve future execution.
 
 EXECUTION TRACE:
@@ -1027,22 +981,17 @@ Return valid JSON:
   ],
   "confidence": 0.0-1.0
 }}"""
-        
-        result = await self.llm_service.generate_structured_output(
-            prompt=prompt,
-            schema={
-                "type": "object",
-                "properties": {
-                    "assessment": {"type": "object"},
-                    "patterns": {"type": "array"},
-                    "issues": {"type": "array"},
-                    "adjustments": {"type": "array"},
-                    "confidence": {"type": "number"}
-                }
-            }
-        )
-        
-        return result
+
+        result = await self._monitored_llm_call(prompt=prompt, temperature=0.5, max_tokens=1000)
+        parsed = _parse_json_response(result)
+
+        return {
+            "assessment": parsed.get("assessment", {}),
+            "patterns": parsed.get("patterns", []),
+            "issues": parsed.get("issues", []),
+            "adjustments": parsed.get("adjustments", []),
+            "confidence": parsed.get("confidence", 0.7)
+        }
     
     def _assess_performance(self, metrics: Dict[str, float]) -> Dict[str, Any]:
         """Assess own performance"""

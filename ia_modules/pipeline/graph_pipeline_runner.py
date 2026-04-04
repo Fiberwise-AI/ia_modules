@@ -331,7 +331,7 @@ class GraphPipelineRunner:
         from .core import ExecutionContext
 
         config_dict = config.model_dump(by_alias=True) if hasattr(config, 'model_dump') else config.dict(by_alias=True)
-        pipeline = create_pipeline_from_json(config_dict, self.services)
+        pipeline = create_pipeline_from_json(config_dict, self.services, input_data=input_data)
 
         self._log_to_central_service("INFO", f"Executing pipeline with {len(config.steps)} steps")
 

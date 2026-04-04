@@ -1,26 +1,27 @@
-"""Audio processing (speech-to-text, text-to-speech) via LLMProviderService."""
+"""Audio processing (speech-to-text, text-to-speech).
 
-from typing import Union, Optional
+Uses a duck-typed LLM service that provides transcribe() and synthesize_speech().
+"""
+
+from typing import Any, Union, Optional
 import logging
-
-from ..pipeline.llm_provider_service import LLMProviderService
 
 logger = logging.getLogger(__name__)
 
 
 class AudioProcessor:
-    """Process audio using speech models via LLMProviderService."""
+    """Process audio using speech models."""
 
     def __init__(
         self,
-        llm_service: LLMProviderService,
+        llm_service: Any,
         model: str = "whisper-1"
     ):
         """
         Initialize audio processor.
 
         Args:
-            llm_service: LLMProviderService instance (required)
+            llm_service: Service with transcribe() and synthesize_speech() methods
             model: Whisper model to use
         """
         self.llm_service = llm_service

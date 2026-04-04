@@ -93,7 +93,8 @@ export default function PatternsPage() {
     setIsLoading(true);
     try {
       const endpoint = `/api/patterns/${selectedPattern}`;
-      const response = await fetch(`http://localhost:8000${endpoint}`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5555';
+      const response = await fetch(`${apiUrl}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

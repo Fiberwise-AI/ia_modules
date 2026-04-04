@@ -313,6 +313,18 @@ class Step:
             return self.services.get('http')
         return None
 
+    def get_ndjson_logger(self):
+        """Get the pipeline NdjsonLogger from registry (if registered)."""
+        if self.services:
+            return self.services.get('ndjson_logger')
+        return None
+
+    def get_central_logger(self):
+        """Get the CentralLoggingService from registry."""
+        if self.services:
+            return self.services.get('central_logger')
+        return None
+
 
 class Pipeline:
     """Main pipeline executor"""
@@ -537,8 +549,24 @@ class Pipeline:
         thread_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Internal pipeline execution with telemetry context and checkpointing"""
+        import time as _time
+
+        # NDJSON logger (optional — logs step lifecycle if registered)
+        ndjson = self.services.get('ndjson_logger') if self.services else None
+
         # Execute steps in order based on flow
+        pipeline_t0 = _time.monotonic()
         try:
+            if ndjson:
+                await ndjson.log_pipeline_start(
+                    self.name, execution_context.execution_id, input_data,
+                )
+
+            # Inject execution context into data so steps can access it
+            current_data["_execution_id"] = execution_context.execution_id
+            if execution_context.pipeline_id:
+                current_data["_pipeline_id"] = execution_context.pipeline_id
+
             # Get the starting step
             current_step_name = self.flow.get("start_at")
             if not current_step_name:
@@ -585,6 +613,9 @@ class Pipeline:
 
                 # Execute step with telemetry if enabled
                 step_error = None
+                step_t0 = _time.monotonic()
+                if ndjson:
+                    await ndjson.log_step_start(current_step_name, current_data)
                 try:
                     if self.enable_telemetry and self.telemetry:
                         parent_span = pipeline_ctx.span if pipeline_ctx else None
@@ -602,6 +633,19 @@ class Pipeline:
                 except Exception as e:
                     step_error = e
                     step_result = None
+                finally:
+                    step_dur = int((_time.monotonic() - step_t0) * 1000)
+                    if ndjson:
+                        await ndjson.log_step_end(
+                            current_step_name,
+                            duration_ms=step_dur,
+                            output_data=step_result if isinstance(step_result, dict) else None,
+                            error=str(step_error) if step_error else None,
+                        )
+                    # Flush any pending central_logger → NDJSON entries
+                    central_logger = self.services.get('central_logger') if self.services else None
+                    if central_logger and hasattr(central_logger, 'flush_ndjson'):
+                        await central_logger.flush_ndjson()
 
                 # Track step execution completion if tracker available
                 if tracker and step_execution_id:
@@ -669,6 +713,17 @@ class Pipeline:
                         await tracker.update_execution_status(
                             execution_id=execution_context.execution_id,
                             status=ExecutionStatus.WAITING_FOR_HUMAN
+                        )
+
+                    # Flush pending NDJSON before pausing
+                    central_logger = self.services.get('central_logger') if self.services else None
+                    if central_logger and hasattr(central_logger, 'flush_ndjson'):
+                        await central_logger.flush_ndjson()
+                    if ndjson:
+                        dur = int((_time.monotonic() - pipeline_t0) * 1000)
+                        await ndjson.log(
+                            "system", subtype="pipeline_paused",
+                            step_name=current_step_name, duration_ms=dur,
                         )
 
                     # Return partial results with waiting status
@@ -756,11 +811,23 @@ class Pipeline:
             if pipeline_ctx:
                 pipeline_ctx.set_result(results["output"])
 
+            if ndjson:
+                dur = int((_time.monotonic() - pipeline_t0) * 1000)
+                await ndjson.log_pipeline_end(
+                    self.name, execution_context.execution_id, duration_ms=dur,
+                )
+
             self.logger.info("Pipeline execution completed successfully")
             return results
 
         except Exception as e:
             self.logger.error(f"Pipeline execution failed: {e}")
+            if ndjson:
+                dur = int((_time.monotonic() - pipeline_t0) * 1000)
+                await ndjson.log_pipeline_end(
+                    self.name, execution_context.execution_id,
+                    duration_ms=dur, error=str(e),
+                )
             raise
     
     def _get_next_steps(self, current_step: str, current_data: Dict[str, Any]) -> List[str]:

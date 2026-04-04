@@ -70,7 +70,7 @@ class MultiModalProcessor:
         Initialize multi-modal processor.
 
         Args:
-            llm_service: LLMProviderService instance (required)
+            llm_service: Service with generate_vision/transcribe methods
             config: Configuration
             llm_provider: LLM provider for text processing
         """

@@ -1,20 +1,21 @@
-"""Image processing with vision models via LLMProviderService."""
+"""Image processing with vision models.
 
-from typing import Union, List, Optional
+Uses a duck-typed LLM service that provides generate_vision().
+"""
+
+from typing import Any, Union, List, Optional
 import logging
 import io
-
-from ..pipeline.llm_provider_service import LLMProviderService
 
 logger = logging.getLogger(__name__)
 
 
 class ImageProcessor:
-    """Process images using vision models via LLMProviderService."""
+    """Process images using vision models."""
 
     def __init__(
         self,
-        llm_service: LLMProviderService,
+        llm_service: Any,
         model: str = "gpt-4-vision-preview",
         max_size: int = 2048,
         provider_name: Optional[str] = None
@@ -23,7 +24,7 @@ class ImageProcessor:
         Initialize image processor.
 
         Args:
-            llm_service: LLMProviderService instance (required)
+            llm_service: Service with generate_vision() method
             model: Vision model to use
             max_size: Maximum image dimension in pixels
             provider_name: Provider name to use with llm_service
@@ -103,7 +104,7 @@ class ImageProcessor:
         """
         description = await self.process(image, "Describe this image in detail")
 
-        # Use LLMProviderService for embedding if available
+        # Use litellm for embedding
         import litellm
         response = await litellm.aembedding(
             model="text-embedding-ada-002",

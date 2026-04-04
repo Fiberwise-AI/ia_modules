@@ -20,20 +20,55 @@ class LogEntry:
 
 
 class CentralLoggingService:
-    """Central logging service that collects logs during execution and writes to database"""
+    """Central logging service that collects logs during execution and writes to database.
+
+    When an NdjsonLogger is attached (via ``set_ndjson_logger``), every log()
+    call also queues an NDJSON event. Call ``await flush_ndjson()`` to write
+    pending entries — Pipeline does this automatically at step boundaries.
+    """
 
     def __init__(self):
         self.execution_logs: List[LogEntry] = []
         self.current_execution_id: Optional[str] = None
+        self._ndjson_logger = None
+        self._ndjson_pending: List[Dict[str, Any]] = []
 
     def set_execution_id(self, execution_id: str):
         """Set the current execution ID for logging"""
         self.current_execution_id = execution_id
 
+    def set_ndjson_logger(self, ndjson_logger) -> None:
+        """Attach an NdjsonLogger so log() calls also produce NDJSON events."""
+        self._ndjson_logger = ndjson_logger
+
     def log(self, level: str, message: str, step_name: Optional[str] = None, data: Optional[Dict[str, Any]] = None):
         """Log a message to the central service"""
         entry = LogEntry(level, message, step_name, data)
         self.execution_logs.append(entry)
+
+        # Queue NDJSON event if logger attached
+        if self._ndjson_logger is not None:
+            self._ndjson_pending.append({
+                "level": level,
+                "message": message,
+                "step_name": step_name,
+                "data": data,
+            })
+
+    async def flush_ndjson(self) -> None:
+        """Write pending log entries to the attached NdjsonLogger."""
+        if not self._ndjson_logger or not self._ndjson_pending:
+            return
+        pending = self._ndjson_pending
+        self._ndjson_pending = []
+        for entry in pending:
+            await self._ndjson_logger.log(
+                "log",
+                subtype=entry["level"].lower(),
+                step_name=entry["step_name"],
+                text=entry["message"],
+                data=entry["data"],
+            )
 
     def info(self, message: str, step_name: Optional[str] = None, data: Optional[Dict[str, Any]] = None):
         """Log an info message"""
@@ -86,8 +121,17 @@ class ServiceRegistry:
         self._services['central_logger'] = CentralLoggingService()
 
     def register(self, name: str, service: Any):
-        """Register a service"""
+        """Register a service.
+
+        When registering ``ndjson_logger``, auto-attaches it to the
+        CentralLoggingService so log() calls also produce NDJSON events.
+        """
         self._services[name] = service
+        # Auto-wire: central_logger ↔ ndjson_logger
+        if name == "ndjson_logger":
+            cl = self._services.get("central_logger")
+            if cl and hasattr(cl, "set_ndjson_logger"):
+                cl.set_ndjson_logger(service)
 
     def get(self, name: str) -> Optional[Any]:
         """Get a service by name"""

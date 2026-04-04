@@ -35,8 +35,15 @@ from .tracing import (
 from .integration import (
     PipelineTelemetry,
     get_telemetry,
-    configure_telemetry
+    configure_telemetry,
+    get_agent_telemetry,
+    get_llm_telemetry,
+    configure_agent_telemetry,
+    configure_llm_telemetry
 )
+
+from .agent_telemetry import AgentTelemetry
+from .llm_telemetry import LLMTelemetry
 
 __all__ = [
     # Metrics
@@ -67,4 +74,14 @@ __all__ = [
     'PipelineTelemetry',
     'get_telemetry',
     'configure_telemetry',
+    'get_agent_telemetry',
+    'get_llm_telemetry',
+    'configure_agent_telemetry',
+    'configure_llm_telemetry',
+
+    # Agent Telemetry
+    'AgentTelemetry',
+
+    # LLM Telemetry
+    'LLMTelemetry',
 ]

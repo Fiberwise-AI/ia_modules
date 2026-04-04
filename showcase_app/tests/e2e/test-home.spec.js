@@ -1,0 +1,65 @@
+// @ts-check
+const { test, expect } = require('@playwright/test');
+const { HomePage } = require('./pages/HomePage');
+
+test.describe('Home Page', () => {
+  let homePage;
+
+  test.beforeEach(async ({ page }) => {
+    homePage = new HomePage(page);
+    await homePage.goto();
+  });
+
+  test('should load home page successfully @smoke', async ({ page }) => {
+    await homePage.expectLoaded();
+    
+    // Take screenshot for visual verification
+    await homePage.screenshot('home-page-loaded');
+  });
+
+  test('should display navigation menu', async ({ page }) => {
+    await expect(homePage.navbar).toBeVisible();
+    await expect(homePage.homeLink).toBeVisible();
+    await expect(homePage.pipelinesLink).toBeVisible();
+    await expect(homePage.metricsLink).toBeVisible();
+    await expect(homePage.patternsLink).toBeVisible();
+  });
+
+  test('should navigate to pipelines page', async ({ page }) => {
+    await homePage.pipelinesLink.click();
+    await page.waitForURL('**/pipelines');
+    await expect(page.getByRole('heading', { name: /pipelines/i })).toBeVisible();
+  });
+
+  test('should navigate to metrics page', async ({ page }) => {
+    await homePage.metricsLink.click();
+    await page.waitForURL('**/metrics');
+    await expect(page.getByRole('heading', { name: /metrics/i })).toBeVisible();
+  });
+
+  test('should navigate to patterns page', async ({ page }) => {
+    await homePage.patternsLink.click();
+    await page.waitForURL('**/patterns');
+    await expect(page.getByRole('heading', { name: /patterns/i })).toBeVisible();
+  });
+
+  test('should display feature cards', async ({ page }) => {
+    const featureCards = homePage.featureCards;
+    await expect(featureCards.first()).toBeVisible();
+  });
+
+  test('should be responsive on mobile viewport', async ({ browser }) => {
+    const mobilePage = await browser.newPage({ 
+      viewport: { width: 375, height: 667 } 
+    });
+    
+    const mobileHomePage = new HomePage(mobilePage);
+    await mobileHomePage.goto();
+    await mobileHomePage.expectLoaded();
+    
+    // Verify mobile menu or navigation exists
+    await expect(mobilePage.getByRole('navigation')).toBeVisible();
+    
+    await mobilePage.close();
+  });
+});

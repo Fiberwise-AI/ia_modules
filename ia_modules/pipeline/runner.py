@@ -97,13 +97,14 @@ async def create_step_from_json_async(
     return step_class(step_name, resolved_config)
 
 
-def create_pipeline_from_json(pipeline_config: Dict[str, Any], services: Optional[ServiceRegistry] = None) -> Pipeline:
+def create_pipeline_from_json(pipeline_config: Dict[str, Any], services: Optional[ServiceRegistry] = None, input_data: Optional[Dict[str, Any]] = None) -> Pipeline:
     """Create pipeline from JSON configuration with graph-based execution support"""
 
     # Prepare context for template resolution
+    # input_data provides actual parameter values; pipeline_config['parameters'] is the schema
     context = {
-        'parameters': pipeline_config.get('parameters', {}),
-        'pipeline_input': {}
+        'parameters': input_data or {},
+        'pipeline_input': input_data or {}
     }
 
     # Create steps with template resolution
@@ -206,7 +207,7 @@ async def run_pipeline_from_json(
         )
 
     # Create and run pipeline with injected services
-    pipeline = create_pipeline_from_json(pipeline_config, services)
+    pipeline = create_pipeline_from_json(pipeline_config, services, input_data=input_data)
     result = await pipeline.run(input_data, execution_context=execution_context)
 
     return result

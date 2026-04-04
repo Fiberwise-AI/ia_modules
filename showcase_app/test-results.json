@@ -1,0 +1,651 @@
+{
+  "config": {
+    "configFile": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\playwright.config.js",
+    "rootDir": "c:/Users/David/Notes/projects/ia_modules/showcase_app/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 7
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "c:/Users/David/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "c:/Users/David/Notes/projects/ia_modules/showcase_app/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "c:/Users/David/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "c:/Users/David/Notes/projects/ia_modules/showcase_app/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "c:/Users/David/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "c:/Users/David/Notes/projects/ia_modules/showcase_app/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 8,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "test-home.spec.js",
+      "file": "test-home.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Home Page",
+          "file": "test-home.spec.js",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should load home page successfully @smoke",
+              "ok": false,
+              "tags": [
+                "smoke"
+              ],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 2733,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /ia modules showcase/i })\nExpected: visible\nError: strict mode violation: getByRole('heading', { name: /ia modules showcase/i }) resolved to 2 elements:\n    1) <h2 class=\"text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100\">IA Modules Showcase</h2> aka getByRole('heading', { name: 'IA Modules Showcase', exact: true })\n    2) <h1 class=\"text-4xl font-bold mb-4\">Welcome to IA Modules Showcase</h1> aka getByRole('heading', { name: 'Welcome to IA Modules Showcase' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /ia modules showcase/i })\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /ia modules showcase/i })\nExpected: visible\nError: strict mode violation: getByRole('heading', { name: /ia modules showcase/i }) resolved to 2 elements:\n    1) <h2 class=\"text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100\">IA Modules Showcase</h2> aka getByRole('heading', { name: 'IA Modules Showcase', exact: true })\n    2) <h1 class=\"text-4xl font-bold mb-4\">Welcome to IA Modules Showcase</h1> aka getByRole('heading', { name: 'Welcome to IA Modules Showcase' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /ia modules showcase/i })\u001b[22m\n\n    at HomePage.expectLoaded (c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\pages\\HomePage.js:42:36)\n    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:14:20",
+                        "location": {
+                          "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\pages\\HomePage.js",
+                          "column": 36,
+                          "line": 42
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mpages\\HomePage.js:42\n\n\u001b[0m \u001b[90m 40 |\u001b[39m \u001b[90m   */\u001b[39m\n \u001b[90m 41 |\u001b[39m   \u001b[36masync\u001b[39m expectLoaded() {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 42 |\u001b[39m     \u001b[36mawait\u001b[39m expect(\u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mheroSection)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 43 |\u001b[39m   }\n \u001b[90m 44 |\u001b[39m }\n \u001b[90m 45 |\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\pages\\HomePage.js",
+                            "column": 36,
+                            "line": 42
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /ia modules showcase/i })\nExpected: visible\nError: strict mode violation: getByRole('heading', { name: /ia modules showcase/i }) resolved to 2 elements:\n    1) <h2 class=\"text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100\">IA Modules Showcase</h2> aka getByRole('heading', { name: 'IA Modules Showcase', exact: true })\n    2) <h1 class=\"text-4xl font-bold mb-4\">Welcome to IA Modules Showcase</h1> aka getByRole('heading', { name: 'Welcome to IA Modules Showcase' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /ia modules showcase/i })\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\HomePage.js:42\n\n\u001b[0m \u001b[90m 40 |\u001b[39m \u001b[90m   */\u001b[39m\n \u001b[90m 41 |\u001b[39m   \u001b[36masync\u001b[39m expectLoaded() {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 42 |\u001b[39m     \u001b[36mawait\u001b[39m expect(\u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mheroSection)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 43 |\u001b[39m   }\n \u001b[90m 44 |\u001b[39m }\n \u001b[90m 45 |\u001b[39m\u001b[0m\n\u001b[2m    at HomePage.expectLoaded (c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\pages\\HomePage.js:42:36)\u001b[22m\n\u001b[2m    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:14:20\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-04T21:33:38.376Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-load-home-page-successfully-smoke-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-load-home-page-successfully-smoke-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-load-home-page-successfully-smoke-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\pages\\HomePage.js",
+                        "column": 36,
+                        "line": 42
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "f4169a4658f4f08d0bd2-168deff9d2bf559b5be6",
+              "file": "test-home.spec.js",
+              "line": 13,
+              "column": 3
+            },
+            {
+              "title": "should display navigation menu",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 2709,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('link', { name: /pipelines/i })\nExpected: visible\nError: strict mode violation: getByRole('link', { name: /pipelines/i }) resolved to 2 elements:\n    1) <a href=\"/pipelines\" data-discover=\"true\" class=\"↵        flex items-center space-x-3 px-4 py-3 rounded-lg transition group↵        hover:bg-gray-800 dark:hover:bg-gray-900 text-gray-400 hover:text-white↵      \">…</a> aka getByRole('link', { name: 'Pipelines', exact: true })\n    2) <a href=\"/pipelines\" data-discover=\"true\" class=\"bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition\">Try Example Pipelines</a> aka getByRole('link', { name: 'Try Example Pipelines' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('link', { name: /pipelines/i })\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('link', { name: /pipelines/i })\nExpected: visible\nError: strict mode violation: getByRole('link', { name: /pipelines/i }) resolved to 2 elements:\n    1) <a href=\"/pipelines\" data-discover=\"true\" class=\"↵        flex items-center space-x-3 px-4 py-3 rounded-lg transition group↵        hover:bg-gray-800 dark:hover:bg-gray-900 text-gray-400 hover:text-white↵      \">…</a> aka getByRole('link', { name: 'Pipelines', exact: true })\n    2) <a href=\"/pipelines\" data-discover=\"true\" class=\"bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition\">Try Example Pipelines</a> aka getByRole('link', { name: 'Try Example Pipelines' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('link', { name: /pipelines/i })\u001b[22m\n\n    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:23:42",
+                        "location": {
+                          "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                          "column": 42,
+                          "line": 23
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 21 |\u001b[39m     \u001b[36mawait\u001b[39m expect(homePage\u001b[33m.\u001b[39mnavbar)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 22 |\u001b[39m     \u001b[36mawait\u001b[39m expect(homePage\u001b[33m.\u001b[39mhomeLink)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 23 |\u001b[39m     \u001b[36mawait\u001b[39m expect(homePage\u001b[33m.\u001b[39mpipelinesLink)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m expect(homePage\u001b[33m.\u001b[39mmetricsLink)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 25 |\u001b[39m     \u001b[36mawait\u001b[39m expect(homePage\u001b[33m.\u001b[39mpatternsLink)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 26 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                            "column": 42,
+                            "line": 23
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('link', { name: /pipelines/i })\nExpected: visible\nError: strict mode violation: getByRole('link', { name: /pipelines/i }) resolved to 2 elements:\n    1) <a href=\"/pipelines\" data-discover=\"true\" class=\"↵        flex items-center space-x-3 px-4 py-3 rounded-lg transition group↵        hover:bg-gray-800 dark:hover:bg-gray-900 text-gray-400 hover:text-white↵      \">…</a> aka getByRole('link', { name: 'Pipelines', exact: true })\n    2) <a href=\"/pipelines\" data-discover=\"true\" class=\"bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition\">Try Example Pipelines</a> aka getByRole('link', { name: 'Try Example Pipelines' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('link', { name: /pipelines/i })\u001b[22m\n\n\n\u001b[0m \u001b[90m 21 |\u001b[39m     \u001b[36mawait\u001b[39m expect(homePage\u001b[33m.\u001b[39mnavbar)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 22 |\u001b[39m     \u001b[36mawait\u001b[39m expect(homePage\u001b[33m.\u001b[39mhomeLink)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 23 |\u001b[39m     \u001b[36mawait\u001b[39m expect(homePage\u001b[33m.\u001b[39mpipelinesLink)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m expect(homePage\u001b[33m.\u001b[39mmetricsLink)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 25 |\u001b[39m     \u001b[36mawait\u001b[39m expect(homePage\u001b[33m.\u001b[39mpatternsLink)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 26 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:23:42\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-04T21:33:38.366Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-display-navigation-menu-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-display-navigation-menu-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-display-navigation-menu-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                        "column": 42,
+                        "line": 23
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "f4169a4658f4f08d0bd2-051c08e9447c2be7f1fe",
+              "file": "test-home.spec.js",
+              "line": 20,
+              "column": 3
+            },
+            {
+              "title": "should navigate to pipelines page",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "failed",
+                      "duration": 2707,
+                      "error": {
+                        "message": "Error: locator.click: Error: strict mode violation: getByRole('link', { name: /pipelines/i }) resolved to 2 elements:\n    1) <a href=\"/pipelines\" data-discover=\"true\" class=\"↵        flex items-center space-x-3 px-4 py-3 rounded-lg transition group↵        hover:bg-gray-800 dark:hover:bg-gray-900 text-gray-400 hover:text-white↵      \">…</a> aka getByRole('link', { name: 'Pipelines', exact: true })\n    2) <a href=\"/pipelines\" data-discover=\"true\" class=\"bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition\">Try Example Pipelines</a> aka getByRole('link', { name: 'Try Example Pipelines' })\n\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /pipelines/i })\u001b[22m\n",
+                        "stack": "Error: locator.click: Error: strict mode violation: getByRole('link', { name: /pipelines/i }) resolved to 2 elements:\n    1) <a href=\"/pipelines\" data-discover=\"true\" class=\"↵        flex items-center space-x-3 px-4 py-3 rounded-lg transition group↵        hover:bg-gray-800 dark:hover:bg-gray-900 text-gray-400 hover:text-white↵      \">…</a> aka getByRole('link', { name: 'Pipelines', exact: true })\n    2) <a href=\"/pipelines\" data-discover=\"true\" class=\"bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition\">Try Example Pipelines</a> aka getByRole('link', { name: 'Try Example Pipelines' })\n\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /pipelines/i })\u001b[22m\n\n    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:29:34",
+                        "location": {
+                          "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                          "column": 34,
+                          "line": 29
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 27 |\u001b[39m\n \u001b[90m 28 |\u001b[39m   test(\u001b[32m'should navigate to pipelines page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 29 |\u001b[39m     \u001b[36mawait\u001b[39m homePage\u001b[33m.\u001b[39mpipelinesLink\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 30 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/pipelines'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 31 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'heading'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[35m/pipelines/i\u001b[39m }))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 32 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                            "column": 34,
+                            "line": 29
+                          },
+                          "message": "Error: locator.click: Error: strict mode violation: getByRole('link', { name: /pipelines/i }) resolved to 2 elements:\n    1) <a href=\"/pipelines\" data-discover=\"true\" class=\"↵        flex items-center space-x-3 px-4 py-3 rounded-lg transition group↵        hover:bg-gray-800 dark:hover:bg-gray-900 text-gray-400 hover:text-white↵      \">…</a> aka getByRole('link', { name: 'Pipelines', exact: true })\n    2) <a href=\"/pipelines\" data-discover=\"true\" class=\"bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition\">Try Example Pipelines</a> aka getByRole('link', { name: 'Try Example Pipelines' })\n\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /pipelines/i })\u001b[22m\n\n\n\u001b[0m \u001b[90m 27 |\u001b[39m\n \u001b[90m 28 |\u001b[39m   test(\u001b[32m'should navigate to pipelines page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 29 |\u001b[39m     \u001b[36mawait\u001b[39m homePage\u001b[33m.\u001b[39mpipelinesLink\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 30 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/pipelines'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 31 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'heading'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[35m/pipelines/i\u001b[39m }))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 32 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:29:34\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-04T21:33:38.379Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-navigate-to-pipelines-page-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-navigate-to-pipelines-page-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-navigate-to-pipelines-page-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                        "column": 34,
+                        "line": 29
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "f4169a4658f4f08d0bd2-e51d8d08a83ad1d3cde1",
+              "file": "test-home.spec.js",
+              "line": 28,
+              "column": 3
+            },
+            {
+              "title": "should navigate to metrics page",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 2660,
+                      "error": {
+                        "message": "Error: locator.click: Error: strict mode violation: getByRole('link', { name: /metrics/i }) resolved to 2 elements:\n    1) <a href=\"/metrics\" data-discover=\"true\" class=\"↵        flex items-center space-x-3 px-4 py-3 rounded-lg transition group↵        hover:bg-gray-800 dark:hover:bg-gray-900 text-gray-400 hover:text-white↵      \">…</a> aka getByRole('link', { name: 'Metrics', exact: true })\n    2) <a href=\"/metrics\" data-discover=\"true\" class=\"border-2 border-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary-600 transition\">View Metrics Dashboard</a> aka getByRole('link', { name: 'View Metrics Dashboard' })\n\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /metrics/i })\u001b[22m\n",
+                        "stack": "Error: locator.click: Error: strict mode violation: getByRole('link', { name: /metrics/i }) resolved to 2 elements:\n    1) <a href=\"/metrics\" data-discover=\"true\" class=\"↵        flex items-center space-x-3 px-4 py-3 rounded-lg transition group↵        hover:bg-gray-800 dark:hover:bg-gray-900 text-gray-400 hover:text-white↵      \">…</a> aka getByRole('link', { name: 'Metrics', exact: true })\n    2) <a href=\"/metrics\" data-discover=\"true\" class=\"border-2 border-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary-600 transition\">View Metrics Dashboard</a> aka getByRole('link', { name: 'View Metrics Dashboard' })\n\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /metrics/i })\u001b[22m\n\n    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:35:32",
+                        "location": {
+                          "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                          "column": 32,
+                          "line": 35
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 33 |\u001b[39m\n \u001b[90m 34 |\u001b[39m   test(\u001b[32m'should navigate to metrics page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 35 |\u001b[39m     \u001b[36mawait\u001b[39m homePage\u001b[33m.\u001b[39mmetricsLink\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/metrics'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 37 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'heading'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[35m/metrics/i\u001b[39m }))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 38 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                            "column": 32,
+                            "line": 35
+                          },
+                          "message": "Error: locator.click: Error: strict mode violation: getByRole('link', { name: /metrics/i }) resolved to 2 elements:\n    1) <a href=\"/metrics\" data-discover=\"true\" class=\"↵        flex items-center space-x-3 px-4 py-3 rounded-lg transition group↵        hover:bg-gray-800 dark:hover:bg-gray-900 text-gray-400 hover:text-white↵      \">…</a> aka getByRole('link', { name: 'Metrics', exact: true })\n    2) <a href=\"/metrics\" data-discover=\"true\" class=\"border-2 border-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary-600 transition\">View Metrics Dashboard</a> aka getByRole('link', { name: 'View Metrics Dashboard' })\n\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /metrics/i })\u001b[22m\n\n\n\u001b[0m \u001b[90m 33 |\u001b[39m\n \u001b[90m 34 |\u001b[39m   test(\u001b[32m'should navigate to metrics page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 35 |\u001b[39m     \u001b[36mawait\u001b[39m homePage\u001b[33m.\u001b[39mmetricsLink\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/metrics'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 37 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'heading'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[35m/metrics/i\u001b[39m }))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 38 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:35:32\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-04T21:33:38.382Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-navigate-to-metrics-page-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-navigate-to-metrics-page-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-navigate-to-metrics-page-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                        "column": 32,
+                        "line": 35
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "f4169a4658f4f08d0bd2-d18fec28b39d5dead4a5",
+              "file": "test-home.spec.js",
+              "line": 34,
+              "column": 3
+            },
+            {
+              "title": "should navigate to patterns page",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "failed",
+                      "duration": 2814,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /patterns/i })\nExpected: visible\nError: strict mode violation: getByRole('heading', { name: /patterns/i }) resolved to 2 elements:\n    1) <h1 class=\"text-3xl font-bold text-gray-800\">Agentic Design Patterns</h1> aka getByRole('heading', { name: 'Agentic Design Patterns' })\n    2) <h3 class=\"font-semibold text-gray-800 mb-3\">About Agentic Patterns</h3> aka getByRole('heading', { name: 'About Agentic Patterns' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /patterns/i })\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /patterns/i })\nExpected: visible\nError: strict mode violation: getByRole('heading', { name: /patterns/i }) resolved to 2 elements:\n    1) <h1 class=\"text-3xl font-bold text-gray-800\">Agentic Design Patterns</h1> aka getByRole('heading', { name: 'Agentic Design Patterns' })\n    2) <h3 class=\"font-semibold text-gray-800 mb-3\">About Agentic Patterns</h3> aka getByRole('heading', { name: 'About Agentic Patterns' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /patterns/i })\u001b[22m\n\n    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:43:68",
+                        "location": {
+                          "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                          "column": 68,
+                          "line": 43
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 41 |\u001b[39m     \u001b[36mawait\u001b[39m homePage\u001b[33m.\u001b[39mpatternsLink\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m 42 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/patterns'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 43 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'heading'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[35m/patterns/i\u001b[39m }))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 44 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 45 |\u001b[39m\n \u001b[90m 46 |\u001b[39m   test(\u001b[32m'should display feature cards'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                            "column": 68,
+                            "line": 43
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /patterns/i })\nExpected: visible\nError: strict mode violation: getByRole('heading', { name: /patterns/i }) resolved to 2 elements:\n    1) <h1 class=\"text-3xl font-bold text-gray-800\">Agentic Design Patterns</h1> aka getByRole('heading', { name: 'Agentic Design Patterns' })\n    2) <h3 class=\"font-semibold text-gray-800 mb-3\">About Agentic Patterns</h3> aka getByRole('heading', { name: 'About Agentic Patterns' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /patterns/i })\u001b[22m\n\n\n\u001b[0m \u001b[90m 41 |\u001b[39m     \u001b[36mawait\u001b[39m homePage\u001b[33m.\u001b[39mpatternsLink\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m 42 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/patterns'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 43 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'heading'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[35m/patterns/i\u001b[39m }))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 44 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 45 |\u001b[39m\n \u001b[90m 46 |\u001b[39m   test(\u001b[32m'should display feature cards'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:43:68\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-04T21:33:38.372Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-navigate-to-patterns-page-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-navigate-to-patterns-page-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-navigate-to-patterns-page-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                        "column": 68,
+                        "line": 43
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "f4169a4658f4f08d0bd2-54d0d448177f72b6cae2",
+              "file": "test-home.spec.js",
+              "line": 40,
+              "column": 3
+            },
+            {
+              "title": "should display feature cards",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "failed",
+                      "duration": 7445,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[class*=\"card\"], [class*=\"feature\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[class*=\"card\"], [class*=\"feature\"]').first()\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[class*=\"card\"], [class*=\"feature\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[class*=\"card\"], [class*=\"feature\"]').first()\u001b[22m\n\n    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:48:40",
+                        "location": {
+                          "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                          "column": 40,
+                          "line": 48
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 46 |\u001b[39m   test(\u001b[32m'should display feature cards'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m 47 |\u001b[39m     \u001b[36mconst\u001b[39m featureCards \u001b[33m=\u001b[39m homePage\u001b[33m.\u001b[39mfeatureCards\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 48 |\u001b[39m     \u001b[36mawait\u001b[39m expect(featureCards\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 49 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 50 |\u001b[39m\n \u001b[90m 51 |\u001b[39m   test(\u001b[32m'should be responsive on mobile viewport'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ browser }) \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                            "column": 40,
+                            "line": 48
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[class*=\"card\"], [class*=\"feature\"]').first()\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[class*=\"card\"], [class*=\"feature\"]').first()\u001b[22m\n\n\n\u001b[0m \u001b[90m 46 |\u001b[39m   test(\u001b[32m'should display feature cards'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m 47 |\u001b[39m     \u001b[36mconst\u001b[39m featureCards \u001b[33m=\u001b[39m homePage\u001b[33m.\u001b[39mfeatureCards\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 48 |\u001b[39m     \u001b[36mawait\u001b[39m expect(featureCards\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 49 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 50 |\u001b[39m\n \u001b[90m 51 |\u001b[39m   test(\u001b[32m'should be responsive on mobile viewport'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ browser }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:48:40\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-04T21:33:38.391Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-display-feature-cards-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-display-feature-cards-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-display-feature-cards-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js",
+                        "column": 40,
+                        "line": 48
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "f4169a4658f4f08d0bd2-9a522781577e86a87d31",
+              "file": "test-home.spec.js",
+              "line": 46,
+              "column": 3
+            },
+            {
+              "title": "should be responsive on mobile viewport",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "failed",
+                      "duration": 3798,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /ia modules showcase/i })\nExpected: visible\nError: strict mode violation: getByRole('heading', { name: /ia modules showcase/i }) resolved to 2 elements:\n    1) <h2 class=\"text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100\">IA Modules Showcase</h2> aka getByRole('heading', { name: 'IA Modules Showcase', exact: true })\n    2) <h1 class=\"text-4xl font-bold mb-4\">Welcome to IA Modules Showcase</h1> aka getByRole('heading', { name: 'Welcome to IA Modules Showcase' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /ia modules showcase/i })\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /ia modules showcase/i })\nExpected: visible\nError: strict mode violation: getByRole('heading', { name: /ia modules showcase/i }) resolved to 2 elements:\n    1) <h2 class=\"text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100\">IA Modules Showcase</h2> aka getByRole('heading', { name: 'IA Modules Showcase', exact: true })\n    2) <h1 class=\"text-4xl font-bold mb-4\">Welcome to IA Modules Showcase</h1> aka getByRole('heading', { name: 'Welcome to IA Modules Showcase' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /ia modules showcase/i })\u001b[22m\n\n    at HomePage.expectLoaded (c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\pages\\HomePage.js:42:36)\n    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:58:26",
+                        "location": {
+                          "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\pages\\HomePage.js",
+                          "column": 36,
+                          "line": 42
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mpages\\HomePage.js:42\n\n\u001b[0m \u001b[90m 40 |\u001b[39m \u001b[90m   */\u001b[39m\n \u001b[90m 41 |\u001b[39m   \u001b[36masync\u001b[39m expectLoaded() {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 42 |\u001b[39m     \u001b[36mawait\u001b[39m expect(\u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mheroSection)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 43 |\u001b[39m   }\n \u001b[90m 44 |\u001b[39m }\n \u001b[90m 45 |\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\pages\\HomePage.js",
+                            "column": 36,
+                            "line": 42
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /ia modules showcase/i })\nExpected: visible\nError: strict mode violation: getByRole('heading', { name: /ia modules showcase/i }) resolved to 2 elements:\n    1) <h2 class=\"text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100\">IA Modules Showcase</h2> aka getByRole('heading', { name: 'IA Modules Showcase', exact: true })\n    2) <h1 class=\"text-4xl font-bold mb-4\">Welcome to IA Modules Showcase</h1> aka getByRole('heading', { name: 'Welcome to IA Modules Showcase' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /ia modules showcase/i })\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\HomePage.js:42\n\n\u001b[0m \u001b[90m 40 |\u001b[39m \u001b[90m   */\u001b[39m\n \u001b[90m 41 |\u001b[39m   \u001b[36masync\u001b[39m expectLoaded() {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 42 |\u001b[39m     \u001b[36mawait\u001b[39m expect(\u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mheroSection)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 43 |\u001b[39m   }\n \u001b[90m 44 |\u001b[39m }\n \u001b[90m 45 |\u001b[39m\u001b[0m\n\u001b[2m    at HomePage.expectLoaded (c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\pages\\HomePage.js:42:36)\u001b[22m\n\u001b[2m    at c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\test-home.spec.js:58:26\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-04T21:33:38.382Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-be-responsive-on-mobile-viewport-chromium\\test-failed-2.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-be-responsive-on-mobile-viewport-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-be-responsive-on-mobile-viewport-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "c:\\Users\\David\\test-results\\test-home-Home-Page-should-be-responsive-on-mobile-viewport-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "c:\\Users\\David\\Notes\\projects\\ia_modules\\showcase_app\\tests\\e2e\\pages\\HomePage.js",
+                        "column": 36,
+                        "line": 42
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "f4169a4658f4f08d0bd2-8605fad5971344563037",
+              "file": "test-home.spec.js",
+              "line": 51,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-04-04T21:33:32.508Z",
+    "duration": 16897.442000000003,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 7,
+    "flaky": 0
+  }
+}

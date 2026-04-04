@@ -1,5 +1,10 @@
 # LLM Provider Service
 
+> **DEPRECATED**: This service is scheduled for removal. Agent execution should use
+> SubprocessExecutor (subprocess agents) or A2AExecutor (remote agents) instead of
+> raw LLM API calls. See `ia_modules/agents/subprocess_executor.py` and
+> `ia_modules/agents/a2a_executor.py`.
+
 **Clean LiteLLM wrapper for ia_modules**
 
 ## Overview

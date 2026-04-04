@@ -2,6 +2,14 @@
 IA Modules Showcase App - FastAPI Backend
 Main application entry point
 """
+import sys
+from pathlib import Path
+
+# Ensure backend directory is in sys.path for relative imports
+_backend_dir = Path(__file__).parent
+if str(_backend_dir) not in sys.path:
+    sys.path.insert(0, str(_backend_dir))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -19,6 +27,7 @@ from pathlib import Path  # noqa: E402
 from nexusql import DatabaseManager  # noqa: E402
 from ia_modules.reliability.decision_trail import DecisionTrailBuilder  # noqa: E402
 from ia_modules.pipeline.importer import PipelineImportService  # noqa: E402
+from ia_modules.telemetry.integration import configure_agent_telemetry, configure_llm_telemetry  # noqa: E402
 
 from api.pipelines import router as pipelines_router  # noqa: E402
 from api.execution import router as execution_router  # noqa: E402
@@ -88,9 +97,19 @@ async def lifespan(app: FastAPI):
     services.benchmark_service = BenchmarkService(services.pipeline_service, services.db_manager)
     
     # Initialize telemetry service with tracer from pipeline_service
+    agent_telemetry = configure_agent_telemetry(
+        collector=services.pipeline_service.telemetry.collector if services.pipeline_service.telemetry else None,
+        tracer=services.pipeline_service.tracer
+    )
+    llm_telemetry = configure_llm_telemetry(
+        collector=services.pipeline_service.telemetry.collector if services.pipeline_service.telemetry else None,
+        tracer=services.pipeline_service.tracer
+    )
     services.telemetry_service = TelemetryService(
         telemetry=services.pipeline_service.telemetry,
-        tracer=services.pipeline_service.tracer
+        tracer=services.pipeline_service.tracer,
+        agent_telemetry=agent_telemetry,
+        llm_telemetry=llm_telemetry
     )
     
     # Initialize checkpoint service with checkpointer from pipeline_service

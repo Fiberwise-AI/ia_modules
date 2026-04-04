@@ -12,6 +12,7 @@ import logging
 from ..base_agent import BaseCollaborativeAgent
 from ..communication import MessageBus, MessageType, AgentMessage
 from ..state import StateManager
+from ia_modules.telemetry.integration import get_agent_telemetry
 
 
 class PeerToPeerCollaboration:
@@ -103,40 +104,44 @@ class PeerToPeerCollaboration:
         """
         self.logger.info(f"Starting P2P collaboration: {rounds} rounds")
 
-        # Initialize shared context
-        await self.state.set("collaboration_task", task)
-        await self.state.set("current_round", 0)
+        telemetry = get_agent_telemetry()
+        participants = [p.agent_id for p in self.peers]
 
-        all_contributions = []
+        with telemetry.trace_collaboration(pattern="peer_to_peer", participants=participants):
+            # Initialize shared context
+            await self.state.set("collaboration_task", task)
+            await self.state.set("current_round", 0)
 
-        # Execute collaboration rounds
-        for round_num in range(1, rounds + 1):
-            self.logger.info(f"Round {round_num}/{rounds}")
+            all_contributions = []
 
-            await self.state.set("current_round", round_num)
+            # Execute collaboration rounds
+            for round_num in range(1, rounds + 1):
+                self.logger.info(f"Round {round_num}/{rounds}")
 
-            # Phase 1: Each peer contributes
-            round_contributions = await self._gather_contributions(task, round_num)
+                await self.state.set("current_round", round_num)
 
-            # Phase 2: Share contributions with all peers
-            await self._share_contributions(round_contributions)
+                # Phase 1: Each peer contributes
+                round_contributions = await self._gather_contributions(task, round_num)
 
-            # Phase 3: Peers review and refine
-            refined_contributions = await self._refine_contributions(
-                round_contributions, round_num
+                # Phase 2: Share contributions with all peers
+                await self._share_contributions(round_contributions)
+
+                # Phase 3: Peers review and refine
+                refined_contributions = await self._refine_contributions(
+                    round_contributions, round_num
+                )
+
+                all_contributions.extend(refined_contributions)
+
+                # Update shared context for next round
+                await self.state.set(f"round_{round_num}_contributions", refined_contributions)
+
+            # Final synthesis
+            final_result = await self._synthesize_all_contributions(
+                all_contributions, task
             )
 
-            all_contributions.extend(refined_contributions)
-
-            # Update shared context for next round
-            await self.state.set(f"round_{round_num}_contributions", refined_contributions)
-
-        # Final synthesis
-        final_result = await self._synthesize_all_contributions(
-            all_contributions, task
-        )
-
-        self.logger.info("P2P collaboration complete")
+            self.logger.info("P2P collaboration complete")
 
         return final_result
 

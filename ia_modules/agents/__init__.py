@@ -67,6 +67,19 @@ from .specialist_agents import (
     CriticAgent
 )
 
+# CLI agent execution
+from .executor import (
+    AgentExecutor,
+    AgentConfig,
+    AgentEvent,
+    EventType,
+    CLIType,
+    AgentMode,
+    normalize_event,
+)
+from .subprocess_executor import SubprocessExecutor
+from .a2a_executor import A2AExecutor
+
 # Legacy role-based agents (from roles.py)
 from .roles import (
     PlannerAgent,
@@ -104,6 +117,17 @@ __all__ = [
     "AnalysisAgent",
     "SynthesisAgent",
     "CriticAgent",
+
+    # CLI agent execution
+    "AgentExecutor",
+    "AgentConfig",
+    "AgentEvent",
+    "EventType",
+    "CLIType",
+    "AgentMode",
+    "normalize_event",
+    "SubprocessExecutor",
+    "A2AExecutor",
 
     # Legacy role-based agents
     "PlannerAgent",

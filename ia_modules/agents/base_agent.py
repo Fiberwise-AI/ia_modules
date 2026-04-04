@@ -11,6 +11,7 @@ from typing import Dict, Any, Optional, List, Callable
 from .core import BaseAgent, AgentRole
 from .state import StateManager
 from .communication import MessageBus, AgentMessage, MessageType
+from ia_modules.telemetry.integration import get_agent_telemetry
 
 
 class BaseCollaborativeAgent(BaseAgent):
@@ -43,7 +44,8 @@ class BaseCollaborativeAgent(BaseAgent):
     """
 
     def __init__(self, role: AgentRole, state_manager: StateManager,
-                 message_bus: Optional[MessageBus] = None):
+                 message_bus: Optional[MessageBus] = None,
+                 enable_telemetry: bool = True):
         """
         Initialize collaborative agent.
 
@@ -51,8 +53,9 @@ class BaseCollaborativeAgent(BaseAgent):
             role: Agent's role definition
             state_manager: Centralized state manager
             message_bus: Message bus for inter-agent communication
+            enable_telemetry: Whether to enable agent telemetry
         """
-        super().__init__(role, state_manager)
+        super().__init__(role, state_manager, enable_telemetry=enable_telemetry)
 
         self.message_bus = message_bus or MessageBus()
         self.agent_id = role.name
@@ -113,6 +116,15 @@ class BaseCollaborativeAgent(BaseAgent):
             message: Incoming message
         """
         self.logger.debug(f"Received {message.message_type.value} from {message.sender}")
+
+        # Track received message
+        if self._telemetry:
+            self._telemetry.record_message_received(
+                self.agent_id, message.message_type.value
+            )
+            self._telemetry.update_pending_messages(
+                self.agent_id, self._message_queue.qsize() + 1
+            )
 
         # Add to queue for polling
         await self._message_queue.put(message)
@@ -232,7 +244,17 @@ class BaseCollaborativeAgent(BaseAgent):
             **kwargs
         )
 
-        await self.message_bus.send(message)
+        # Track with telemetry
+        if self._telemetry:
+            with self._telemetry.trace_message_send(
+                sender=self.agent_id,
+                recipient=recipient,
+                message_type=message_type.value
+            ):
+                await self.message_bus.send(message)
+        else:
+            await self.message_bus.send(message)
+
         self.logger.debug(f"Sent {message_type.value} to {recipient}")
 
         return message

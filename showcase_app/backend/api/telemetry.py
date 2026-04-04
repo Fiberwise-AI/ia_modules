@@ -53,3 +53,34 @@ async def get_span_timeline(job_id: str, service=Depends(get_telemetry_service))
         return {"job_id": job_id, "timeline": timeline_responses, "count": len(timeline_responses)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/agents")
+async def get_agent_metrics(service=Depends(get_telemetry_service)):
+    """Get aggregated agent telemetry metrics."""
+    try:
+        return await service.get_agent_metrics()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/llm/usage")
+async def get_llm_usage(service=Depends(get_telemetry_service)):
+    """Get LLM usage metrics (tokens, cost, requests by model)."""
+    try:
+        return await service.get_llm_metrics()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/timeseries/{metric_name}")
+async def get_metric_timeseries(
+    metric_name: str,
+    hours: int = 24,
+    service=Depends(get_telemetry_service)
+):
+    """Get time-series data for a specific metric."""
+    try:
+        return await service.get_metrics_timeseries(metric_name, hours)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

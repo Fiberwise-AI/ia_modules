@@ -12,6 +12,7 @@ import logging
 from ..base_agent import BaseCollaborativeAgent
 from ..communication import MessageBus
 from ..state import StateManager
+from ia_modules.telemetry.integration import get_agent_telemetry
 
 
 class ConsensusStrategy(Enum):
@@ -136,48 +137,52 @@ class ConsensusCollaboration:
         """
         self.logger.info("Starting consensus-building process")
 
-        # Store decision context
-        await self.state.set("decision_context", decision_context)
+        telemetry = get_agent_telemetry()
+        participants = [a.agent_id for a in self.agents]
 
-        # Phase 1: Generate or receive initial proposal
-        initial_proposal = await self._get_initial_proposal(decision_context)
+        with telemetry.trace_collaboration(pattern="consensus", participants=participants):
+            # Store decision context
+            await self.state.set("decision_context", decision_context)
 
-        # Phase 2: Iterative consensus building
-        consensus_reached = False
-        iteration = 0
-        current_proposal = initial_proposal
+            # Phase 1: Generate or receive initial proposal
+            initial_proposal = await self._get_initial_proposal(decision_context)
 
-        while not consensus_reached and iteration < self.max_iterations:
-            iteration += 1
-            self.logger.info(f"Consensus iteration {iteration}/{self.max_iterations}")
+            # Phase 2: Iterative consensus building
+            consensus_reached = False
+            iteration = 0
+            current_proposal = initial_proposal
 
-            # Discuss proposal
-            discussion = await self._discuss_proposal(current_proposal, iteration)
+            while not consensus_reached and iteration < self.max_iterations:
+                iteration += 1
+                self.logger.info(f"Consensus iteration {iteration}/{self.max_iterations}")
 
-            # Vote on proposal
-            votes = await self._collect_votes(current_proposal, iteration)
+                # Discuss proposal
+                discussion = await self._discuss_proposal(current_proposal, iteration)
 
-            # Check if consensus reached
-            consensus_reached, agreement_level = self._check_consensus(votes)
+                # Vote on proposal
+                votes = await self._collect_votes(current_proposal, iteration)
 
-            if consensus_reached:
-                self.logger.info(f"Consensus reached! Agreement: {agreement_level:.1%}")
-                break
+                # Check if consensus reached
+                consensus_reached, agreement_level = self._check_consensus(votes)
 
-            # Refine proposal based on feedback
-            current_proposal = await self._refine_proposal(
-                current_proposal, discussion, votes, iteration
+                if consensus_reached:
+                    self.logger.info(f"Consensus reached! Agreement: {agreement_level:.1%}")
+                    break
+
+                # Refine proposal based on feedback
+                current_proposal = await self._refine_proposal(
+                    current_proposal, discussion, votes, iteration
+                )
+
+            # Phase 3: Finalize consensus
+            final_result = await self._finalize_consensus(
+                current_proposal, consensus_reached, iteration
             )
 
-        # Phase 3: Finalize consensus
-        final_result = await self._finalize_consensus(
-            current_proposal, consensus_reached, iteration
-        )
-
-        self.logger.info(
-            f"Consensus process complete: "
-            f"{'Success' if consensus_reached else 'No consensus'}"
-        )
+            self.logger.info(
+                f"Consensus process complete: "
+                f"{'Success' if consensus_reached else 'No consensus'}"
+            )
 
         return final_result
 

@@ -6,10 +6,11 @@ Implements the base agent abstraction with role-based specialization.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import logging
 
 from .state import StateManager
+from ia_modules.telemetry.integration import get_agent_telemetry
 
 
 @dataclass
@@ -56,18 +57,24 @@ class BaseAgent(ABC):
         ...         return {"status": "success"}
     """
 
-    def __init__(self, role: AgentRole, state_manager: "StateManager"):
+    def __init__(self, role: AgentRole, state_manager: "StateManager",
+                 enable_telemetry: bool = True):
         """
         Initialize agent.
 
         Args:
             role: Agent's role definition
             state_manager: Centralized state for agent communication
+            enable_telemetry: Whether to enable agent telemetry
         """
         self.role = role
         self.state = state_manager
         self.logger = logging.getLogger(f"Agent.{role.name}")
         self._iteration_count = 0
+
+        # Telemetry
+        self.enable_telemetry = enable_telemetry
+        self._telemetry = get_agent_telemetry() if enable_telemetry else None
 
     @abstractmethod
     async def execute(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -102,6 +109,8 @@ class BaseAgent(ABC):
         Returns:
             Value from state or default
         """
+        if self._telemetry:
+            self._telemetry.record_state_operation(self.role.name, "read")
         return await self.state.get(key, default)
 
     async def write_state(self, key: str, value: Any) -> None:
@@ -112,6 +121,8 @@ class BaseAgent(ABC):
             key: State key to write
             value: Value to store
         """
+        if self._telemetry:
+            self._telemetry.record_state_operation(self.role.name, "write")
         await self.state.set(key, value)
 
     async def get_state_snapshot(self) -> Dict[str, Any]:
@@ -121,6 +132,8 @@ class BaseAgent(ABC):
         Returns:
             Copy of current state
         """
+        if self._telemetry:
+            self._telemetry.record_state_operation(self.role.name, "snapshot")
         return await self.state.snapshot()
 
     def increment_iteration(self) -> int:
@@ -133,6 +146,8 @@ class BaseAgent(ABC):
             Current iteration number
         """
         self._iteration_count += 1
+        if self._telemetry:
+            self._telemetry.record_iteration(self.role.name)
         return self._iteration_count
 
     def reset_iterations(self) -> None:

@@ -4,6 +4,7 @@ import { metricsAPI } from '../services/api'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Activity, CheckCircle, AlertCircle, Users, Zap, Clock } from 'lucide-react'
 import { useMetricsWebSocket } from '../hooks/useWebSocket'
+import MetricsTrendChart from '../components/charts/MetricsTrendChart'
 
 export default function MetricsPage() {
   const queryClient = useQueryClient()
@@ -34,6 +35,15 @@ export default function MetricsPage() {
   }, [queryClient])
 
   const { isConnected } = useMetricsWebSocket(handleWebSocketUpdate)
+
+  const { data: timeseries } = useQuery({
+    queryKey: ['metrics-timeseries'],
+    queryFn: async () => {
+      const response = await metricsAPI.getHistory(24)
+      return response.data?.datapoints || []
+    },
+    refetchInterval: 30000,
+  })
 
   return (
     <div className="space-y-6">
@@ -258,16 +268,10 @@ export default function MetricsPage() {
         </div>
       </div>
 
-      {/* Placeholder for charts */}
+      {/* Metrics Trend Chart */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-4">Metrics Trend (24h)</h2>
-        <div className="h-64 flex items-center justify-center text-gray-500">
-          <div className="text-center">
-            <Activity size={48} className="mx-auto mb-2 text-gray-400" />
-            <p>Historical metrics visualization will appear here</p>
-            <p className="text-sm">Run more pipelines to see trend data</p>
-          </div>
-        </div>
+        <MetricsTrendChart data={timeseries} metrics={['svr', 'cr', 'hir', 'ma']} />
       </div>
     </div>
   )

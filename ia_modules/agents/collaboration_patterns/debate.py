@@ -13,6 +13,7 @@ from ..base_agent import BaseCollaborativeAgent
 from ..communication import MessageBus
 from ..state import StateManager
 from ..core import AgentRole
+from ia_modules.telemetry.integration import get_agent_telemetry
 
 
 class DebateRole(Enum):
@@ -162,37 +163,47 @@ class DebateCollaboration:
 
         self.logger.info(f"Starting debate: {topic}")
 
-        # Store debate topic
-        await self.state.set("debate_topic", topic)
-        await self.state.set("debate_rounds", rounds)
-
-        # Phase 1: Opening statements
-        opening_statements = await self._opening_statements(topic)
-
-        # Phase 2: Debate rounds
-        debate_rounds = []
-        for round_num in range(1, rounds + 1):
-            self.logger.info(f"Debate round {round_num}/{rounds}")
-            round_result = await self._execute_round(round_num, topic)
-            debate_rounds.append(round_result)
-
-        # Phase 3: Closing statements
-        closing_statements = await self._closing_statements(topic)
-
-        # Phase 4: Evaluation (if judge present)
-        evaluation = None
+        telemetry = get_agent_telemetry()
+        participants = (
+            [self.moderator.agent_id]
+            + [p.agent_id for p in self.proponents]
+            + [o.agent_id for o in self.opponents]
+        )
         if self.judge:
-            evaluation = await self._evaluate_debate(
-                opening_statements, debate_rounds, closing_statements
+            participants.append(self.judge.agent_id)
+
+        with telemetry.trace_collaboration(pattern="debate", participants=participants):
+            # Store debate topic
+            await self.state.set("debate_topic", topic)
+            await self.state.set("debate_rounds", rounds)
+
+            # Phase 1: Opening statements
+            opening_statements = await self._opening_statements(topic)
+
+            # Phase 2: Debate rounds
+            debate_rounds = []
+            for round_num in range(1, rounds + 1):
+                self.logger.info(f"Debate round {round_num}/{rounds}")
+                round_result = await self._execute_round(round_num, topic)
+                debate_rounds.append(round_result)
+
+            # Phase 3: Closing statements
+            closing_statements = await self._closing_statements(topic)
+
+            # Phase 4: Evaluation (if judge present)
+            evaluation = None
+            if self.judge:
+                evaluation = await self._evaluate_debate(
+                    opening_statements, debate_rounds, closing_statements
+                )
+
+            # Phase 5: Synthesis
+            final_result = await self._synthesize_debate(
+                topic, opening_statements, debate_rounds,
+                closing_statements, evaluation
             )
 
-        # Phase 5: Synthesis
-        final_result = await self._synthesize_debate(
-            topic, opening_statements, debate_rounds,
-            closing_statements, evaluation
-        )
-
-        self.logger.info("Debate complete")
+            self.logger.info("Debate complete")
 
         return final_result
 

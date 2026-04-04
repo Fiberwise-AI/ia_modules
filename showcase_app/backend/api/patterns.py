@@ -14,6 +14,14 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional
 import os
+import sys
+from pathlib import Path
+
+# Add backend to path for services imports
+backend_path = str(Path(__file__).parent.parent)
+if backend_path not in sys.path:
+    sys.path.insert(0, backend_path)
+
 from services.pattern_service import PatternService
 from services.llm_monitoring_service import LLMMonitoringService
 

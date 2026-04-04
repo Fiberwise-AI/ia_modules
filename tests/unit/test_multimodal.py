@@ -20,7 +20,7 @@ from ia_modules.multimodal.fusion import ModalityFusion
 
 @pytest.fixture
 def mock_llm_service():
-    """Create a mock LLMProviderService."""
+    """Create a mock LLM service."""
     service = Mock()
     service.generate_vision = AsyncMock(return_value="A test image description")
     service.transcribe = AsyncMock(return_value="Transcribed text")

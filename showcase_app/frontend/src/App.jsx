@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom'
-import { Home, BarChart3, Play, FileCode, Github, Edit, Sparkles, Network, Moon, Sun, HelpCircle, Menu, X, Database, Globe } from 'lucide-react'
+import { Home, BarChart3, Play, FileCode, Github, Edit, Sparkles, Network, Moon, Sun, HelpCircle, Menu, X, Database, Globe, Users, Cpu } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import axios from 'axios'
 import HomePage from './pages/HomePage'
@@ -12,6 +12,8 @@ import PipelineEditorPage from './pages/PipelineEditorPage'
 import PatternsPage from './pages/PatternsPage'
 import WebScrapingPage from './pages/WebScrapingPage'
 import MultiAgentDashboard from './components/MultiAgent/MultiAgentDashboard'
+import AgentDashboard from './pages/AgentDashboard'
+import LLMDashboard from './pages/LLMDashboard'
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary'
 import ThemeProvider, { useTheme } from './components/ThemeProvider/ThemeProvider'
 import KeyboardShortcutsModal from './components/ui/keyboard-shortcuts-modal'
@@ -158,6 +160,8 @@ function AppContent() {
           <NavLink to="/web-scraping" icon={<Globe size={20} />} text="Web Scraping" sidebarOpen={sidebarOpen} onClick={() => setMobileMenuOpen(false)} />
           <NavLink to="/multi-agent" icon={<Network size={20} />} text="Multi-Agent" sidebarOpen={sidebarOpen} onClick={() => setMobileMenuOpen(false)} />
           <NavLink to="/metrics" icon={<BarChart3 size={20} />} text="Metrics" sidebarOpen={sidebarOpen} onClick={() => setMobileMenuOpen(false)} />
+          <NavLink to="/agents" icon={<Users size={20} />} text="Agents" sidebarOpen={sidebarOpen} onClick={() => setMobileMenuOpen(false)} />
+          <NavLink to="/llm" icon={<Cpu size={20} />} text="LLM Usage" sidebarOpen={sidebarOpen} onClick={() => setMobileMenuOpen(false)} />
         </nav>
 
         <div className="p-4 border-t border-gray-700 dark:border-gray-800 space-y-2">
@@ -236,6 +240,8 @@ function AppContent() {
             <Route path="/web-scraping" element={<WebScrapingPage />} />
             <Route path="/multi-agent" element={<MultiAgentDashboard />} />
             <Route path="/metrics" element={<MetricsPage />} />
+            <Route path="/agents" element={<AgentDashboard />} />
+            <Route path="/llm" element={<LLMDashboard />} />
           </Routes>
         </main>
       </div>

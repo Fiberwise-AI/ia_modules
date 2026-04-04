@@ -113,6 +113,16 @@ export const metricsAPI = {
   getHistory: (hours = 24) => api.get(`/metrics/history?hours=${hours}`),
 }
 
+// Telemetry
+export const telemetryAPI = {
+  getSpans: (jobId) => api.get(`/telemetry/spans/${jobId}`),
+  getMetrics: (jobId) => api.get(`/telemetry/metrics/${jobId}`),
+  getTimeline: (jobId) => api.get(`/telemetry/timeline/${jobId}`),
+  getAgentMetrics: () => api.get('/telemetry/agents'),
+  getLLMUsage: () => api.get('/telemetry/llm/usage'),
+  getTimeseries: (metric, hours = 24) => api.get(`/telemetry/timeseries/${metric}?hours=${hours}`),
+}
+
 // Health
 export const healthAPI = {
   check: () => axios.get('http://localhost:5555/health'),
