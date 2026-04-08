@@ -10,7 +10,15 @@ import sys
 import zipfile
 from pathlib import Path
 
+import importlib.util
+
 import pytest
+
+try:
+    from build.__main__ import main as _build_main  # noqa: F401
+    _has_build = True
+except (ImportError, ModuleNotFoundError):
+    _has_build = False
 
 
 class TestPackageBuild:
@@ -32,12 +40,8 @@ class TestPackageBuild:
             'database',
             'guardrails',
             'memory',
-            'multimodal',
-            'patterns',
             'pipeline',
             'plugins',
-            'prompt_optimization',
-            'rag',
             'reliability',
             'scheduler',
             'telemetry',
@@ -68,6 +72,7 @@ class TestPackageBuild:
         assert '"examples*"' in content or "'examples*'" in content
 
     @pytest.mark.slow
+    @pytest.mark.skipif(not _has_build, reason="'build' package not installed")
     def test_build_wheel_includes_all_packages(self, project_root, expected_packages, tmp_path):
         """
         Build a wheel and verify all expected packages are included.
@@ -131,6 +136,7 @@ class TestPackageBuild:
             assert not test_files, f"Test files should not be in wheel: {test_files[:5]}"
 
     @pytest.mark.slow
+    @pytest.mark.skipif(not _has_build, reason="'build' package not installed")
     def test_wheel_contains_python_files(self, project_root, tmp_path):
         """
         Verify the built wheel contains actual Python files, not just metadata.

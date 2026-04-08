@@ -5,23 +5,19 @@ A modular framework for building intelligent automation solutions with advanced 
 
 Core Modules:
 - pipeline: Pipeline orchestration and execution
-- utils: Utility functions
-
-Database:
-- For database functionality, use the nexusql package (pip install nexusql)
-
-Authentication:
-- For authentication functionality, use the ia-auth-sessions package (pip install ia-auth-sessions)
-
-Advanced AI Features:
-- patterns: AI reasoning patterns (CoT, ReAct, ToT, Constitutional AI)
-- memory: Advanced memory strategies (semantic, episodic, working)
-- multimodal: Multi-modal AI support (text, image, audio, video)
-- agents: Multi-agent collaboration patterns
-- prompt_optimization: Automated prompt engineering
+- agents: CLI agent execution (subprocess, A2A) and graph orchestration
 - tools: Advanced tool calling with planning and execution
+- memory: Conversation memory with pluggable backends
 - guardrails: LLM safety and control (input/output rails, jailbreak detection)
-- rag: Retrieval-Augmented Generation with RAPTOR and Self-RAG
+- telemetry: OpenTelemetry integration, metrics, tracing
+- reliability: Circuit breaker, SLO tracking, cost tracking
+- plugins: Plugin system with built-in plugins
+- cli: CLI interface
+- scheduler: Task scheduling
+- checkpoint: Pipeline checkpointing
+- database: Database adapters (NexusQL, SQLAlchemy)
+- validation: Data validation
+- utils: Utility functions
 """
 
 __version__ = "0.1.0"
@@ -34,14 +30,17 @@ __version__ = "0.1.0"
 __all__ = [
     # Core modules
     'pipeline',
-    'utils',
-    # Advanced AI modules
-    'patterns',
-    'memory',
-    'multimodal',
     'agents',
-    'prompt_optimization',
     'tools',
+    'memory',
     'guardrails',
-    'rag',
+    'telemetry',
+    'reliability',
+    'plugins',
+    'cli',
+    'scheduler',
+    'checkpoint',
+    'database',
+    'validation',
+    'utils',
 ]

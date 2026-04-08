@@ -297,7 +297,7 @@ class TestAgentStepRun:
         async def mock_execute(config):
             yield AgentEvent(
                 type=EventType.RESULT, subtype="error_agent_exit",
-                error="Agent crashed", result="Agent crashed",
+                error="Agent crashed",
             )
 
         mock_executor = MagicMock()

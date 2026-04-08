@@ -9,8 +9,7 @@ Targets:
 5. hitl.py
 6. hitl_manager.py
 7. subprocess_executor.py
-8-11. patterns/constitutions/*
-12. iterative_refinement.py
+8. iterative_refinement.py
 """
 
 import asyncio
@@ -2134,49 +2133,6 @@ class TestSubprocessExecute:
 async def _exhaust_async_gen(gen):
     async for _ in gen:
         pass
-
-
-# ---------------------------------------------------------------------------
-# 8-11. patterns/constitutions
-# ---------------------------------------------------------------------------
-class TestConstitutions:
-    def test_import_init(self):
-        from ia_modules.patterns.constitutions import (
-            harmless_principles, helpful_principles, honest_principles
-        )
-        assert len(harmless_principles) > 0
-        assert len(helpful_principles) > 0
-        assert len(honest_principles) > 0
-
-    def test_harmless_principles(self):
-        from ia_modules.patterns.constitutions.harmless_constitution import harmless_principles
-        from ia_modules.patterns.constitutional_ai import PrincipleCategory
-        for p in harmless_principles:
-            assert p.category == PrincipleCategory.HARMLESS
-            assert p.weight > 0
-            assert p.name
-            assert p.critique_prompt
-
-    def test_helpful_principles(self):
-        from ia_modules.patterns.constitutions.helpful_constitution import helpful_principles
-        from ia_modules.patterns.constitutional_ai import PrincipleCategory
-        for p in helpful_principles:
-            assert p.category == PrincipleCategory.HELPFUL
-            assert p.name
-            assert p.description
-
-    def test_honest_principles(self):
-        from ia_modules.patterns.constitutions.honest_constitution import honest_principles
-        from ia_modules.patterns.constitutional_ai import PrincipleCategory
-        for p in honest_principles:
-            assert p.category == PrincipleCategory.HONEST
-            assert p.min_score > 0
-
-    def test_principle_format_critique(self):
-        from ia_modules.patterns.constitutions.harmless_constitution import harmless_principles
-        p = harmless_principles[0]
-        formatted = p.format_critique_prompt("test response")
-        assert "test response" in formatted
 
 
 # ---------------------------------------------------------------------------

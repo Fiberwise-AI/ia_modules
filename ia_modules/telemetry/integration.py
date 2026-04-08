@@ -11,7 +11,6 @@ from contextlib import contextmanager
 
 from .metrics import MetricsCollector
 from .tracing import Tracer, SimpleTracer
-from ..benchmarking.models import BenchmarkResult
 from .agent_telemetry import AgentTelemetry
 from .llm_telemetry import LLMTelemetry
 
@@ -258,7 +257,7 @@ class PipelineTelemetry:
     def record_benchmark_result(
         self,
         pipeline_name: str,
-        result: BenchmarkResult
+        result: Any
     ):
         """
         Record benchmark results as telemetry metrics.

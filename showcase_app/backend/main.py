@@ -36,28 +36,20 @@ from api.websocket import router as websocket_router  # noqa: E402
 from api.checkpoints import router as checkpoints_router  # noqa: E402
 from api.reliability import router as reliability_router  # noqa: E402
 from api.scheduler import router as scheduler_router  # noqa: E402
-from api.benchmarking import router as benchmarking_router  # noqa: E402
 from api.telemetry import router as telemetry_router  # noqa: E402
 from api.memory import router as memory_router  # noqa: E402
-from api.patterns import router as patterns_router  # noqa: E402
 from api.multi_agent import router as multi_agent_router  # noqa: E402
-from api.constitutional_ai_api import router as constitutional_ai_router  # noqa: E402
-from api.advanced_memory_api import router as advanced_memory_router  # noqa: E402
-from api.multimodal_api import router as multimodal_router  # noqa: E402
 from api.agents_api import router as agents_router  # noqa: E402
-from api.prompt_optimization_api import router as prompt_optimization_router  # noqa: E402
 from api.advanced_tools_api import router as advanced_tools_router  # noqa: E402
 from api.step_modules import router as step_modules_router  # noqa: E402
 from api.hitl import router as hitl_router  # noqa: E402
 from api.plugins import router as plugins_router  # noqa: E402
 from api.guardrails import router as guardrails_router  # noqa: E402
-from api.collaboration import router as collaboration_router  # noqa: E402
 from services.container import ServiceContainer  # noqa: E402
 from services.metrics_service import MetricsService  # noqa: E402
 from services.pipeline_service import PipelineService  # noqa: E402
 from services.reliability_service import ReliabilityService  # noqa: E402
 from services.scheduler_service import SchedulerService  # noqa: E402
-from services.benchmark_service import BenchmarkService  # noqa: E402
 from services.telemetry_service import TelemetryService  # noqa: E402
 from services.checkpoint_service import CheckpointService  # noqa: E402
 from services.memory_service import MemoryService  # noqa: E402
@@ -99,7 +91,6 @@ async def lifespan(app: FastAPI):
         services.db_manager
     )
     services.reliability_service = ReliabilityService(services.db_manager)
-    services.benchmark_service = BenchmarkService(services.pipeline_service, services.db_manager)
     services.scheduler_service = SchedulerService(services.pipeline_service, services.db_manager)
     # Don't call start() - it blocks the event loop
     # await services.scheduler_service.start()
@@ -273,24 +264,17 @@ app.include_router(metrics_router, prefix="/api/metrics", tags=["Metrics"])
 app.include_router(checkpoints_router, prefix="/api/checkpoints", tags=["Checkpoints"])
 app.include_router(reliability_router, prefix="/api/reliability", tags=["Reliability"])
 app.include_router(scheduler_router, prefix="/api/scheduler", tags=["Scheduler"])
-app.include_router(benchmarking_router, prefix="/api/benchmarking", tags=["Benchmarking"])
 app.include_router(telemetry_router, prefix="/api/telemetry", tags=["Telemetry"])
 app.include_router(memory_router, prefix="/api/memory", tags=["Memory"])
-app.include_router(patterns_router, tags=["Patterns"])
 app.include_router(multi_agent_router, tags=["Multi-Agent"])
 app.include_router(websocket_router, prefix="/ws", tags=["WebSocket"])
 app.include_router(hitl_router, prefix="/api/hitl", tags=["Human-in-the-Loop"])
 
 # Advanced AI Features
-app.include_router(constitutional_ai_router, prefix="/api/constitutional-ai", tags=["Constitutional AI"])
-app.include_router(advanced_memory_router, prefix="/api/advanced-memory", tags=["Advanced Memory"])
-app.include_router(multimodal_router, prefix="/api/multimodal", tags=["Multimodal"])
 app.include_router(agents_router, prefix="/api/agents", tags=["Agents"])
-app.include_router(prompt_optimization_router, prefix="/api/prompt-optimization", tags=["Prompt Optimization"])
 app.include_router(advanced_tools_router, prefix="/api/tools", tags=["Advanced Tools"])
 app.include_router(plugins_router, prefix="/api/plugins", tags=["Plugins"])
 app.include_router(guardrails_router, prefix="/api/guardrails", tags=["Guardrails"])
-app.include_router(collaboration_router, prefix="/api/collaboration", tags=["Collaboration"])
 
 
 # Global exception handler
@@ -327,11 +311,6 @@ def get_reliability_service() -> ReliabilityService:
 def get_scheduler_service() -> SchedulerService:
     """Get scheduler service instance"""
     return app.state.services.scheduler_service
-
-
-def get_benchmark_service() -> BenchmarkService:
-    """Get benchmark service instance"""
-    return app.state.services.benchmark_service
 
 
 def get_memory_service() -> MemoryService:

@@ -19,10 +19,8 @@ from .websocket import router as websocket_router
 from .checkpoints import router as checkpoints_router
 from .reliability import router as reliability_router
 from .scheduler import router as scheduler_router
-from .benchmarking import router as benchmarking_router
 from .telemetry import router as telemetry_router
 from .memory import router as memory_router
-from .patterns import router as patterns_router  # Re-enabled after sys.path fix
 from .multi_agent import router as multi_agent_router
 
 __all__ = [
@@ -33,9 +31,7 @@ __all__ = [
     'checkpoints_router',
     'reliability_router',
     'scheduler_router',
-    'benchmarking_router',
     'telemetry_router',
     'memory_router',
-    'patterns_router',
-    'multi_agent_router'
+    'multi_agent_router',
 ]

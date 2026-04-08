@@ -11,8 +11,7 @@ import asyncio
 import json
 from pathlib import Path
 from ia_modules.agents.orchestrator import AgentOrchestrator
-from ia_modules.agents.core import BaseAgent
-from ia_modules.agents.roles import AgentRole
+from ia_modules.agents.core import BaseAgent, AgentRole
 from ia_modules.agents.state import StateManager
 
 
