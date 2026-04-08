@@ -19,11 +19,10 @@ class SchedulerService:
 
         logger.info("Initializing scheduler service with ia_modules library...")
 
-        # Initialize scheduler using library
+        # Initialize scheduler (start() will be called asynchronously later)
         self.scheduler = Scheduler()
-        asyncio.run(self.scheduler.start())
 
-        logger.info("Scheduler service initialized")
+        logger.info("Scheduler service initialized (not started - will be started asynchronously)")
 
     async def cleanup(self):
         """Clean up scheduler"""

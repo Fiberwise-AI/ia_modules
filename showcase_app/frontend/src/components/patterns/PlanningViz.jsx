@@ -52,15 +52,15 @@ export default function PlanningViz({ data }) {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-800 text-center">
           <div className="text-2xl font-bold text-blue-600">{plan.length}</div>
           <div className="text-sm text-gray-600">Total Steps</div>
         </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-800 text-center">
           <div className="text-2xl font-bold text-indigo-600">{estimated_total_time}m</div>
           <div className="text-sm text-gray-600">Est. Time</div>
         </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-800 text-center">
           <div className="text-2xl font-bold text-purple-600">
             {plan.filter(s => s.dependencies?.length > 0).length}
           </div>
@@ -86,7 +86,7 @@ export default function PlanningViz({ data }) {
               </div>
               
               {/* Step Card */}
-              <div className="flex-1 bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
                 {/* Step Header */}
                 <div className="flex items-start justify-between mb-3">
                   <h5 className="font-semibold text-gray-800 text-lg flex-1">
@@ -144,7 +144,7 @@ export default function PlanningViz({ data }) {
       {/* Gantt-style Timeline Visualization */}
       <div className="mt-6">
         <h4 className="font-semibold text-gray-800 mb-4">Timeline Overview</h4>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
           <div className="space-y-2">
             {plan.map((step, idx) => {
               const startTime = plan.slice(0, idx).reduce((sum, s) => sum + s.estimated_duration, 0);

@@ -1,17 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.011em;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', source-code-pro, Menlo, Monaco, Consolas, monospace;
+  }
+
+  /* Smoother scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+@layer components {
+  /* Modern card with subtle border + soft shadow */
+  .card {
+    @apply bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/60 dark:border-gray-800/60;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+  }
+  .card:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Glass card variant */
+  .card-glass {
+    @apply rounded-2xl border border-white/20 dark:border-gray-700/40 backdrop-blur-xl;
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+  }
+  .dark .card-glass {
+    background: rgba(17, 24, 39, 0.7);
+  }
+
+  /* Section heading style */
+  .section-heading {
+    @apply text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100;
+  }
 }

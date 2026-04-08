@@ -1,5 +1,5 @@
 // @ts-check
-const { test, expect } = require('@playwright/test');
+const { expect } = require('@playwright/test');
 const { BasePage } = require('./BasePage');
 
 /**
@@ -11,20 +11,22 @@ class HomePage extends BasePage {
    */
   constructor(page) {
     super(page);
+
+    // Selectors scoped to sidebar nav to avoid mobile menu duplicates
+    // Using role-based selectors within the aside container
+    const sidebarNav = page.locator('aside nav');
+    this.navbar = sidebarNav;
+    this.homeLink = sidebarNav.getByRole('link', { name: /home/i });
+    this.pipelinesLink = sidebarNav.getByRole('link', { name: /pipelines/i });
+    this.metricsLink = sidebarNav.getByRole('link', { name: /metrics/i });
+    this.patternsLink = sidebarNav.getByRole('link', { name: /patterns/i });
     
-    // Selectors
-    this.navbar = page.getByRole('navigation');
-    this.homeLink = page.getByRole('link', { name: /home/i });
-    this.pipelinesLink = page.getByRole('link', { name: /pipelines/i });
-    this.metricsLink = page.getByRole('link', { name: /metrics/i });
-    this.patternsLink = page.getByRole('link', { name: /patterns/i });
-    
-    // Hero section
-    this.heroSection = page.getByRole('heading', { name: /ia modules showcase/i });
+    // Hero section - use case-insensitive regex for resilience
+    this.heroSection = page.getByRole('heading', { name: /welcome to ia modules showcase/i });
     this.quickStartButton = page.getByRole('button', { name: /quick start|get started/i });
     
-    // Feature cards
-    this.featureCards = page.locator('[class*="card"], [class*="feature"]');
+    // Feature cards - use the grid layout with heading children
+    this.featureCards = page.locator('[class*="grid"] > div').filter({ has: page.locator('h3') });
   }
 
   /**

@@ -72,7 +72,7 @@ export default function ConversationHistory({ sessionId }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header with Stats */}
-      <div className="border-b bg-gray-50 p-4">
+      <div className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <MessageSquare className="w-5 h-5" />
           Conversation History
@@ -81,18 +81,18 @@ export default function ConversationHistory({ sessionId }) {
         {/* Stats Cards */}
         {!statsLoading && stats && (
           <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="bg-white p-3 rounded-lg border">
-              <div className="text-sm text-gray-600">Total Messages</div>
+            <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
+              <div className="text-sm text-gray-600 dark:text-gray-400">Total Messages</div>
               <div className="text-2xl font-bold text-blue-600">{stats.total_messages}</div>
             </div>
-            <div className="bg-white p-3 rounded-lg border">
-              <div className="text-sm text-gray-600">Total Tokens</div>
+            <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
+              <div className="text-sm text-gray-600 dark:text-gray-400">Total Tokens</div>
               <div className="text-2xl font-bold text-purple-600">
                 {stats.total_tokens?.toLocaleString() || 0}
               </div>
             </div>
-            <div className="bg-white p-3 rounded-lg border">
-              <div className="text-sm text-gray-600">Duration</div>
+            <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
+              <div className="text-sm text-gray-600 dark:text-gray-400">Duration</div>
               <div className="text-2xl font-bold text-green-600">
                 {stats.first_message && stats.last_message
                   ? `${Math.round((new Date(stats.last_message) - new Date(stats.first_message)) / 60000)}m`
@@ -111,12 +111,12 @@ export default function ConversationHistory({ sessionId }) {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Search conversation..."
-              className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="flex-1 px-3 py-2 border dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-900 dark:text-gray-100"
             />
             <select
               value={searchType}
               onChange={(e) => setSearchType(e.target.value)}
-              className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-gray-100"
             >
               <option value="semantic">Semantic</option>
               <option value="keyword">Keyword</option>
@@ -133,7 +133,7 @@ export default function ConversationHistory({ sessionId }) {
         </div>
 
         {searchMutation.data && (
-          <div className="mt-2 text-sm text-gray-600">
+          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Found {searchMutation.data.results?.length || 0} results
             <button
               onClick={() => searchMutation.reset()}
@@ -171,7 +171,7 @@ function MessageCard({ message }) {
         isUser
           ? 'bg-blue-50 border-blue-200'
           : isSystem
-          ? 'bg-gray-50 border-gray-200'
+          ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
           : 'bg-purple-50 border-purple-200'
       }`}
     >
@@ -194,15 +194,15 @@ function MessageCard({ message }) {
       </div>
 
       {/* Content */}
-      <div className="text-sm text-gray-700 whitespace-pre-wrap">{message.content}</div>
+      <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{message.content}</div>
 
       {/* Metadata */}
       {message.metadata && Object.keys(message.metadata).length > 0 && (
         <details className="mt-2">
-          <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+          <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300">
             Metadata
           </summary>
-          <pre className="mt-1 text-xs bg-white p-2 rounded border overflow-x-auto">
+          <pre className="mt-1 text-xs bg-white dark:bg-gray-800 dark:text-gray-200 p-2 rounded border dark:border-gray-700 overflow-x-auto">
             {JSON.stringify(message.metadata, null, 2)}
           </pre>
         </details>

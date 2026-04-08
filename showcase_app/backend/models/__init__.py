@@ -300,3 +300,151 @@ class PipelineGraphResponse(BaseModel):
     """Pipeline graph structure"""
     nodes: List[GraphNode]
     edges: List[GraphEdge]
+
+
+# Plugin Models
+
+class PluginResponse(BaseModel):
+    """Plugin summary response"""
+    name: str
+    version: str
+    author: Optional[str] = None
+    description: Optional[str] = None
+    type: str
+    tags: List[str] = Field(default_factory=list)
+    status: str = "loaded"
+
+
+class PluginDetailResponse(PluginResponse):
+    """Plugin detail response with extra fields"""
+    config_schema: Optional[Dict[str, Any]] = None
+    dependencies: List[str] = Field(default_factory=list)
+    dependencies_satisfied: bool = True
+    missing_dependencies: List[str] = Field(default_factory=list)
+
+
+class PluginExecuteRequest(BaseModel):
+    """Plugin execution request"""
+    params: Dict[str, Any] = Field(default_factory=dict, description="Parameters to pass to the plugin")
+
+
+class PluginExecuteResponse(BaseModel):
+    """Plugin execution response"""
+    plugin: str
+    type: str
+    result: Optional[Any] = None
+    error: Optional[str] = None
+    success: bool = True
+
+
+class PluginLoadRequest(BaseModel):
+    """Plugin load request"""
+    path: str = Field(..., description="File path to load plugin from")
+
+
+class PluginLoadResponse(BaseModel):
+    """Plugin load response"""
+    loaded_count: int
+    path: str
+    success: bool = True
+    message: Optional[str] = None
+
+
+# Guardrails Models
+
+class GuardrailsTestInputRequest(BaseModel):
+    """Request to test an input rail"""
+    text: str = Field(..., min_length=1, description="Text to test against the rail")
+    rail_type: str = Field(..., description="Input rail type: jailbreak, toxicity, or pii")
+    options: Optional[Dict[str, Any]] = Field(default=None, description="Rail-specific options")
+
+
+class GuardrailsTestOutputRequest(BaseModel):
+    """Request to test an output rail"""
+    text: str = Field(..., min_length=1, description="Text to test against the rail")
+    rail_type: str = Field(..., description="Output rail type: toxic_filter, disclaimer, or length_limit")
+    options: Optional[Dict[str, Any]] = Field(default=None, description="Rail-specific options")
+
+
+class GuardrailsPipelineRequest(BaseModel):
+    """Request to run a full guardrails pipeline"""
+    text: str = Field(..., min_length=1, description="Text to process through the pipeline")
+    input_rails: List[str] = Field(default_factory=list, description="Input rails to enable")
+    output_rails: List[str] = Field(default_factory=list, description="Output rails to enable")
+    options: Dict[str, Any] = Field(default_factory=dict, description="Rail-specific options")
+
+
+class GuardrailsRailResult(BaseModel):
+    """Individual rail execution result"""
+    rail_id: str
+    rail_type: str
+    action: str
+    triggered: bool
+    confidence: float = 1.0
+    reason: Optional[str] = None
+    modified_content: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class GuardrailsTestResponse(BaseModel):
+    """Response from testing a single rail"""
+    action: str
+    content: Any
+    triggered_count: int = 0
+    results: List[GuardrailsRailResult] = Field(default_factory=list)
+    reason: Optional[str] = None
+    blocked_by: Optional[str] = None
+
+
+class GuardrailsPipelineStepResult(BaseModel):
+    """Result of a pipeline step"""
+    step: str
+    rails_checked: List[str] = Field(default_factory=list)
+    action: str
+    triggered_count: int = 0
+    results: List[GuardrailsRailResult] = Field(default_factory=list)
+    blocked: Optional[bool] = None
+    reason: Optional[str] = None
+    modified_text: Optional[str] = None
+
+
+class GuardrailsPipelineResponse(BaseModel):
+    """Response from running a full guardrails pipeline"""
+    original_text: str
+    final_text: Optional[str]
+    overall_action: str
+    blocked: bool
+    blocked_at: Optional[str] = None
+    steps: List[GuardrailsPipelineStepResult] = Field(default_factory=list)
+    engine_stats: Optional[Dict[str, Any]] = None
+
+
+class GuardrailsRailsListResponse(BaseModel):
+    """Response listing all available rails"""
+    rails: Dict[str, Any]
+
+
+# Collaboration Pattern Models
+
+class CollaborationPatternInfo(BaseModel):
+    """Collaboration pattern information"""
+    id: str
+    name: str
+    description: str
+    use_cases: List[str] = Field(default_factory=list)
+
+
+class CollaborationHistoryStep(BaseModel):
+    """A step in the collaboration history"""
+    phase: str
+    message: Optional[str] = None
+    timestamp: Optional[str] = None
+
+
+class CollaborationResult(BaseModel):
+    """Collaboration execution result"""
+    pattern: str
+    result: Dict[str, Any] = Field(default_factory=dict)
+    history: List[Dict[str, Any]] = Field(default_factory=list)
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None

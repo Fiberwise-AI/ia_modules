@@ -132,8 +132,8 @@ export default function PatternsPage() {
       </div>
 
       {/* Pattern Selection */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Select a Pattern</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Select a Pattern</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {patterns.map((pattern) => {
             const Icon = pattern.icon;
@@ -182,9 +182,9 @@ export default function PatternsPage() {
 
       {/* Pattern Configuration */}
       {currentPattern && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Pattern Configuration</h2>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Pattern Configuration</h2>
             <button
               onClick={runPattern}
               disabled={isLoading}
@@ -211,9 +211,9 @@ export default function PatternsPage() {
           </div>
 
           {/* Example Configuration Display */}
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <div className="text-sm font-medium text-gray-700 mb-2">Example Configuration:</div>
-            <pre className="text-xs text-gray-600 overflow-x-auto">
+          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Example Configuration:</div>
+            <pre className="text-xs text-gray-600 dark:text-gray-400 overflow-x-auto">
               {JSON.stringify(currentPattern.example, null, 2)}
             </pre>
           </div>
@@ -222,8 +222,8 @@ export default function PatternsPage() {
 
       {/* Pattern Visualization */}
       {patternData && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-6">Pattern Execution Results</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-6">Pattern Execution Results</h2>
           
           {selectedPattern === 'reflection' && <ReflectionViz data={patternData} />}
           {selectedPattern === 'planning' && <PlanningViz data={patternData} />}
@@ -246,7 +246,7 @@ export default function PatternsPage() {
               <div>
                 <div className="font-semibold text-gray-800 mb-3">Tool Usage Plan</div>
                 {patternData.usage_plan?.map((step, idx) => (
-                  <div key={idx} className="mb-3 bg-white border border-gray-200 rounded-lg p-4">
+                  <div key={idx} className="mb-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
                         {step.step}
@@ -324,7 +324,7 @@ export default function PatternsPage() {
           and CrewAI implement under the hood.
         </p>
         
-        <div className="bg-white rounded-lg p-4 mb-4 border border-blue-200">
+        <div className="bg-white dark:bg-gray-900 rounded-lg p-4 mb-4 border border-blue-200">
           <div className="text-sm font-mono text-gray-700">
             <div className="font-semibold text-blue-600 mb-2">Core Agent Architecture:</div>
             <div className="text-xs">

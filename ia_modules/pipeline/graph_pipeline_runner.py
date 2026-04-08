@@ -507,6 +507,103 @@ class GraphPipelineRunner:
 
         return result
 
+    async def run_pipeline(
+        self,
+        name: str,
+        steps: List[Step],
+        flow: Dict[str, Any],
+        input_data: Dict[str, Any] = None,
+        execution_context: ExecutionContext = None,
+        loop_config: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Run a pipeline from pre-built Step instances.
+
+        This is the programmatic equivalent of run_pipeline_from_json —
+        same logging, tracking, and stats, but accepts already-instantiated
+        steps instead of JSON config.
+
+        Args:
+            name: Pipeline name.
+            steps: List of Step (or AgentStep) instances.
+            flow: Flow dict with ``start_at`` and ``paths``.
+            input_data: Initial input data for the pipeline.
+            execution_context: Execution context with execution_id etc.
+            loop_config: Optional loop configuration for iterative pipelines.
+
+        Returns:
+            Pipeline execution results.
+        """
+        input_data = input_data or {}
+
+        if execution_context:
+            execution_id = execution_context.execution_id
+        else:
+            execution_id = str(uuid.uuid4())
+            execution_context = ExecutionContext(
+                execution_id=execution_id,
+                pipeline_id=name,
+            )
+
+        # Minimal PipelineConfig for logging (no module/step_class needed)
+        pseudo_steps = [
+            PipelineStep(
+                id=s.name, name=s.name,
+                step_class=type(s).__name__,
+                module=type(s).__module__,
+                config=getattr(s, "config", {}),
+            )
+            for s in steps
+        ]
+        pseudo_config = PipelineConfig(
+            name=name,
+            steps=pseudo_steps,
+            flow=PipelineFlow(
+                start_at=flow["start_at"],
+                paths=[FlowPath(**p) for p in flow.get("paths", [])],
+            ),
+        )
+
+        await self._start_execution_logging(pseudo_config, input_data, execution_id)
+
+        try:
+            self.execution_stats["start_time"] = datetime.now()
+
+            pipeline = Pipeline(
+                name=name,
+                steps=steps,
+                flow=flow,
+                services=self.services,
+                loop_config=loop_config,
+            )
+
+            start_time = datetime.now()
+            result = await pipeline.run(input_data, execution_context)
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+
+            self.execution_stats["end_time"] = end_time
+            self.execution_stats["steps_executed"] = len(steps)
+
+            # HITL pause
+            if isinstance(result, dict) and result.get("status") == "waiting_for_human":
+                await self._write_central_logs_to_database()
+                return result
+
+            self._log_execution_end_to_database(execution_id, success=True)
+            await self._write_central_logs_to_database()
+            self._log_to_central_service(
+                "SUCCESS",
+                f"Pipeline completed in {duration:.2f} seconds",
+                data={"duration_seconds": duration, "steps_executed": len(steps)},
+            )
+            return result
+
+        except Exception as e:
+            self._log_execution_end_to_database(execution_id, success=False, error=str(e))
+            await self._write_central_logs_to_database()
+            self._log_to_central_service("ERROR", f"Pipeline execution failed: {str(e)}")
+            raise
+
     async def run_with_different_scenarios(
         self,
         pipeline_config: Dict[str, Any],

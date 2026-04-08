@@ -57,7 +57,7 @@ export function TabsTrigger({ value, className = '', children }) {
         disabled:pointer-events-none disabled:opacity-50
         ${
           isActive
-            ? 'bg-white text-gray-900 shadow-sm'
+            ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
             : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
         }
         ${className}

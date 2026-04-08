@@ -82,7 +82,7 @@ module.exports = defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: [
     {
-      command: 'cd backend && python main.py',
+      command: 'cd backend && "C:/Users/David/.venv/showcase_app/Scripts/python.exe" main.py',
       url: 'http://localhost:5555/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,

@@ -24,7 +24,7 @@ export default function StepDetailCard({ step }) {
       case 'running':
         return 'border-blue-200 bg-blue-50'
       default:
-        return 'border-gray-200 bg-gray-50'
+        return 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
     }
   }
 
@@ -81,13 +81,13 @@ export default function StepDetailCard({ step }) {
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
             <div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-1">
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                 {step.step_name}
               </h4>
               <div className="flex items-center gap-2">
                 {getStatusBadge(step.status)}
                 {step.step_type && (
-                  <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded border border-gray-300">
+                  <span className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded border border-gray-300 dark:border-gray-600">
                     {step.step_type}
                   </span>
                 )}
@@ -95,7 +95,7 @@ export default function StepDetailCard({ step }) {
             </div>
             <div className="text-right">
               {step.execution_time_ms != null && (
-                <div className="text-lg font-bold text-gray-900">
+                <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
                   {step.execution_time_ms.toFixed(0)}ms
                 </div>
               )}
@@ -120,9 +120,9 @@ export default function StepDetailCard({ step }) {
 
           {/* Metrics Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-            <div className="bg-white bg-opacity-60 rounded p-3 border border-gray-200">
+            <div className="bg-white dark:bg-gray-800 bg-opacity-60 dark:bg-opacity-60 rounded p-3 border border-gray-200 dark:border-gray-700">
               <div className="text-xs text-gray-500 mb-1">Started</div>
-              <div className="text-sm font-medium text-gray-900">
+              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {formatTime(step.started_at)}
               </div>
               <div className="text-xs text-gray-500 mt-0.5">
@@ -131,9 +131,9 @@ export default function StepDetailCard({ step }) {
             </div>
 
             {step.completed_at && (
-              <div className="bg-white bg-opacity-60 rounded p-3 border border-gray-200">
+              <div className="bg-white dark:bg-gray-800 bg-opacity-60 dark:bg-opacity-60 rounded p-3 border border-gray-200 dark:border-gray-700">
                 <div className="text-xs text-gray-500 mb-1">Completed</div>
-                <div className="text-sm font-medium text-gray-900">
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {formatTime(step.completed_at)}
                 </div>
                 <div className="text-xs text-gray-500 mt-0.5">
@@ -143,9 +143,9 @@ export default function StepDetailCard({ step }) {
             )}
 
             {step.execution_time_ms != null && (
-              <div className="bg-white bg-opacity-60 rounded p-3 border border-gray-200">
+              <div className="bg-white dark:bg-gray-800 bg-opacity-60 dark:bg-opacity-60 rounded p-3 border border-gray-200 dark:border-gray-700">
                 <div className="text-xs text-gray-500 mb-1">Duration</div>
-                <div className="text-sm font-medium text-gray-900">
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {step.execution_time_ms < 1000 
                     ? `${step.execution_time_ms.toFixed(0)}ms`
                     : `${(step.execution_time_ms / 1000).toFixed(2)}s`
@@ -155,11 +155,11 @@ export default function StepDetailCard({ step }) {
             )}
 
             {(step.tokens || step.cost != null) && (
-              <div className="bg-white bg-opacity-60 rounded p-3 border border-gray-200">
+              <div className="bg-white dark:bg-gray-800 bg-opacity-60 dark:bg-opacity-60 rounded p-3 border border-gray-200 dark:border-gray-700">
                 <div className="text-xs text-gray-500 mb-1">
                   {step.tokens ? 'Tokens' : 'Cost'}
                 </div>
-                <div className="text-sm font-medium text-gray-900">
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {step.tokens || (step.cost != null ? `$${step.cost.toFixed(4)}` : 'N/A')}
                 </div>
               </div>
@@ -171,7 +171,7 @@ export default function StepDetailCard({ step }) {
             {/* Input Preview */}
             {step.input_data && Object.keys(step.input_data).length > 0 && (
               <details className="group">
-                <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center gap-2 py-2">
+                <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 flex items-center gap-2 py-2">
                   <span className="text-blue-600">▸</span>
                   <span>Input Data</span>
                   <span className="text-xs text-gray-500">
@@ -179,7 +179,7 @@ export default function StepDetailCard({ step }) {
                   </span>
                 </summary>
                 <div className="mt-2 ml-6">
-                  <pre className="text-xs text-gray-900 bg-white p-3 rounded border overflow-x-auto max-h-48 overflow-y-auto">
+                  <pre className="text-xs text-gray-900 dark:text-gray-200 bg-white dark:bg-gray-800 p-3 rounded border dark:border-gray-700 overflow-x-auto max-h-48 overflow-y-auto">
                     {JSON.stringify(step.input_data, null, 2)}
                   </pre>
                 </div>
@@ -189,7 +189,7 @@ export default function StepDetailCard({ step }) {
             {/* Output Preview */}
             {step.output_data && Object.keys(step.output_data).length > 0 && (
               <details className="group">
-                <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center gap-2 py-2">
+                <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 flex items-center gap-2 py-2">
                   <span className="text-green-600">▸</span>
                   <span>Output Data</span>
                   <span className="text-xs text-gray-500">
@@ -197,7 +197,7 @@ export default function StepDetailCard({ step }) {
                   </span>
                 </summary>
                 <div className="mt-2 ml-6">
-                  <pre className="text-xs text-gray-900 bg-white p-3 rounded border overflow-x-auto max-h-48 overflow-y-auto">
+                  <pre className="text-xs text-gray-900 dark:text-gray-200 bg-white dark:bg-gray-800 p-3 rounded border dark:border-gray-700 overflow-x-auto max-h-48 overflow-y-auto">
                     {JSON.stringify(step.output_data, null, 2)}
                   </pre>
                 </div>
@@ -207,7 +207,7 @@ export default function StepDetailCard({ step }) {
             {/* Metadata Preview */}
             {step.metadata && Object.keys(step.metadata).length > 0 && (
               <details className="group">
-                <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center gap-2 py-2">
+                <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 flex items-center gap-2 py-2">
                   <span className="text-purple-600">▸</span>
                   <span>Metadata</span>
                   <span className="text-xs text-gray-500">
@@ -215,7 +215,7 @@ export default function StepDetailCard({ step }) {
                   </span>
                 </summary>
                 <div className="mt-2 ml-6">
-                  <pre className="text-xs text-gray-900 bg-white p-3 rounded border overflow-x-auto max-h-48 overflow-y-auto">
+                  <pre className="text-xs text-gray-900 dark:text-gray-200 bg-white dark:bg-gray-800 p-3 rounded border dark:border-gray-700 overflow-x-auto max-h-48 overflow-y-auto">
                     {JSON.stringify(step.metadata, null, 2)}
                   </pre>
                 </div>

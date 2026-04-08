@@ -62,7 +62,7 @@ export default function ReplayComparison({ jobId }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header with Controls */}
-      <div className="border-b bg-gray-50 p-4">
+      <div className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Play className="w-5 h-5" />
           Execution Replay
@@ -77,7 +77,7 @@ export default function ReplayComparison({ jobId }) {
               onChange={(e) => setUseCached(e.target.checked)}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm text-gray-700">Use cached responses</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Use cached responses</span>
           </label>
 
           <button
@@ -107,7 +107,7 @@ export default function ReplayComparison({ jobId }) {
         )}
 
         {/* History Section */}
-        <div className="border-t bg-gray-50 p-4">
+        <div className="border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
           <h3 className="text-md font-semibold mb-3 flex items-center gap-2">
             <History className="w-4 h-4" />
             Replay History
@@ -137,24 +137,24 @@ function ReplaySummary({ result }) {
 
   return (
     <div className="grid grid-cols-4 gap-4">
-      <div className="bg-white p-3 rounded-lg border">
-        <div className="text-sm text-gray-600">Original Status</div>
+      <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
+        <div className="text-sm text-gray-600 dark:text-gray-400">Original Status</div>
         <div className={`text-lg font-bold ${getStatusColor(comparison.original_status)}`}>
           {comparison.original_status}
         </div>
       </div>
-      <div className="bg-white p-3 rounded-lg border">
-        <div className="text-sm text-gray-600">Replay Status</div>
+      <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
+        <div className="text-sm text-gray-600 dark:text-gray-400">Replay Status</div>
         <div className={`text-lg font-bold ${getStatusColor(comparison.replay_status)}`}>
           {comparison.replay_status}
         </div>
       </div>
-      <div className="bg-white p-3 rounded-lg border">
-        <div className="text-sm text-gray-600">Identical Steps</div>
+      <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
+        <div className="text-sm text-gray-600 dark:text-gray-400">Identical Steps</div>
         <div className="text-lg font-bold text-green-600">{identicalCount}</div>
       </div>
-      <div className="bg-white p-3 rounded-lg border">
-        <div className="text-sm text-gray-600">Differences</div>
+      <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
+        <div className="text-sm text-gray-600 dark:text-gray-400">Differences</div>
         <div className="text-lg font-bold text-orange-600">{differenceCount}</div>
       </div>
     </div>
@@ -171,7 +171,7 @@ function ComparisonDetails({ comparison, expandedDiffs, toggleDiff }) {
       <h3 className="text-md font-semibold">Step-by-Step Comparison</h3>
 
       {comparison.differences.map((diff, idx) => (
-        <div key={idx} className="border rounded-lg overflow-hidden">
+        <div key={idx} className="border dark:border-gray-700 rounded-lg overflow-hidden">
           {/* Step Header */}
           <div
             className={`p-3 cursor-pointer flex items-center justify-between ${
@@ -205,15 +205,15 @@ function ComparisonDetails({ comparison, expandedDiffs, toggleDiff }) {
 
           {/* Expanded Details */}
           {expandedDiffs.has(idx) && (
-            <div className="p-4 bg-white">
+            <div className="p-4 bg-white dark:bg-gray-900">
               {diff.identical ? (
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
                   <p className="mb-2">✓ Outputs match perfectly</p>
                   <details>
                     <summary className="cursor-pointer text-blue-600 hover:text-blue-700">
                       View output
                     </summary>
-                    <pre className="mt-2 p-3 bg-gray-50 rounded text-xs overflow-x-auto">
+                    <pre className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 dark:text-gray-200 rounded text-xs overflow-x-auto">
                       {JSON.stringify(diff.original_output, null, 2)}
                     </pre>
                   </details>
@@ -249,7 +249,7 @@ function ComparisonDetails({ comparison, expandedDiffs, toggleDiff }) {
 
 function HistoryCard({ item }) {
   return (
-    <div className="bg-white p-3 rounded-lg border">
+    <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {item.identical ? (
@@ -266,7 +266,7 @@ function HistoryCard({ item }) {
             </div>
           </div>
         </div>
-        <div className="text-sm text-gray-600">{item.difference_count} differences</div>
+        <div className="text-sm text-gray-600 dark:text-gray-400">{item.difference_count} differences</div>
       </div>
     </div>
   );

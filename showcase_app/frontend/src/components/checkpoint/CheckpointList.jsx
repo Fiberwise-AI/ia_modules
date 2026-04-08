@@ -34,9 +34,9 @@ export default function CheckpointList({ jobId }) {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="text-gray-600">Loading checkpoints...</div>
+          <div className="text-gray-600 dark:text-gray-400">Loading checkpoints...</div>
         </div>
       </div>
     )
@@ -46,8 +46,8 @@ export default function CheckpointList({ jobId }) {
 
   if (checkpoints.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
           <Database size={20} />
           Checkpoints
         </h3>
@@ -59,18 +59,18 @@ export default function CheckpointList({ jobId }) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <Database size={20} />
           Checkpoints
         </h3>
-        <p className="text-sm text-gray-600 mt-1">
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
           {checkpoints.length} checkpoint{checkpoints.length !== 1 ? 's' : ''} saved
         </p>
       </div>
 
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-gray-200 dark:divide-gray-700">
         {checkpoints.map((checkpoint) => (
           <CheckpointCard
             key={checkpoint.id}
@@ -98,36 +98,36 @@ function CheckpointCard({ checkpoint, onResume, isResuming }) {
   }
 
   return (
-    <div className="p-6 hover:bg-gray-50 transition-colors">
+    <div className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <div className="bg-blue-100 p-2 rounded">
+            <div className="bg-blue-100 dark:bg-blue-900/50 p-2 rounded">
               <Database className="text-blue-600" size={20} />
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900">{checkpoint.step_name}</h4>
-              <p className="text-sm text-gray-600">Checkpoint ID: {checkpoint.id}</p>
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100">{checkpoint.step_name}</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Checkpoint ID: {checkpoint.id}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
             <div>
               <span className="text-gray-500">Created:</span>
-              <span className="ml-2 text-gray-900">{formatDate(checkpoint.created_at)}</span>
+              <span className="ml-2 text-gray-900 dark:text-gray-100">{formatDate(checkpoint.created_at)}</span>
             </div>
             <div>
               <span className="text-gray-500">State Size:</span>
-              <span className="ml-2 text-gray-900">{formatSize(checkpoint.state_size)}</span>
+              <span className="ml-2 text-gray-900 dark:text-gray-100">{formatSize(checkpoint.state_size)}</span>
             </div>
           </div>
 
           {checkpoint.metadata && Object.keys(checkpoint.metadata).length > 0 && (
             <details className="mt-3">
-              <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-900">
+              <summary className="cursor-pointer text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
                 View Metadata
               </summary>
-              <pre className="mt-2 text-xs bg-gray-100 p-3 rounded overflow-auto max-h-32">
+              <pre className="mt-2 text-xs bg-gray-100 dark:bg-gray-800 dark:text-gray-200 p-3 rounded overflow-auto max-h-32">
                 {JSON.stringify(checkpoint.metadata, null, 2)}
               </pre>
             </details>

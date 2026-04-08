@@ -27,13 +27,13 @@ const moduleCategories = [
 
 export default function ModulePalette({ onAddStep }) {
   return (
-    <div className="w-64 bg-gray-50 border-r p-4 overflow-y-auto">
-      <h3 className="font-semibold text-gray-700 mb-4">Module Palette</h3>
+    <div className="w-64 bg-gray-50 dark:bg-gray-800/50 border-r dark:border-gray-700 p-4 overflow-y-auto">
+      <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-4">Module Palette</h3>
 
       <div className="space-y-4">
         {moduleCategories.map((category) => (
           <div key={category.name}>
-            <h4 className="text-sm font-medium text-gray-600 mb-2">{category.name}</h4>
+            <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">{category.name}</h4>
             <div className="space-y-2">
               {category.modules.map((module) => (
                 <ModuleCard key={module.type} module={module} onAdd={() => onAddStep(module.type)} />
@@ -59,14 +59,14 @@ function ModuleCard({ module, onAdd }) {
   return (
     <button
       onClick={onAdd}
-      className="w-full p-3 bg-white border rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-left group"
+      className="w-full p-3 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-left group"
     >
       <div className="flex items-start gap-3">
         <div className="p-2 bg-blue-50 rounded group-hover:bg-blue-100 transition-colors">
           <Icon className="w-4 h-4 text-blue-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-sm text-gray-900">{module.label}</div>
+          <div className="font-medium text-sm text-gray-900 dark:text-gray-100">{module.label}</div>
           <div className="text-xs text-gray-500 mt-0.5">{module.description}</div>
         </div>
       </div>

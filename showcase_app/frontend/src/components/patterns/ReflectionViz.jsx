@@ -74,7 +74,7 @@ export default function ReflectionViz({ data }) {
               </div>
               
               {/* Iteration Content */}
-              <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+              <div className="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm">
                 {/* Quality Score */}
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium text-gray-600">
@@ -98,7 +98,7 @@ export default function ReflectionViz({ data }) {
                 {/* Current Output Preview */}
                 <div className="mb-3">
                   <div className="text-xs font-medium text-gray-500 mb-1">Output</div>
-                  <div className="bg-gray-50 p-3 rounded border border-gray-200 text-sm text-gray-700">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
                     {iteration.output.substring(0, 200)}
                     {iteration.output.length > 200 && '...'}
                   </div>

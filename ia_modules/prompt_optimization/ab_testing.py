@@ -252,8 +252,17 @@ class ABTester(PromptOptimizer):
         n_a = len(variant_a.samples)
         n_b = len(variant_b.samples)
 
+        # If both variances are zero, means are either identical or not
+        pooled_var = var_a / n_a + var_b / n_b
+        if pooled_var == 0:
+            # No variance at all – can't compute a t-statistic
+            if mean_a == mean_b:
+                return 1.0, False  # identical distributions
+            else:
+                return 0.0, True  # perfectly separated
+
         # Welch's t-statistic
-        t_stat = (mean_a - mean_b) / math.sqrt(var_a / n_a + var_b / n_b)
+        t_stat = (mean_a - mean_b) / math.sqrt(pooled_var)
 
         # Degrees of freedom (Welch-Satterthwaite)
         df = (var_a / n_a + var_b / n_b) ** 2 / (

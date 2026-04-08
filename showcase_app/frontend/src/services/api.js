@@ -123,6 +123,44 @@ export const telemetryAPI = {
   getTimeseries: (metric, hours = 24) => api.get(`/telemetry/timeseries/${metric}?hours=${hours}`),
 }
 
+// Plugins
+export const pluginsAPI = {
+  list: () => api.get('/plugins'),
+  get: (name) => api.get(`/plugins/${name}`),
+  execute: (name, params) => api.post(`/plugins/${name}/execute`, { params }),
+  load: (path) => api.post('/plugins/load', { path }),
+  unload: (name) => api.delete(`/plugins/${name}`),
+}
+
+// Guardrails
+export const guardrailsAPI = {
+  listRails: () => api.get('/guardrails/rails'),
+  testInput: (data) => api.post('/guardrails/test-input', data),
+  testOutput: (data) => api.post('/guardrails/test-output', data),
+  runPipeline: (data) => api.post('/guardrails/run', data),
+}
+
+// Collaboration Patterns
+export const collaborationAPI = {
+  getPatterns: () => api.get('/collaboration/patterns'),
+  runConsensus: (data) => api.post('/collaboration/consensus', data, {
+    loadingMessage: 'Running consensus collaboration...',
+    successMessage: 'Consensus collaboration completed',
+  }),
+  runDebate: (data) => api.post('/collaboration/debate', data, {
+    loadingMessage: 'Running debate collaboration...',
+    successMessage: 'Debate collaboration completed',
+  }),
+  runHierarchical: (data) => api.post('/collaboration/hierarchical', data, {
+    loadingMessage: 'Running hierarchical collaboration...',
+    successMessage: 'Hierarchical collaboration completed',
+  }),
+  runPeerToPeer: (data) => api.post('/collaboration/peer-to-peer', data, {
+    loadingMessage: 'Running peer-to-peer collaboration...',
+    successMessage: 'Peer-to-peer collaboration completed',
+  }),
+}
+
 // Health
 export const healthAPI = {
   check: () => axios.get('http://localhost:5555/health'),

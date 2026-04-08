@@ -268,7 +268,7 @@ function PipelineCard({ pipeline, onExecute, onEdit, isExecuting }) {
       <div className="flex items-center space-x-2">
         <button
           onClick={onEdit}
-          className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition flex items-center gap-2"
+          className="px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center gap-2"
         >
           <Edit size={16} />
           Edit

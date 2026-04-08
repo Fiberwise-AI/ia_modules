@@ -13,15 +13,17 @@ class PatternsPage extends BasePage {
     super(page);
     
     // Selectors
-    this.pageTitle = page.getByRole('heading', { name: /patterns/i });
-    
-    // Pattern cards
+    this.pageTitle = page.getByRole('heading', { name: 'Agentic Design Patterns' });
+
+    // Pattern cards - use heading-based selectors as fallback
+    this.reflectionPattern = page.getByRole('heading', { name: 'Reflection' }).first();
+    this.planningPattern = page.getByRole('heading', { name: 'Planning' }).first();
+    this.toolUsePattern = page.getByRole('heading', { name: /Tool Use/ }).first();
+    this.agenticRAGPattern = page.getByRole('heading', { name: /Agentic RAG/ }).first();
+    this.metacognitionPattern = page.getByRole('heading', { name: 'Metacognition' }).first();
+
+    // Fallback: generic pattern card locator
     this.patternCards = page.locator('[class*="pattern"], [class*="card"]').filter({ hasText: /reflection|planning|tool|rAG|metacognition/i });
-    this.reflectionPattern = page.locator('[class*="pattern"], [class*="card"]').filter({ hasText: /reflection/i }).first();
-    this.planningPattern = page.locator('[class*="pattern"], [class*="card"]').filter({ hasText: /planning/i }).first();
-    this.toolUsePattern = page.locator('[class*="pattern"], [class*="card"]').filter({ hasText: /tool use/i }).first();
-    this.agenticRAGPattern = page.locator('[class*="pattern"], [class*="card"]').filter({ hasText: /agentic.*rag/i }).first();
-    this.metacognitionPattern = page.locator('[class*="pattern"], [class*="card"]').filter({ hasText: /metacognition/i }).first();
     
     // Run button
     this.runButton = page.getByRole('button', { name: /run pattern|execute/i });

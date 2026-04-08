@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { CheckCircle, XCircle, Play, Clock, Activity, Code, GitCompare, FileText } from 'lucide-react'
-import ReactJson from 'react-json-view'
-import ReactDiffViewer from 'react-diff-viewer'
+import ReactJson from '@microlink/react-json-view'
+import ReactDiffViewer from 'react-diff-viewer-continued'
 
 export default function StepDetailPanel({ step, onClose }) {
   const [activeTab, setActiveTab] = useState('overview')
@@ -44,17 +44,17 @@ export default function StepDetailPanel({ step, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="border-b px-6 py-4 flex items-center justify-between">
+        <div className="border-b dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {getStepIcon(step.status)}
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">{step.step_name}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{step.step_name}</h2>
               <div className="flex items-center gap-3 mt-1">
                 {getStatusBadge(step.status)}
                 {step.duration_ms != null && (
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
                     Duration: {step.duration_ms.toFixed(0)}ms
                   </span>
                 )}
@@ -70,7 +70,7 @@ export default function StepDetailPanel({ step, onClose }) {
         </div>
 
         {/* Tabs */}
-        <div className="border-b px-6">
+        <div className="border-b dark:border-gray-700 px-6">
           <div className="flex gap-1">
             {tabs.map((tab) => {
               const Icon = tab.icon
@@ -81,7 +81,7 @@ export default function StepDetailPanel({ step, onClose }) {
                   className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${
                     activeTab === tab.id
                       ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-600 hover:text-gray-900'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                   }`}
                 >
                   <Icon size={18} />
@@ -157,12 +157,12 @@ function OverviewTab({ step }) {
         {metrics.map((metric, idx) => {
           const Icon = metric.icon
           return (
-            <div key={idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <div className="flex items-center gap-2 text-gray-600 text-sm mb-1">
+            <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm mb-1">
                 <Icon size={16} />
                 {metric.label}
               </div>
-              <div className="text-2xl font-semibold text-gray-900">{metric.value}</div>
+              <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{metric.value}</div>
             </div>
           )
         })}
@@ -170,20 +170,20 @@ function OverviewTab({ step }) {
 
       {/* Timestamps */}
       <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-gray-900">Execution Timeline</h3>
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-2">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Execution Timeline</h3>
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700 space-y-2">
           {step.started_at && (
             <div className="flex justify-between">
-              <span className="text-gray-600">Started:</span>
-              <span className="font-mono text-gray-900">
+              <span className="text-gray-600 dark:text-gray-400">Started:</span>
+              <span className="font-mono text-gray-900 dark:text-gray-100">
                 {new Date(step.started_at).toLocaleString()}
               </span>
             </div>
           )}
           {step.completed_at && (
             <div className="flex justify-between">
-              <span className="text-gray-600">Completed:</span>
-              <span className="font-mono text-gray-900">
+              <span className="text-gray-600 dark:text-gray-400">Completed:</span>
+              <span className="font-mono text-gray-900 dark:text-gray-100">
                 {new Date(step.completed_at).toLocaleString()}
               </span>
             </div>
@@ -194,8 +194,8 @@ function OverviewTab({ step }) {
       {/* Metadata */}
       {step.metadata && Object.keys(step.metadata).length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-gray-900">Metadata</h3>
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Metadata</h3>
+          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
             <ReactJson
               src={step.metadata}
               theme="rjv-default"
@@ -223,17 +223,17 @@ function JsonTab({ data, title }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
         <button
           onClick={() => {
             navigator.clipboard.writeText(JSON.stringify(data, null, 2))
           }}
-          className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded border border-gray-300"
+          className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded border border-gray-300 dark:border-gray-600"
         >
           Copy JSON
         </button>
       </div>
-      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 overflow-auto max-h-[600px]">
+      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 p-4 overflow-auto max-h-[600px]">
         <ReactJson
           src={data}
           theme="rjv-default"
@@ -262,8 +262,8 @@ function DiffTab({ step }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-semibold text-gray-900">Input vs Output Comparison</h3>
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Input vs Output Comparison</h3>
+      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
         <ReactDiffViewer
           oldValue={oldValue}
           newValue={newValue}
@@ -289,7 +289,7 @@ function LogsTab({ logs }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-semibold text-gray-900">Execution Logs</h3>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Execution Logs</h3>
       <div className="bg-gray-900 rounded-lg p-4 overflow-auto max-h-[600px] font-mono text-sm">
         {logs.map((log, idx) => (
           <div key={idx} className="text-gray-300 hover:bg-gray-800 px-2 py-1 rounded">

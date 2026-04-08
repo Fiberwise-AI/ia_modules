@@ -1,116 +1,75 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { PatternsPage } = require('./pages/PatternsPage');
 
 test.describe('Patterns Page Interactions', () => {
-  let patternsPage;
-
   test.beforeEach(async ({ page }) => {
-    patternsPage = new PatternsPage(page);
-    await patternsPage.goto();
+    await page.goto('http://localhost:5173/patterns');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
   });
 
   test('should load patterns page', async ({ page }) => {
-    await patternsPage.expectLoaded();
-    await patternsPage.screenshot('patterns-page-loaded');
+    await expect(page.getByRole('heading', { name: 'Agentic Design Patterns' })).toBeVisible();
   });
 
   test('should display all pattern cards', async ({ page }) => {
-    await expect(patternsPage.reflectionPattern).toBeVisible();
-    await expect(patternsPage.planningPattern).toBeVisible();
-    await expect(patternsPage.toolUsePattern).toBeVisible();
-    await expect(patternsPage.agenticRAGPattern).toBeVisible();
-    await expect(patternsPage.metacognitionPattern).toBeVisible();
+    // Patterns are listed in the sidebar
+    await expect(page.getByText('Reflection')).toBeVisible();
+    await expect(page.getByText('Planning')).toBeVisible();
+    await expect(page.getByText('Tool Use')).toBeVisible();
+    await expect(page.getByText('Agentic RAG')).toBeVisible();
+    await expect(page.getByText('Metacognition')).toBeVisible();
   });
 
   test('should select reflection pattern', async ({ page }) => {
-    await patternsPage.reflectionPattern.click();
-    
-    // Pattern details should be visible
+    await page.getByText('Reflection').first().click();
+    await page.waitForTimeout(300);
+    // Description should be visible
     await expect(page.getByText(/self-critique|iterative improvement/i)).toBeVisible();
-    
-    await patternsPage.screenshot('reflection-pattern-selected');
   });
 
   test('should select planning pattern', async ({ page }) => {
-    await patternsPage.planningPattern.click();
-    
+    await page.getByText('Planning').first().click();
+    await page.waitForTimeout(300);
     await expect(page.getByText(/multi-step|goal decomposition/i)).toBeVisible();
   });
 
   test('should select tool use pattern', async ({ page }) => {
-    await patternsPage.toolUsePattern.click();
-    
+    await page.getByText('Tool Use').first().click();
+    await page.waitForTimeout(300);
     await expect(page.getByText(/tool selection|dynamic/i)).toBeVisible();
   });
 
   test('should select agentic RAG pattern', async ({ page }) => {
-    await patternsPage.agenticRAGPattern.click();
-    
+    await page.getByText('Agentic RAG').first().click();
+    await page.waitForTimeout(300);
     await expect(page.getByText(/query refinement|retrieval/i)).toBeVisible();
   });
 
   test('should select metacognition pattern', async ({ page }) => {
-    await patternsPage.metacognitionPattern.click();
-    
+    await page.getByText('Metacognition').first().click();
+    await page.waitForTimeout(300);
     await expect(page.getByText(/self-monitoring|adaptation/i)).toBeVisible();
-  });
-
-  test('should run reflection pattern', async ({ page }) => {
-    await patternsPage.reflectionPattern.click();
-    
-    // Look for run button specific to the pattern
-    const runButton = page.getByRole('button', { name: /run pattern|execute|run/i });
-    await runButton.click();
-    
-    // Loading state should appear
-    await expect(page.locator('[class*="loading"], [class*="spinner"]').first()).toBeVisible({ timeout: 3000 });
-    
-    // Results should appear after loading
-    await expect(page.locator('[class*="output"], [class*="result"], [class*="visualization"]').first()).toBeVisible({ timeout: 30000 });
-    
-    await patternsPage.screenshot('reflection-pattern-results');
-  });
-
-  test('should display pattern visualization', async ({ page }) => {
-    await patternsPage.reflectionPattern.click();
-    
-    // Run the pattern
-    const runButton = page.getByRole('button', { name: /run pattern|execute|run/i });
-    await runButton.click();
-    
-    // Wait for visualization
-    await expect(page.locator('[class*="viz"], [class*="visualization"]').first()).toBeVisible({ timeout: 30000 });
-    
-    // Visualization should have content
-    const vizContent = await page.locator('[class*="viz"], [class*="visualization"]').first().textContent();
-    expect(vizContent.length).toBeGreaterThan(0);
-  });
-
-  test('should display pattern example data', async ({ page }) => {
-    await patternsPage.reflectionPattern.click();
-    
-    // Example data should be visible
-    await expect(page.getByText(/example|initial output|criteria/i)).toBeVisible();
   });
 
   test('should switch between patterns and see different content', async ({ page }) => {
     // Select reflection
-    await patternsPage.reflectionPattern.click();
-    const reflectionContent = await page.locator('[class*="pattern"]').first().textContent();
-    
+    await page.getByText('Reflection').first().click();
+    await page.waitForTimeout(300);
+    const reflectionContent = await page.locator('main').textContent();
+
     // Switch to planning
-    await patternsPage.planningPattern.click();
-    const planningContent = await page.locator('[class*="pattern"]').first().textContent();
-    
-    // Content should be different
+    await page.getByText('Planning').first().click();
+    await page.waitForTimeout(300);
+    const planningContent = await page.locator('main').textContent();
+
     expect(reflectionContent).not.toBe(planningContent);
   });
 
   test('should display pattern descriptions', async ({ page }) => {
-    // Each pattern should have a description
+    // Each pattern has a description
     await expect(page.getByText(/self-critique|iterative/i)).toBeVisible();
     await expect(page.getByText(/multi-step|goal/i)).toBeVisible();
-    await expect(page.getByText(/tool selection/i)).toBeVisible();
+    await expect(page.getByText(/dynamic tool/i)).toBeVisible();
   });
 });

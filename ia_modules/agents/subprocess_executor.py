@@ -79,11 +79,12 @@ class SubprocessExecutor:
                         event.job_id = job_id
                         yield event
 
-                        # Capture result text
+                        # Capture result text (prefer TEXT over generic RESULT)
                         if event.type == EventType.TEXT and event.text:
                             result_text = event.text
                         elif event.type == EventType.RESULT and event.result:
-                            result_text = event.result
+                            if not result_text:
+                                result_text = event.result
 
                         if event.is_fatal:
                             break
@@ -147,6 +148,12 @@ class SubprocessExecutor:
             stdin_config["provider"] = config.provider
         if config.api_key:
             stdin_config["apiKey"] = config.api_key
+        # OpenCode bridge needs providerConfig to write opencode.json for auth
+        if config.cli_type == CLIType.OPENCODE and config.provider and config.api_key:
+            stdin_config["providerConfig"] = {
+                "provider": config.provider,
+                "apiKey": config.api_key,
+            }
         if config.business_id:
             stdin_config["businessId"] = config.business_id
         if config.agent_id:
@@ -274,13 +281,15 @@ class SubprocessExecutor:
             # Yield error event if process failed
             if proc.returncode and proc.returncode != 0:
                 _noise = ("INFO", "DEBUG", "TRACE", "Allowed:", "Denied:",
-                          "Ruleset:", "Permission", "  -")
+                          "Ruleset:", "Permission", "  -",
+                          "[opencode:stderr]", "[opencode:event]",
+                          "[opencode:stdout]", "[opencode:trailing]")
                 useful = [ln for ln in stderr_lines
                           if ln.strip() and not any(ln.lstrip().startswith(p) for p in _noise)]
                 stderr_summary = "\n".join(useful[-10:]) if useful else ""
 
-                if proc.returncode in (-9, 137):
-                    msg = "Agent canceled"
+                if proc.returncode in (-2, -9, 137):
+                    msg = "Agent interrupted" if proc.returncode == -2 else "Agent canceled"
                 else:
                     msg = f"Agent exited with code {proc.returncode}"
                 if stderr_summary:

@@ -13,34 +13,32 @@ class WebScrapingPage extends BasePage {
     super(page);
     
     // Selectors
-    this.pageTitle = page.getByRole('heading', { name: /web scraping/i });
-    
-    // Tabs
-    this.tabs = page.getByRole('tablist');
-    this.singleUrlTab = page.getByRole('tab', { name: /single url/i });
-    this.batchTab = page.getByRole('tab', { name: /batch/i });
-    this.pipelineDemoTab = page.getByRole('tab', { name: /pipeline demo/i });
-    
+    this.pageTitle = page.getByRole('heading', { name: /web scraping tools/i });
+
+    // Tabs - these are regular buttons, not role='tab'
+    this.singleUrlTab = page.getByRole('button', { name: /single url/i });
+    this.batchTab = page.getByRole('button', { name: /batch urls/i });
+    this.pipelineDemoTab = page.getByRole('button', { name: /pipeline demo/i });
+
     // Single URL tab
-    this.urlInput = page.getByRole('textbox', { name: /url/i }).first();
-    this.scrapeButton = page.getByRole('button', { name: /scrape/i });
-    
+    this.urlInput = page.locator('input[type="url"]').first();
+    this.scrapeButton = page.getByRole('button', { name: /scrape url/i });
+
     // Batch tab
-    this.batchUrlInputs = page.locator('[class*="url-input"], input[type="url"]');
-    this.addUrlButton = page.getByRole('button', { name: /add.*url/i });
+    this.batchUrlInputs = page.locator('input[type="url"]');
+    this.addUrlButton = page.getByRole('button', { name: /\+ add url/i });
     this.removeUrlButtons = page.getByRole('button', { name: /remove/i });
-    this.batchScrapeButton = page.getByRole('button', { name: /batch.*scrape/i });
-    
+
     // Results
     this.resultsSection = page.locator('[class*="results"], [class*="scrape-result"]');
-    this.successBadge = page.locator('[class*="success"]').filter({ hasText: /success/i }).first();
-    this.errorBadge = page.locator('[class*="error"], [class*="fail"]').filter({ hasText: /error|fail/i }).first();
-    
+    this.successBadge = page.locator('[class*="green"]').filter({ hasText: /success/i }).first();
+    this.errorBadge = page.locator('[class*="red"]').filter({ hasText: /fail/i }).first();
+
     // Export
     this.exportButton = page.getByRole('button', { name: /export/i });
-    
+
     // Error display
-    this.errorDisplay = page.locator('[class*="error"]').filter({ hasText: /error/i }).first();
+    this.errorDisplay = page.locator('[class*="red"]').filter({ hasText: /error/i }).first();
   }
 
   /**
@@ -74,7 +72,7 @@ class WebScrapingPage extends BasePage {
         await this.pipelineDemoTab.click();
         break;
       default:
-        throw new Error(`Unknown tab: ${tabName}`);
+        throw new Error(`Unknown tab: ${tabName}. Use 'single', 'batch', or 'pipeline'.`);
     }
   }
 

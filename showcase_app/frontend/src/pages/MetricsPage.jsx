@@ -53,8 +53,8 @@ export default function MetricsPage() {
       </div>
 
       {/* Core Metrics */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Core EARF Metrics</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Core EARF Metrics</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <MetricCard
             label="SVR - Step Validity Rate"
@@ -104,8 +104,8 @@ export default function MetricsPage() {
       </div>
 
       {/* Extended Metrics */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Extended Reliability Metrics</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Extended Reliability Metrics</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <MetricCard
             label="MTTE - Mean Time to Error"
@@ -148,8 +148,8 @@ export default function MetricsPage() {
 
       {/* SLO Compliance */}
       {slo && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">SLO Compliance Status</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">SLO Compliance Status</h2>
           <div className="space-y-3">
             <SLOStatus
               metric="Step Validity Rate (SVR)"
@@ -179,7 +179,7 @@ export default function MetricsPage() {
             />
           </div>
 
-          <div className="mt-4 p-4 rounded-lg bg-gray-50">
+          <div className="mt-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-gray-800">Overall Compliance</span>
               <span
@@ -197,8 +197,8 @@ export default function MetricsPage() {
       )}
 
       {/* Workflow Statistics */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Workflow Statistics</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Workflow Statistics</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatRow label="Total Workflows" value={report?.total_workflows || 0} />
           <StatRow label="Total Steps" value={report?.total_steps || 0} />
@@ -208,8 +208,8 @@ export default function MetricsPage() {
       </div>
 
       {/* EARF Three Pillars */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">EARF Three Pillars</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">EARF Three Pillars</h2>
         <p className="text-gray-600 mb-6">
           Enterprise Agent Reliability Framework - Production-ready AI agent development
         </p>
@@ -269,8 +269,8 @@ export default function MetricsPage() {
       </div>
 
       {/* Metrics Trend Chart */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Metrics Trend (24h)</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Metrics Trend (24h)</h2>
         <MetricsTrendChart data={timeseries} metrics={['svr', 'cr', 'hir', 'ma']} />
       </div>
     </div>
@@ -340,13 +340,13 @@ function MetricCard({ label, value, icon, color, target, compliant }) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 relative">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 relative">
       {compliant !== undefined && (
         <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${compliant ? 'bg-green-500' : 'bg-red-500'}`}></div>
       )}
       <div className={`${colors[color]} rounded-lg p-2 w-fit mb-2`}>{icon}</div>
-      <div className="text-2xl font-bold text-gray-800">{value}</div>
-      <div className="text-sm text-gray-600">{label}</div>
+      <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">{value}</div>
+      <div className="text-sm text-gray-600 dark:text-gray-400">{label}</div>
       {target && <div className="text-xs text-gray-500 mt-1">{target}</div>}
     </div>
   )
@@ -359,7 +359,7 @@ function SLOStatus({ metric, current, target, compliant, inverse = false }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-sm font-medium text-gray-700">{metric}</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{metric}</span>
         <span className="text-sm text-gray-600">
           {(current * 100).toFixed(1)}% / {(target * 100).toFixed(1)}%
         </span>

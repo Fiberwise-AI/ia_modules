@@ -194,10 +194,20 @@ export default function PipelineEditorPage() {
       let response;
       if (pipelineId) {
         // Update existing pipeline
-        response = await pipelinesAPI.update(pipelineId, config);
+        response = await pipelinesAPI.update(pipelineId, {
+          name: config.name,
+          description: config.description || '',
+          config: config,
+          tags: config.tags || []
+        });
       } else {
         // Create new pipeline
-        response = await pipelinesAPI.create(config);
+        response = await pipelinesAPI.create({
+          name: config.name || 'Untitled Pipeline',
+          description: config.description || '',
+          config: config,
+          tags: config.tags || []
+        });
       }
 
       if (response.status === 200 || response.status === 201) {
@@ -259,42 +269,42 @@ export default function PipelineEditorPage() {
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/pipelines')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {existingPipeline ? existingPipeline.name : 'Pipeline Editor'}
             </h1>
             {existingPipeline && (
-              <p className="text-sm text-gray-600">{existingPipeline.description}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{existingPipeline.description}</p>
             )}
           </div>
-          {hasChanges && <span className="text-sm text-orange-600">● Unsaved changes</span>}
+          {hasChanges && <span className="text-sm text-orange-500">● Unsaved changes</span>}
         </div>
 
         <div className="flex items-center gap-3">
           {/* Load Pipeline Button */}
           <button
             onClick={() => setShowLoadDialog(true)}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors"
           >
             <FolderOpen className="w-4 h-4" />
             Load
           </button>
           {/* View Mode Selector */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
+          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
             <button
               onClick={() => setViewMode(VIEW_MODES.VISUAL)}
               className={`px-3 py-2 rounded flex items-center gap-2 transition-colors ${
                 viewMode === VIEW_MODES.VISUAL
-                  ? 'bg-white shadow-sm text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600 dark:text-primary-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               }`}
             >
               <Eye className="w-4 h-4" />
@@ -304,8 +314,8 @@ export default function PipelineEditorPage() {
               onClick={() => setViewMode(VIEW_MODES.CODE)}
               className={`px-3 py-2 rounded flex items-center gap-2 transition-colors ${
                 viewMode === VIEW_MODES.CODE
-                  ? 'bg-white shadow-sm text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600 dark:text-primary-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               }`}
             >
               <Code className="w-4 h-4" />
@@ -315,8 +325,8 @@ export default function PipelineEditorPage() {
               onClick={() => setViewMode(VIEW_MODES.SPLIT)}
               className={`px-3 py-2 rounded flex items-center gap-2 transition-colors ${
                 viewMode === VIEW_MODES.SPLIT
-                  ? 'bg-white shadow-sm text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600 dark:text-primary-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               }`}
             >
               <Columns className="w-4 h-4" />
@@ -328,7 +338,7 @@ export default function PipelineEditorPage() {
           <button
             onClick={handleSave}
             disabled={!hasChanges}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
           >
             <Save className="w-4 h-4" />
             Save
@@ -336,7 +346,7 @@ export default function PipelineEditorPage() {
           <button
             onClick={handleRun}
             disabled={isExecuting}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
           >
             <Play className="w-4 h-4" />
             Run
@@ -358,7 +368,7 @@ export default function PipelineEditorPage() {
 
         {viewMode === VIEW_MODES.SPLIT && (
           <div className="h-full flex">
-            <div className="w-1/2 border-r">
+            <div className="w-1/2 border-r border-gray-200 dark:border-gray-800">
               <VisualCanvas pipelineConfig={pipelineConfig} pipelineId={pipelineId} onConfigChange={handleVisualChange} />
             </div>
             <div className="w-1/2 p-4">
@@ -370,35 +380,35 @@ export default function PipelineEditorPage() {
 
       {/* Execution Results Panel */}
       {pipelineId && executions && executions.length > 0 && (
-        <div className="border-t bg-gray-50">
+        <div className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
           <button
             onClick={() => setShowExecutionsTable(!showExecutionsTable)}
-            className="w-full flex items-center justify-between p-4 hover:bg-gray-100 transition"
+            className="w-full flex items-center justify-between p-4 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition"
           >
-            <h3 className="font-semibold text-gray-900">Recent Executions ({executions.length})</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Recent Executions ({executions.length})</h3>
             {showExecutionsTable ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </button>
           {showExecutionsTable && (
             <div className="px-4 pb-4 max-h-96 overflow-y-auto">
-              <div className="bg-white border rounded overflow-hidden">
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded overflow-hidden">
             <table className="min-w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-800/50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Job ID</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Status</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Started</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Duration</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Actions</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Job ID</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Started</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Duration</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                 {executions.map((execution) => {
                   const executionHITL = hitlInteractions.filter(h => h.execution_id === execution.job_id);
                   const hasPendingApproval = executionHITL.length > 0 && execution.status === 'waiting_for_human';
 
                   return (
-                  <tr key={execution.job_id} className={`hover:bg-gray-50 ${hasPendingApproval ? 'bg-yellow-50' : ''}`}>
-                    <td className="px-4 py-2 text-xs font-mono text-gray-900">
+                  <tr key={execution.job_id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 ${hasPendingApproval ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}`}>
+                    <td className="px-4 py-2 text-xs font-mono text-gray-900 dark:text-gray-200">
                       {execution.job_id.slice(0, 8)}...
                     </td>
                     <td className="px-4 py-2 text-xs">
@@ -411,10 +421,10 @@ export default function PipelineEditorPage() {
                         {execution.status.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-xs text-gray-600">
+                    <td className="px-4 py-2 text-xs text-gray-600 dark:text-gray-400">
                       {new Date(execution.started_at).toLocaleString()}
                     </td>
-                    <td className="px-4 py-2 text-xs text-gray-600">
+                    <td className="px-4 py-2 text-xs text-gray-600 dark:text-gray-400">
                       {execution.execution_time_ms ? `${(execution.execution_time_ms / 1000).toFixed(2)}s` : '-'}
                     </td>
                     <td className="px-4 py-2">
@@ -440,7 +450,7 @@ export default function PipelineEditorPage() {
                             hitlInteraction: hitl || null
                           });
                         }}
-                        className="text-xs text-blue-600 hover:text-blue-800"
+                        className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300"
                       >
                         View Details
                       </button>
@@ -458,44 +468,44 @@ export default function PipelineEditorPage() {
 
       {/* Execution Dialog */}
       {showExecutionDialog && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full my-8 flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-xl font-bold text-gray-800">Execute Pipeline</h2>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full my-8 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Execute Pipeline</h2>
               <button
                 onClick={() => setShowExecutionDialog(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
               >
                 <X size={24} />
               </button>
             </div>
 
             <div className="p-6 overflow-y-auto flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Input Data (JSON)
               </label>
               <textarea
                 value={inputData}
                 onChange={(e) => setInputData(e.target.value)}
-                className="w-full h-64 p-3 border rounded-lg font-mono text-sm"
+                className="w-full h-64 p-3 border border-gray-300 dark:border-gray-700 rounded-lg font-mono text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 placeholder="{}"
               />
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 Edit the JSON input data for this pipeline execution
               </p>
             </div>
 
-            <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
               <button
                 onClick={() => setShowExecutionDialog(false)}
-                className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmExecution}
                 disabled={isExecuting}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2 transition"
               >
                 <Play size={16} />
                 Execute Pipeline

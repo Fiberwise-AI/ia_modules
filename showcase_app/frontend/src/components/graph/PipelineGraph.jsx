@@ -42,14 +42,14 @@ export default function PipelineGraph({ pipeline, execution }) {
 
   if (nodes.length === 0) {
     return (
-      <div className="h-[600px] flex items-center justify-center bg-gray-50 rounded-lg border">
+      <div className="h-[600px] flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 rounded-lg border dark:border-gray-700">
         <div className="text-gray-500">No pipeline graph available</div>
       </div>
     )
   }
 
   return (
-    <div className="h-[600px] bg-gray-50 rounded-lg border">
+    <div className="h-[600px] bg-gray-50 dark:bg-gray-800/50 rounded-lg border dark:border-gray-700">
       <ReactFlow
         nodes={nodes}
         edges={edges}

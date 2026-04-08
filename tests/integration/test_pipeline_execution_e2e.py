@@ -1,477 +1,323 @@
 """
-End-to-end pipeline execution tests with real database.
+End-to-end pipeline execution tests using ia_modules library directly.
 
-Tests the full execution flow from execute_pipeline through GraphPipelineRunner
-with actual database operations including step tracking.
-
-NOTE: These tests are currently disabled due to showcase_app dependencies.
+Tests the full execution flow: GraphPipelineRunner with real steps,
+ExecutionTracker with database persistence, and step-level tracking.
 """
 
 import pytest
-from pathlib import Path
-import uuid
+import asyncio
 import json
-import os
+import uuid
+from pathlib import Path
 
-try:
-    from core.database import DatabaseManager
-    from core.service_registry import ServiceRegistry
-    from pipeline.execution_tracker import ExecutionTracker
-    from pipeline.service import PipelineService
-    from pipeline.import_export import PipelineImportService
-except ImportError:
-    DatabaseManager = None
-    ServiceRegistry = None
-    ExecutionTracker = None
-    PipelineService = None
-    PipelineImportService = None
+from nexusql import DatabaseManager
+from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
+from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.pipeline.execution_tracker import ExecutionTracker
+from ia_modules.pipeline.core import ExecutionContext, Step
 
-# Skip all tests in this module until showcase_app dependencies are resolved
-pytestmark = pytest.mark.skip(reason="Tests need showcase_app which has dependency issues")
 
+# ---------------------------------------------------------------------------
+# Test step classes
+# ---------------------------------------------------------------------------
+
+class AddPrefixStep(Step):
+    """Adds a prefix to text"""
+    async def run(self, data: dict) -> dict:
+        text = data.get("text", "")
+        prefix = self.config.get("prefix", "PROCESSED")
+        await asyncio.sleep(0.1)
+        return {"text": f"{prefix}_{text}"}
+
+
+class UppercaseStep(Step):
+    """Uppercases text"""
+    async def run(self, data: dict) -> dict:
+        text = data.get("text", "")
+        await asyncio.sleep(0.1)
+        return {"text": text.upper()}
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def pipelines_dir():
-    """Get path to test pipelines"""
     return Path(__file__).parent.parent / "pipelines"
 
 
 @pytest.fixture
-async def db_manager(request):
-    """Database manager for different backends"""
-    # Use SQLite for basic tests
-    db_url = 'sqlite:///test_e2e_execution.db'
-
-    db = DatabaseManager(db_url)
-    await db.initialize()
-
-    # Run migrations
-    from nexusql import MigrationRunner
-    runner = MigrationRunner(db)
-    await runner.run_pending_migrations()
-
+async def db_manager(tmp_path):
+    """Temporary SQLite database with schema applied"""
+    db_path = tmp_path / "test_e2e.db"
+    db = DatabaseManager(f"sqlite:///{db_path}")
+    await db.initialize(apply_schema=True, app_migration_paths=None)
     yield db
-
     await db.close()
-
-    # Cleanup SQLite file
-    db_path = Path('test_e2e_execution.db')
-    if db_path.exists():
-        db_path.unlink()
 
 
 @pytest.fixture
-async def pipeline_service(db_manager, pipelines_dir):
-    """Create PipelineService with real database"""
-    services = ServiceRegistry()
-    services.register('database', db_manager)
-
+def services(db_manager):
+    """ServiceRegistry with execution tracker"""
+    registry = ServiceRegistry()
     tracker = ExecutionTracker(db_manager)
-    services.register('execution_tracker', tracker)
+    registry.register("execution_tracker", tracker)
+    return registry
 
-    # Create metrics service (mock)
-    class MockMetricsService:
-        def track_metric(self, *args, **kwargs):
-            pass
 
-    metrics_service = MockMetricsService()
+@pytest.fixture
+def runner(services):
+    return GraphPipelineRunner(services)
 
-    service = PipelineService(
-        metrics_service=metrics_service,
-        db_manager=db_manager
-    )
-    service.pipeline_dir = pipelines_dir
 
-    # Import test pipelines
-    importer = PipelineImportService(db_manager, pipelines_dir)
-    await importer.import_all_pipelines()
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
-    return service
+def make_pipeline_config(name, steps, connections=None):
+    """Build a pipeline config dict from step definitions."""
+    flow_paths = []
+    if connections:
+        for conn in connections:
+            flow_paths.append({
+                "from_step": conn["from"],
+                "to_step": conn["to"],
+                "condition": {"type": "always"}
+            })
 
+    return {
+        "name": name,
+        "version": "1.0.0",
+        "steps": steps,
+        "flow": {
+            "start_at": steps[0]["id"],
+            "paths": flow_paths
+        }
+    }
+
+
+def all_steps_completed(result):
+    """Check that every step in the result completed successfully."""
+    steps = result.get("steps", [])
+    return all(s.get("status") == "completed" for s in steps)
+
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
 class TestPipelineExecutionE2E:
-    """End-to-end pipeline execution tests"""
+    """End-to-end pipeline execution with real database tracking"""
 
-    async def test_simple_pipeline_execution_tracks_steps(self, pipeline_service, db_manager):
-        """Execute simple pipeline and verify all steps tracked in database"""
-        # Create a test pipeline directly
-        test_pipeline = {
-            "name": "Test E2E Pipeline",
-            "version": "1.0.0",
-            "description": "Test pipeline for e2e execution",
-            "config": {
-                "name": "Test E2E Pipeline",
-                "version": "1.0.0",
-                "steps": [
-                    {
-                        "id": "step1",
-                        "name": "Step 1",
-                        "step_class": "DataTransformStep",
-                        "module": "tests.pipelines.simple_pipeline.steps.simple_steps",
-                        "config": {}
-                    }
-                ],
-                "flow": {
-                    "start_at": "step1",
-                    "paths": []
+    async def test_single_step_execution(self, runner):
+        """Execute a single-step pipeline and verify output"""
+        config = make_pipeline_config(
+            "Single Step Test",
+            steps=[{
+                "id": "step1",
+                "name": "Uppercase",
+                "step_class": "UppercaseStep",
+                "module": "tests.integration.test_pipeline_execution_e2e",
+                "config": {}
+            }]
+        )
+
+        ctx = ExecutionContext(
+            execution_id=str(uuid.uuid4()),
+            pipeline_id="test-single-step"
+        )
+
+        result = await runner.run_pipeline_from_json(
+            config,
+            {"text": "hello"},
+            execution_context=ctx
+        )
+
+        assert "output" in result
+        assert all_steps_completed(result)
+
+    async def test_multi_step_pipeline(self, runner):
+        """Execute a multi-step pipeline with connections"""
+        config = make_pipeline_config(
+            "Multi Step Test",
+            steps=[
+                {
+                    "id": "prefix",
+                    "name": "Add Prefix",
+                    "step_class": "AddPrefixStep",
+                    "module": "tests.integration.test_pipeline_execution_e2e",
+                    "config": {"prefix": "DATA"}
+                },
+                {
+                    "id": "upper",
+                    "name": "Uppercase",
+                    "step_class": "UppercaseStep",
+                    "module": "tests.integration.test_pipeline_execution_e2e",
+                    "config": {}
                 }
-            }
-        }
+            ],
+            connections=[{"from": "prefix", "to": "upper"}]
+        )
 
-        # Insert pipeline into database
-        from ia_modules.pipeline.importer import PipelineImportService
-        PipelineImportService(db_manager, Path(__file__).parent.parent / "pipelines")
+        ctx = ExecutionContext(
+            execution_id=str(uuid.uuid4()),
+            pipeline_id="test-multi-step"
+        )
 
-        # Insert directly
-        pipeline_id = str(uuid.uuid4())
-        query = """
-        INSERT INTO pipelines (id, name, slug, version, description, config_json, is_active)
-        VALUES (:id, :name, :slug, :version, :description, :config_json, :is_active)
+        result = await runner.run_pipeline_from_json(
+            config,
+            {"text": "hello"},
+            execution_context=ctx
+        )
+
+        assert all_steps_completed(result)
+        assert len(result["steps"]) == 2
+
+    async def test_step_executions_tracked_in_database(self, runner, db_manager):
+        """Verify step execution records are persisted to the database.
+
+        Note: GraphPipelineRunner tracks step-level executions.
+        Pipeline-level execution records are created by the showcase
+        app's PipelineService (not tested here).
         """
-        db_manager.execute(query, {
-            'id': pipeline_id,
-            'name': test_pipeline['name'],
-            'slug': 'test_e2e_pipeline',
-            'version': test_pipeline['version'],
-            'description': test_pipeline['description'],
-            'config_json': json.dumps(test_pipeline['config']),
-            'is_active': True
-        })
-
-        # Verify insert
-        verify_query = "SELECT * FROM pipelines WHERE id = :id"
-        pipeline_record = await db_manager.fetch_one(verify_query, {'id': pipeline_id})
-        assert pipeline_record is not None, f"Pipeline {pipeline_id} not inserted"
-
-        # Execute pipeline
-        job_id = await pipeline_service.execute_pipeline(
-            pipeline_id=pipeline_id,
-            input_data={"value": 10}
+        exec_id = str(uuid.uuid4())
+        config = make_pipeline_config(
+            "Tracked Pipeline",
+            steps=[{
+                "id": "step1",
+                "name": "Uppercase",
+                "step_class": "UppercaseStep",
+                "module": "tests.integration.test_pipeline_execution_e2e",
+                "config": {}
+            }]
         )
 
-        assert job_id is not None
-
-        # Wait for execution to complete
-        import asyncio
-        max_wait = 30
-        waited = 0
-        while waited < max_wait:
-            status = await pipeline_service.get_execution_status(job_id)
-            if status['status'] in ('completed', 'failed'):
-                break
-            await asyncio.sleep(0.5)
-            waited += 0.5
-
-        # Verify execution in database
-        query = "SELECT * FROM pipeline_executions WHERE id = :execution_id"
-        execution = await db_manager.fetch_one(query, {'execution_id': job_id})
-
-        assert execution is not None
-        assert execution['status'] in ('completed', 'failed')
-
-        # Verify step executions were tracked
-        step_query = "SELECT * FROM step_executions WHERE execution_id = :execution_id ORDER BY started_at"
-        steps = await db_manager.fetch_all(step_query, {'execution_id': job_id})
-
-        assert len(steps) > 0, "No step executions tracked"
-
-        # Verify each step has required data
-        for step in steps:
-            assert step['step_id'] is not None
-            assert step['step_name'] is not None
-            assert step['status'] is not None
-            assert step['started_at'] is not None
-
-    async def test_pipeline_execution_with_error_tracking(self, pipeline_service, db_manager):
-        """Execute pipeline that fails and verify error tracked"""
-        pipelines = await pipeline_service.list_pipelines()
-
-        # Use any pipeline and pass invalid input to cause failure
-        if not pipelines:
-            pytest.skip("No pipelines available")
-
-        pipeline_id = pipelines[0]['id']
-
-        # Execute with bad input
-        job_id = await pipeline_service.execute_pipeline(
-            pipeline_id=pipeline_id,
-            input_data={}  # Empty input may cause some pipelines to fail
+        ctx = ExecutionContext(
+            execution_id=exec_id,
+            pipeline_id="test-tracked"
         )
 
-        # Wait for execution
-        import asyncio
-        max_wait = 30
-        waited = 0
-        while waited < max_wait:
-            status = await pipeline_service.get_execution_status(job_id)
-            if status['status'] in ('completed', 'failed'):
-                break
-            await asyncio.sleep(0.5)
-            waited += 0.5
-
-        # Check execution exists in database
-        query = "SELECT * FROM pipeline_executions WHERE id = :execution_id"
-        execution = await db_manager.fetch_one(query, {'execution_id': job_id})
-
-        assert execution is not None
-
-        # If it failed, verify error message exists
-        if execution['status'] == 'failed':
-            assert execution['error_message'] is not None or execution['error_message'] != ''
-
-    async def test_parallel_executions_tracked_separately(self, pipeline_service, db_manager):
-        """Execute same pipeline twice in parallel and verify separate tracking"""
-        pipelines = await pipeline_service.list_pipelines()
-
-        if not pipelines:
-            pytest.skip("No pipelines available")
-
-        pipeline_id = pipelines[0]['id']
-
-        # Start two executions in parallel
-        job_id_1 = await pipeline_service.execute_pipeline(
-            pipeline_id=pipeline_id,
-            input_data={"value": 1}
+        await runner.run_pipeline_from_json(
+            config,
+            {"text": "track me"},
+            execution_context=ctx
         )
 
-        job_id_2 = await pipeline_service.execute_pipeline(
-            pipeline_id=pipeline_id,
-            input_data={"value": 2}
+        # Verify step execution records
+        step_rows = db_manager.fetch_all(
+            "SELECT * FROM step_executions WHERE execution_id = :id",
+            {"id": exec_id}
+        )
+        assert len(step_rows) >= 1
+        assert step_rows[0]["status"] == "completed"
+        assert step_rows[0]["step_name"] == "step1"
+
+    async def test_parallel_executions_tracked_separately(self, runner, db_manager):
+        """Two concurrent executions get independent step tracking"""
+        config = make_pipeline_config(
+            "Parallel Test",
+            steps=[{
+                "id": "step1",
+                "name": "Uppercase",
+                "step_class": "UppercaseStep",
+                "module": "tests.integration.test_pipeline_execution_e2e",
+                "config": {}
+            }]
         )
 
-        assert job_id_1 != job_id_2
+        exec_id_1 = str(uuid.uuid4())
+        exec_id_2 = str(uuid.uuid4())
 
-        # Wait for both to complete
-        import asyncio
-        max_wait = 30
-
-        async def wait_for_execution(job_id):
-            waited = 0
-            while waited < max_wait:
-                status = await pipeline_service.get_execution_status(job_id)
-                if status['status'] in ('completed', 'failed'):
-                    return
-                await asyncio.sleep(0.5)
-                waited += 0.5
+        ctx1 = ExecutionContext(execution_id=exec_id_1, pipeline_id="test-parallel")
+        ctx2 = ExecutionContext(execution_id=exec_id_2, pipeline_id="test-parallel")
 
         await asyncio.gather(
-            wait_for_execution(job_id_1),
-            wait_for_execution(job_id_2)
+            runner.run_pipeline_from_json(config, {"text": "one"}, execution_context=ctx1),
+            runner.run_pipeline_from_json(config, {"text": "two"}, execution_context=ctx2),
         )
 
-        # Verify both executions in database
-        query = "SELECT * FROM pipeline_executions WHERE id = :execution_id"
+        steps_1 = db_manager.fetch_all(
+            "SELECT * FROM step_executions WHERE execution_id = :id",
+            {"id": exec_id_1}
+        )
+        steps_2 = db_manager.fetch_all(
+            "SELECT * FROM step_executions WHERE execution_id = :id",
+            {"id": exec_id_2}
+        )
 
-        execution_1 = await db_manager.fetch_one(query, {'execution_id': job_id_1})
-        execution_2 = await db_manager.fetch_one(query, {'execution_id': job_id_2})
+        assert len(steps_1) >= 1
+        assert len(steps_2) >= 1
+        assert steps_1[0]["execution_id"] != steps_2[0]["execution_id"]
 
-        assert execution_1 is not None
-        assert execution_2 is not None
-        assert execution_1['id'] != execution_2['id']
+    async def test_failed_step_raises_error(self, runner):
+        """A pipeline with a bad module import raises an error"""
+        config = make_pipeline_config(
+            "Failing Pipeline",
+            steps=[{
+                "id": "bad_step",
+                "name": "Bad Step",
+                "step_class": "NonExistent",
+                "module": "does.not.exist",
+                "config": {}
+            }]
+        )
 
-        # Verify step executions are separate
-        step_query = "SELECT COUNT(*) as count FROM step_executions WHERE execution_id = :execution_id"
+        ctx = ExecutionContext(
+            execution_id=str(uuid.uuid4()),
+            pipeline_id="test-fail"
+        )
 
-        steps_1 = await db_manager.fetch_one(step_query, {'execution_id': job_id_1})
-        steps_2 = await db_manager.fetch_one(step_query, {'execution_id': job_id_2})
-
-        # Both should have tracked steps
-        assert steps_1['count'] > 0
-        assert steps_2['count'] > 0
-
-
-@pytest.mark.postgres
-@pytest.mark.asyncio
-class TestPipelineExecutionPostgreSQL:
-    """PostgreSQL-specific execution tests"""
-
-    async def test_postgresql_execution_with_concurrent_writes(self, pipelines_dir):
-        """Test PostgreSQL handles concurrent pipeline executions"""
-        db_url = os.environ.get('TEST_POSTGRESQL_URL')
-        if not db_url:
-            pytest.skip("PostgreSQL not configured")
-
-        db = DatabaseManager(db_url)
-        await db.initialize()
-
-        try:
-            services = ServiceRegistry()
-            services.register('database', db)
-
-            tracker = ExecutionTracker(db)
-            services.register('execution_tracker', tracker)
-
-            service = PipelineService(
-                db=db,
-                pipeline_dir=pipelines_dir,
-                services=services
+        with pytest.raises((ImportError, Exception)):
+            await runner.run_pipeline_from_json(
+                config,
+                {"text": "will fail"},
+                execution_context=ctx
             )
 
-            # Import pipelines
-            importer = PipelineImportService(db, pipelines_dir)
-            await importer.import_all_pipelines()
+    async def test_real_simple_pipeline_from_json(self, runner, pipelines_dir):
+        """Execute the actual simple_pipeline from tests/pipelines/"""
+        pipeline_path = pipelines_dir / "simple_pipeline" / "pipeline.json"
+        if not pipeline_path.exists():
+            pytest.skip("simple_pipeline not found")
 
-            pipelines = await service.list_pipelines()
-            if not pipelines:
-                pytest.skip("No pipelines available")
+        with open(pipeline_path) as f:
+            config = json.load(f)
 
-            pipeline_id = pipelines[0]['id']
+        ctx = ExecutionContext(
+            execution_id=str(uuid.uuid4()),
+            pipeline_id="simple-pipeline"
+        )
 
-            # Start 5 concurrent executions
-            import asyncio
-            jobs = []
-            for i in range(5):
-                job_id = await service.execute_pipeline(
-                    pipeline_id=pipeline_id,
-                    input_data={"value": i}
-                )
-                jobs.append(job_id)
+        result = await runner.run_pipeline_from_json(
+            config,
+            {"topic": "testing"},
+            execution_context=ctx
+        )
 
-            # Wait for all to complete
-            async def wait_for_execution(job_id):
-                max_wait = 30
-                waited = 0
-                while waited < max_wait:
-                    status = await service.get_execution_status(job_id)
-                    if status['status'] in ('completed', 'failed'):
-                        return
-                    await asyncio.sleep(0.5)
-                    waited += 0.5
+        assert all_steps_completed(result)
+        assert len(result["steps"]) == 3
 
-            await asyncio.gather(*[wait_for_execution(job_id) for job_id in jobs])
+    async def test_real_conditional_pipeline(self, runner, pipelines_dir):
+        """Execute the actual conditional_pipeline from tests/pipelines/"""
+        pipeline_path = pipelines_dir / "conditional_pipeline" / "pipeline.json"
+        if not pipeline_path.exists():
+            pytest.skip("conditional_pipeline not found")
 
-            # Verify all executions in database
-            query = "SELECT COUNT(*) as count FROM pipeline_executions WHERE id = ANY(:execution_ids)"
-            result = await db.fetch_one(query, {'execution_ids': jobs})
+        with open(pipeline_path) as f:
+            config = json.load(f)
 
-            assert result['count'] == 5
+        ctx = ExecutionContext(
+            execution_id=str(uuid.uuid4()),
+            pipeline_id="conditional-pipeline"
+        )
 
-        finally:
-            await db.close()
+        result = await runner.run_pipeline_from_json(
+            config,
+            {"topic": "testing", "priority": "high"},
+            execution_context=ctx
+        )
 
-
-@pytest.mark.mysql
-@pytest.mark.asyncio
-class TestPipelineExecutionMySQL:
-    """MySQL-specific execution tests"""
-
-    async def test_mysql_execution_tracking(self, pipelines_dir):
-        """Test MySQL execution tracking"""
-        db_url = os.environ.get('TEST_MYSQL_URL')
-        if not db_url:
-            pytest.skip("MySQL not configured")
-
-        db = DatabaseManager(db_url)
-        await db.initialize()
-
-        try:
-            services = ServiceRegistry()
-            services.register('database', db)
-
-            tracker = ExecutionTracker(db)
-            services.register('execution_tracker', tracker)
-
-            service = PipelineService(
-                db=db,
-                pipeline_dir=pipelines_dir,
-                services=services
-            )
-
-            # Import and execute
-            importer = PipelineImportService(db, pipelines_dir)
-            await importer.import_all_pipelines()
-
-            pipelines = await service.list_pipelines()
-            if not pipelines:
-                pytest.skip("No pipelines available")
-
-            pipeline_id = pipelines[0]['id']
-
-            job_id = await service.execute_pipeline(
-                pipeline_id=pipeline_id,
-                input_data={"value": 42}
-            )
-
-            # Wait for completion
-            import asyncio
-            max_wait = 30
-            waited = 0
-            while waited < max_wait:
-                status = await service.get_execution_status(job_id)
-                if status['status'] in ('completed', 'failed'):
-                    break
-                await asyncio.sleep(0.5)
-                waited += 0.5
-
-            # Verify in database
-            query = "SELECT * FROM pipeline_executions WHERE id = :execution_id"
-            execution = await db.fetch_one(query, {'execution_id': job_id})
-
-            assert execution is not None
-
-        finally:
-            await db.close()
-
-
-@pytest.mark.mssql
-@pytest.mark.asyncio
-class TestPipelineExecutionMSSQL:
-    """MSSQL-specific execution tests"""
-
-    async def test_mssql_execution_tracking(self, pipelines_dir):
-        """Test MSSQL execution tracking"""
-        db_url = os.environ.get('TEST_MSSQL_URL')
-        if not db_url:
-            pytest.skip("MSSQL not configured")
-
-        db = DatabaseManager(db_url)
-        await db.initialize()
-
-        try:
-            services = ServiceRegistry()
-            services.register('database', db)
-
-            tracker = ExecutionTracker(db)
-            services.register('execution_tracker', tracker)
-
-            service = PipelineService(
-                db=db,
-                pipeline_dir=pipelines_dir,
-                services=services
-            )
-
-            # Import and execute
-            importer = PipelineImportService(db, pipelines_dir)
-            await importer.import_all_pipelines()
-
-            pipelines = await service.list_pipelines()
-            if not pipelines:
-                pytest.skip("No pipelines available")
-
-            pipeline_id = pipelines[0]['id']
-
-            job_id = await service.execute_pipeline(
-                pipeline_id=pipeline_id,
-                input_data={"value": 99}
-            )
-
-            # Wait for completion
-            import asyncio
-            max_wait = 30
-            waited = 0
-            while waited < max_wait:
-                status = await service.get_execution_status(job_id)
-                if status['status'] in ('completed', 'failed'):
-                    break
-                await asyncio.sleep(0.5)
-                waited += 0.5
-
-            # Verify in database
-            query = "SELECT * FROM pipeline_executions WHERE id = :execution_id"
-            execution = await db.fetch_one(query, {'execution_id': job_id})
-
-            assert execution is not None
-
-        finally:
-            await db.close()
+        assert all_steps_completed(result)

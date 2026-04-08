@@ -49,6 +49,9 @@ from api.prompt_optimization_api import router as prompt_optimization_router  # 
 from api.advanced_tools_api import router as advanced_tools_router  # noqa: E402
 from api.step_modules import router as step_modules_router  # noqa: E402
 from api.hitl import router as hitl_router  # noqa: E402
+from api.plugins import router as plugins_router  # noqa: E402
+from api.guardrails import router as guardrails_router  # noqa: E402
+from api.collaboration import router as collaboration_router  # noqa: E402
 from services.container import ServiceContainer  # noqa: E402
 from services.metrics_service import MetricsService  # noqa: E402
 from services.pipeline_service import PipelineService  # noqa: E402
@@ -60,6 +63,8 @@ from services.checkpoint_service import CheckpointService  # noqa: E402
 from services.memory_service import MemoryService  # noqa: E402
 from services.replay_service import ReplayService  # noqa: E402
 from services.decision_trail_service import DecisionTrailService  # noqa: E402
+from services.plugin_service import PluginService  # noqa: E402
+from services.guardrails_service import GuardrailsService  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -90,11 +95,14 @@ async def lifespan(app: FastAPI):
     # Initialize services
     services.metrics_service = MetricsService(services.db_manager)
     services.pipeline_service = PipelineService(
-        services.metrics_service, 
+        services.metrics_service,
         services.db_manager
     )
     services.reliability_service = ReliabilityService(services.db_manager)
     services.benchmark_service = BenchmarkService(services.pipeline_service, services.db_manager)
+    services.scheduler_service = SchedulerService(services.pipeline_service, services.db_manager)
+    # Don't call start() - it blocks the event loop
+    # await services.scheduler_service.start()
     
     # Initialize telemetry service with tracer from pipeline_service
     agent_telemetry = configure_agent_telemetry(
@@ -140,6 +148,14 @@ async def lifespan(app: FastAPI):
         reliability_metrics=services.reliability_service
     )
 
+    # Initialize plugin service
+    services.plugin_service = PluginService()
+    logger.info(f"✓ Plugin service initialized with {len(services.plugin_service.list_plugins())} plugins")
+
+    # Initialize guardrails service
+    services.guardrails_service = GuardrailsService()
+    logger.info("✓ Guardrails service initialized")
+
     logger.info("✓ Services initialized successfully")
 
     # Import test pipelines on startup
@@ -147,6 +163,9 @@ async def lifespan(app: FastAPI):
     importer = PipelineImportService(services.db_manager, str(tests_dir))
     import_results = await importer.import_all_pipelines()
     logger.info(f"✓ Pipeline import: {import_results['imported']} imported, {import_results['updated']} updated, {import_results['skipped']} skipped")
+
+    # Load imported pipelines into in-memory cache so API can serve them
+    await services.pipeline_service.load_pipelines_from_db()
 
     # Store services on app state
     app.state.services = services
@@ -269,6 +288,9 @@ app.include_router(multimodal_router, prefix="/api/multimodal", tags=["Multimoda
 app.include_router(agents_router, prefix="/api/agents", tags=["Agents"])
 app.include_router(prompt_optimization_router, prefix="/api/prompt-optimization", tags=["Prompt Optimization"])
 app.include_router(advanced_tools_router, prefix="/api/tools", tags=["Advanced Tools"])
+app.include_router(plugins_router, prefix="/api/plugins", tags=["Plugins"])
+app.include_router(guardrails_router, prefix="/api/guardrails", tags=["Guardrails"])
+app.include_router(collaboration_router, prefix="/api/collaboration", tags=["Collaboration"])
 
 
 # Global exception handler

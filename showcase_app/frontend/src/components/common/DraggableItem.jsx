@@ -27,14 +27,14 @@ export default function DraggableItem({ id, children, onRemove, className = "" }
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group bg-white rounded-lg shadow-md border border-gray-200 mb-4 ${className}`}
+      className={`relative group bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 mb-4 ${className}`}
     >
       {/* Drag handle and remove button header */}
-      <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+      <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-t-lg">
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 rounded transition-colors"
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
           title="Drag to reorder"
         >
           <GripVertical className="w-4 h-4 text-gray-500" />
@@ -42,7 +42,7 @@ export default function DraggableItem({ id, children, onRemove, className = "" }
         {onRemove && (
           <button
             onClick={() => onRemove(id)}
-            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-colors"
+            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
             title="Remove component"
           >
             <X className="w-4 h-4 text-red-500" />

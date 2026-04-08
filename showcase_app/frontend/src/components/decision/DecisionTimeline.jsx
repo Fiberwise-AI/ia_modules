@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { GitBranch, CircleDot, TrendingUp, FileText, Download, ChevronRight, ChevronDown } from 'lucide-react';
-import ReactJson from 'react-json-view';
+import ReactJson from '@microlink/react-json-view';
 
 export default function DecisionTimeline({ jobId }) {
   const [expandedNodes, setExpandedNodes] = useState(new Set());
@@ -84,7 +84,7 @@ export default function DecisionTimeline({ jobId }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b bg-gray-50 p-4">
+      <div className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <GitBranch className="w-5 h-5" />
@@ -93,21 +93,21 @@ export default function DecisionTimeline({ jobId }) {
           <div className="flex gap-2">
             <button
               onClick={() => handleExport('json')}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 flex items-center gap-2"
+              className="px-3 py-1 text-sm bg-white dark:bg-gray-900 border dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
               JSON
             </button>
             <button
               onClick={() => handleExport('graphviz')}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 flex items-center gap-2"
+              className="px-3 py-1 text-sm bg-white dark:bg-gray-900 border dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
               DOT
             </button>
             <button
               onClick={() => handleExport('mermaid')}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 flex items-center gap-2"
+              className="px-3 py-1 text-sm bg-white dark:bg-gray-900 border dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
               Mermaid
@@ -178,8 +178,8 @@ export default function DecisionTimeline({ jobId }) {
 
 function StatCard({ label, value }) {
   return (
-    <div className="bg-white p-3 rounded-lg border">
-      <div className="text-sm text-gray-600">{label}</div>
+    <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
+      <div className="text-sm text-gray-600 dark:text-gray-400">{label}</div>
       <div className="text-xl font-bold text-blue-600">{value}</div>
     </div>
   );
@@ -194,9 +194,9 @@ function PathStep({ step, isLast }) {
         </div>
         {!isLast && <div className="w-0.5 h-8 bg-blue-200 my-1" />}
       </div>
-      <div className="flex-1 bg-white p-3 rounded-lg border">
+      <div className="flex-1 bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
         <div className="font-medium">{step.decision_type}</div>
-        <div className="text-sm text-gray-600 mt-1">{step.decision}</div>
+        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">{step.decision}</div>
         <div className="text-xs text-gray-500 mt-1">
           Outcome: <span className="font-medium">{step.outcome}</span>
         </div>
@@ -212,22 +212,22 @@ function DecisionNodeCard({ node, isExpanded, isSelected, onToggle, onSelect, ev
   return (
     <div
       className={`border rounded-lg overflow-hidden ${
-        isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+        isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 dark:border-gray-700'
       }`}
     >
       {/* Node Header */}
       <div
-        className="p-3 bg-gray-50 cursor-pointer flex items-center justify-between hover:bg-gray-100"
+        className="p-3 bg-gray-50 dark:bg-gray-800/50 cursor-pointer flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800"
         onClick={onSelect}
       >
         <div className="flex items-center gap-3 flex-1">
-          <button onClick={(e) => { e.stopPropagation(); onToggle(); }} className="text-gray-600">
+          <button onClick={(e) => { e.stopPropagation(); onToggle(); }} className="text-gray-600 dark:text-gray-400">
             {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           </button>
           <CircleDot className="w-4 h-4 text-blue-600" />
           <div className="flex-1">
             <div className="font-medium">{node.label}</div>
-            <div className="text-sm text-gray-600">{node.type}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">{node.type}</div>
           </div>
         </div>
         <div className={`text-sm font-semibold ${confidenceColor}`}>
@@ -237,19 +237,19 @@ function DecisionNodeCard({ node, isExpanded, isSelected, onToggle, onSelect, ev
 
       {/* Node Details */}
       {isExpanded && (
-        <div className="p-4 bg-white space-y-3">
+        <div className="p-4 bg-white dark:bg-gray-900 space-y-3">
           {/* Decision */}
           {node.decision && (
             <div>
-              <div className="text-sm font-medium text-gray-700 mb-1">Decision</div>
-              <div className="text-sm text-gray-600">{node.decision}</div>
+              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Decision</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">{node.decision}</div>
             </div>
           )}
 
           {/* Metadata */}
           {node.metadata && Object.keys(node.metadata).length > 0 && (
             <div>
-              <div className="text-sm font-medium text-gray-700 mb-1">Metadata</div>
+              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Metadata</div>
               <ReactJson
                 src={node.metadata}
                 collapsed={1}
@@ -264,7 +264,7 @@ function DecisionNodeCard({ node, isExpanded, isSelected, onToggle, onSelect, ev
           {/* Evidence */}
           {evidence && evidence.length > 0 && (
             <div>
-              <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Evidence ({evidence.length})
               </div>
@@ -289,7 +289,7 @@ function EvidenceCard({ evidence }) {
   };
 
   return (
-    <div className="bg-gray-50 p-3 rounded border">
+    <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded border dark:border-gray-700">
       <div className="flex items-center justify-between mb-2">
         <span className={`text-xs px-2 py-1 rounded ${typeColors[evidence.type] || 'bg-gray-100 text-gray-700'}`}>
           {evidence.type}
@@ -298,8 +298,8 @@ function EvidenceCard({ evidence }) {
           Weight: {evidence.weight} | Confidence: {(evidence.confidence * 100).toFixed(0)}%
         </div>
       </div>
-      <div className="text-sm text-gray-700 mb-1 font-medium">{evidence.source}</div>
-      <div className="text-sm text-gray-600">{evidence.content}</div>
+      <div className="text-sm text-gray-700 dark:text-gray-300 mb-1 font-medium">{evidence.source}</div>
+      <div className="text-sm text-gray-600 dark:text-gray-400">{evidence.content}</div>
     </div>
   );
 }

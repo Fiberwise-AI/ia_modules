@@ -30,7 +30,7 @@ export default function AgenticRAGViz({ data }) {
         <div className="space-y-4">
           <div>
             <div className="text-xs font-medium text-gray-600 mb-1">Initial Query</div>
-            <div className="bg-white p-3 rounded border border-green-200 text-gray-800">
+            <div className="bg-white dark:bg-gray-900 p-3 rounded border border-green-200 text-gray-800 dark:text-gray-100">
               {initial_query}
             </div>
           </div>
@@ -54,17 +54,17 @@ export default function AgenticRAGViz({ data }) {
 
       {/* Relevance Improvement */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-800 text-center">
           <div className="text-2xl font-bold text-green-600">{iterations.length}</div>
           <div className="text-sm text-gray-600">Iterations</div>
         </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-800 text-center">
           <div className="text-2xl font-bold text-emerald-600">
             {(final_relevance * 100).toFixed(0)}%
           </div>
           <div className="text-sm text-gray-600">Final Relevance</div>
         </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-800 text-center">
           <div className="text-2xl font-bold text-teal-600">
             {iterations.reduce((sum, it) => sum + it.documents_retrieved, 0)}
           </div>
@@ -98,7 +98,7 @@ export default function AgenticRAGViz({ data }) {
               </div>
               
               {/* Iteration Content */}
-              <div className="flex-1 bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+              <div className="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export default function AgenticRAGViz({ data }) {
                 {/* Query Text */}
                 <div className="mb-4">
                   <div className="text-xs font-medium text-gray-500 mb-1">Query</div>
-                  <div className="bg-gray-50 p-3 rounded border border-gray-200 text-sm text-gray-700">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
                     {iteration.query}
                   </div>
                 </div>
@@ -142,7 +142,7 @@ export default function AgenticRAGViz({ data }) {
                   </div>
                   <div className="space-y-2">
                     {iteration.documents.map((doc, docIdx) => (
-                      <div key={docIdx} className="bg-white border border-gray-200 rounded p-3">
+                      <div key={docIdx} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded p-3">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2 flex-1">
                             <FileText size={16} className="text-blue-500 flex-shrink-0" />
@@ -188,7 +188,7 @@ export default function AgenticRAGViz({ data }) {
       </div>
 
       {/* Relevance Trend Chart */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
         <h4 className="font-semibold text-gray-800 mb-4">Relevance Improvement Trend</h4>
         <div className="flex items-end gap-4 h-40">
           {iterations.map((iteration, idx) => {

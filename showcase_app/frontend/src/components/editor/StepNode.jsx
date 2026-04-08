@@ -65,7 +65,7 @@ function getStatusStyle(status) {
       return {
         icon: Circle,
         color: 'text-gray-700',
-        bgColor: 'bg-white border-gray-300',
+        bgColor: 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700',
       };
   }
 }

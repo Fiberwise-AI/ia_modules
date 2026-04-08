@@ -55,7 +55,7 @@ export default function ExecutionDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Loading execution details...</div>
+        <div className="text-gray-600 dark:text-gray-400">Loading execution details...</div>
       </div>
     )
   }
@@ -63,7 +63,7 @@ export default function ExecutionDetailPage() {
   if (!execution) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-red-600">Execution not found</div>
+        <div className="text-red-600 dark:text-red-400">Execution not found</div>
       </div>
     )
   }

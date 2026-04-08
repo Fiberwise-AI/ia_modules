@@ -137,9 +137,9 @@ export default function StepCodeEditor({ pipelineId, stepId, onClose }) {
   }
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-white dark:bg-gray-900">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+      <div className="flex items-center justify-between p-4 border-b bg-gray-50 dark:bg-gray-800/50">
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <FileCode className="w-5 h-5 text-blue-600" />
@@ -150,14 +150,14 @@ export default function StepCodeEditor({ pipelineId, stepId, onClose }) {
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-600 mt-1">{stepModule?.module_path}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{stepModule?.module_path}</p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={handleValidate}
             disabled={!hasChanges || validateMutation.isLoading}
-            className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm disabled:opacity-50"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 text-sm disabled:opacity-50"
           >
             <Check className="w-4 h-4" />
             Validate
@@ -173,7 +173,7 @@ export default function StepCodeEditor({ pipelineId, stepId, onClose }) {
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -211,8 +211,8 @@ export default function StepCodeEditor({ pipelineId, stepId, onClose }) {
 
       {/* Footer with metadata */}
       {stepModule && (
-        <div className="p-3 border-t bg-gray-50">
-          <div className="flex items-center justify-between text-xs text-gray-600">
+        <div className="p-3 border-t bg-gray-50 dark:bg-gray-800/50">
+          <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <Database className="w-3 h-3" />

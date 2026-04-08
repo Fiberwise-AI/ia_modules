@@ -517,7 +517,8 @@ class CriticAgent(BaseCollaborativeAgent):
 
     def __init__(self, role: AgentRole, state_manager: StateManager,
                  message_bus: Optional[MessageBus] = None,
-                 criteria: Optional[List[str]] = None):
+                 criteria: Optional[List[str]] = None,
+                 enable_telemetry: bool = True):
         """
         Initialize critic agent.
 
@@ -526,8 +527,9 @@ class CriticAgent(BaseCollaborativeAgent):
             state_manager: State manager
             message_bus: Message bus for communication
             criteria: Review criteria (overrides role.metadata)
+            enable_telemetry: Whether to enable agent telemetry
         """
-        super().__init__(role, state_manager, message_bus)
+        super().__init__(role, state_manager, message_bus, enable_telemetry=enable_telemetry)
         self.criteria = criteria or role.metadata.get("criteria", [
             "accuracy", "completeness", "clarity", "coherence"
         ])

@@ -11,16 +11,16 @@ class MetricsPage extends BasePage {
    */
   constructor(page) {
     super(page);
-    
-    // Selectors
-    this.pageTitle = page.getByRole('heading', { name: /metrics/i });
+
+    // Selectors - look for section and div elements with metric content
+    this.pageTitle = page.getByRole('heading', { name: 'Reliability Metrics', exact: true }).first();
     this.successRateChart = page.locator('[class*="chart"]').first();
-    this.metricsCards = page.locator('[class*="metric"], [class*="card"]');
-    
+    this.metricsCards = page.locator('section, div[class*="card"], div[class*="metric"]').filter({ hasText: /\d+/ });
+
     // Metric values
-    this.successRate = page.getByText(/success rate/i);
-    this.checkpointRecovery = page.getByText(/checkpoint.*recovery/i);
-    this.humanInterventionRate = page.getByText(/human.*intervention/i);
+    this.successRate = page.getByText('Success Rate').first();
+    this.checkpointRecovery = page.getByText(/CR|Checkpoint/i).first();
+    this.humanInterventionRate = page.getByText(/human.*intervention/i).first();
     
     // Time range filters
     this.timeRangeFilter = page.getByRole('button').filter({ hasText: /time range|filter/i });

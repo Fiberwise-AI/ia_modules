@@ -7,6 +7,8 @@ from services.pipeline_service import PipelineService
 from services.reliability_service import ReliabilityService
 from services.scheduler_service import SchedulerService
 from services.benchmark_service import BenchmarkService
+from services.plugin_service import PluginService
+from services.guardrails_service import GuardrailsService
 
 
 class ServiceContainer:
@@ -19,3 +21,5 @@ class ServiceContainer:
         self.reliability_service: Optional[ReliabilityService] = None
         self.scheduler_service: Optional[SchedulerService] = None
         self.benchmark_service: Optional[BenchmarkService] = None
+        self.plugin_service: Optional[PluginService] = None
+        self.guardrails_service: Optional[GuardrailsService] = None

@@ -176,7 +176,7 @@ export default function VisualCanvas({ pipelineConfig, pipelineId, onConfigChang
 
           {/* Top Panel */}
           <Panel position="top-right">
-            <div className="bg-white rounded-lg shadow-lg p-2 flex gap-2">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-2 flex gap-2">
               <button
                 className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
                 onClick={() => updatePipelineConfig(nodes, edges)}
@@ -202,7 +202,7 @@ export default function VisualCanvas({ pipelineConfig, pipelineId, onConfigChang
 
       {/* Step Code Editor Sidebar */}
       {showCodeEditor && selectedStepForCode && pipelineId && (
-        <div className="absolute top-0 right-0 w-1/2 h-full border-l bg-white shadow-2xl z-50">
+        <div className="absolute top-0 right-0 w-1/2 h-full border-l dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl z-50">
           <StepCodeEditor
             pipelineId={pipelineId}
             stepId={selectedStepForCode.id}
@@ -231,17 +231,17 @@ function PropertyPanel({ node, onUpdate, onClose, onViewCode, pipelineId }) {
   };
 
   return (
-    <div className="w-80 bg-white border-l shadow-lg p-4 overflow-y-auto">
+    <div className="w-80 bg-white dark:bg-gray-900 border-l dark:border-gray-700 shadow-lg p-4 overflow-y-auto">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold">Node Properties</h3>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
           ×
         </button>
       </div>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
           <input
             type="text"
             value={label}
@@ -251,17 +251,17 @@ function PropertyPanel({ node, onUpdate, onClose, onViewCode, pipelineId }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
           <input
             type="text"
             value={node.data.stepType || node.type}
             disabled
-            className="w-full px-3 py-2 border rounded-lg bg-gray-50"
+            className="w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-800"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Configuration</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Configuration</label>
           <textarea
             value={config}
             onChange={(e) => setConfig(e.target.value)}

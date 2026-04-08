@@ -11,9 +11,9 @@ class PipelinesPage extends BasePage {
    */
   constructor(page) {
     super(page);
-    
+
     // Selectors
-    this.pageTitle = page.getByRole('heading', { name: /pipelines/i });
+    this.pageTitle = page.getByRole('heading', { name: 'Pipelines', exact: true });
     this.pipelineList = page.locator('[class*="pipeline"], [class*="card"]').first();
     this.executeButton = page.getByRole('button', { name: /execute|run/i });
     

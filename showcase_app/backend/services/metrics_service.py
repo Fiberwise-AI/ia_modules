@@ -220,6 +220,7 @@ class MetricsService:
             events.append({
                 "id": workflow["workflow_id"],
                 "event_type": "workflow_execution",
+                "agent_name": workflow.get("agent", "system"),
                 "success": workflow["success"],
                 "timestamp": workflow["timestamp"].isoformat() if isinstance(workflow["timestamp"], datetime) else workflow["timestamp"],
                 "data": {

@@ -91,6 +91,7 @@ class BaseCollaborativeAgent(BaseAgent):
     def _register_default_handlers(self) -> None:
         """Register default message handlers."""
         self.register_message_handler(MessageType.TASK_REQUEST, self._handle_task_request)
+        self.register_message_handler(MessageType.TASK_RESPONSE, self._handle_response)
         self.register_message_handler(MessageType.QUERY, self._handle_query)
         self.register_message_handler(MessageType.RESPONSE, self._handle_response)
         self.register_message_handler(MessageType.ERROR, self._handle_error)

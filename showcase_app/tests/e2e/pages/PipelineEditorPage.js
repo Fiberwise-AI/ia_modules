@@ -20,18 +20,18 @@ class PipelineEditorPage extends BasePage {
     this.codeTab = page.getByRole('button', { name: /code/i });
     this.splitTab = page.getByRole('button', { name: /split/i });
     
-    // Toolbar buttons
-    this.saveButton = page.getByRole('button', { name: /save/i });
-    this.runButton = page.getByRole('button', { name: /run/i });
-    this.loadButton = page.getByRole('button', { name: /load/i });
-    this.backButton = page.getByRole('button', { name: /back/i });
-    
+    // Toolbar buttons - scope to toolbar and use .first() to avoid matching ReactFlow buttons
+    this.saveButton = page.locator('[class*="toolbar"]').getByRole('button', { name: /save/i }).first();
+    this.runButton = page.locator('[class*="toolbar"]').getByRole('button', { name: /run/i }).first();
+    this.loadButton = page.locator('[class*="toolbar"]').getByRole('button', { name: /load/i }).first();
+    this.backButton = page.locator('[class*="toolbar"]').getByRole('button', { name: /back/i }).first();
+
     // Code editor
-    this.codeEditor = page.locator('[class*="editor"], [class*="monaco"]');
+    this.codeEditor = page.getByRole('code').first();
     this.jsonValidation = page.locator('[class*="validation"], [class*="error"]').first();
-    
-    // Load pipeline dialog
-    this.loadDialog = page.getByRole('dialog').filter({ hasText: /load pipeline/i });
+
+    // Load pipeline dialog - be flexible with dialog text
+    this.loadDialog = page.getByRole('dialog');
     this.loadDialogPipelineList = page.locator('[class*="pipeline-item"], [class*="list-item"]');
     
     // Execution results

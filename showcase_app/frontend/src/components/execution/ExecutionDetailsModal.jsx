@@ -63,7 +63,7 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
             onChange={(e) => handleFieldChange(field.name, e.target.value)}
             placeholder={field.placeholder}
             required={field.required}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500"
+            className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-yellow-500 dark:bg-gray-800 dark:text-gray-100"
           />
         );
 
@@ -75,7 +75,7 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
             placeholder={field.placeholder}
             required={field.required}
             rows={field.rows || 3}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500"
+            className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-yellow-500 dark:bg-gray-800 dark:text-gray-100"
           />
         );
 
@@ -125,11 +125,11 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-6 border-b dark:border-gray-700">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Execution Details</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Execution Details</h2>
             <p className="text-sm text-gray-500 font-mono mt-1">{execution.job_id}</p>
           </div>
           <button
@@ -142,7 +142,7 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
 
 
         {/* Status Summary */}
-        <div className="p-6 border-b bg-gray-50">
+        <div className="p-6 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <div className="grid grid-cols-3 gap-4">
             <div>
               <p className="text-xs text-gray-500">Status</p>
@@ -174,11 +174,11 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
 
         {/* Steps */}
         <div className="flex-1 overflow-y-auto p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Pipeline Results</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Pipeline Results</h3>
           {(!execution.steps || execution.steps.length === 0) && execution.output_data && (
             <div className="mb-6">
               <p className="text-sm text-gray-500 mb-2">Final Output:</p>
-              <pre className="bg-gray-50 border rounded p-4 text-xs overflow-x-auto max-h-96">
+              <pre className="bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 rounded p-4 text-xs dark:text-gray-200 overflow-x-auto max-h-96">
                 {JSON.stringify(execution.output_data, null, 2)}
               </pre>
             </div>
@@ -191,16 +191,16 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
               const isHITLStep = hitlInteraction && hitlInteraction.step_name === step.step_name;
 
               return (
-              <div key={index} className={`border rounded-lg overflow-hidden ${isHITLStep ? 'border-yellow-400 bg-yellow-50' : ''}`}>
+              <div key={index} className={`border dark:border-gray-700 rounded-lg overflow-hidden ${isHITLStep ? 'border-yellow-400 bg-yellow-50' : ''}`}>
                 <button
                   onClick={() => toggleStep(step.step_name)}
-                  className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 transition ${isHITLStep ? 'bg-yellow-50' : 'bg-white'}`}
+                  className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition ${isHITLStep ? 'bg-yellow-50' : 'bg-white dark:bg-gray-900'}`}
                 >
                   <div className="flex items-center gap-3">
                     {expandedSteps[step.step_name] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     {isHITLStep ? <AlertCircle className="text-yellow-600" size={20} /> : getStatusIcon(step.status)}
                     <div className="text-left">
-                      <p className="font-semibold text-gray-900 flex items-center gap-2">
+                      <p className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                         {step.step_name}
                         {isHITLStep && <span className="text-xs bg-yellow-500 text-white px-2 py-0.5 rounded">Approval Required</span>}
                       </p>
@@ -212,7 +212,7 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
                 </button>
 
                 {expandedSteps[step.step_name] && (
-                  <div className="p-4 bg-gray-50 border-t space-y-4">
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-t dark:border-gray-700 space-y-4">
                     {/* HITL Approval Form */}
                     {isHITLStep && (
                       <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-4">
@@ -276,8 +276,8 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
                     {/* Input Data */}
                     {step.input_data && Object.keys(step.input_data).length > 0 && (
                       <div>
-                        <p className="text-xs font-semibold text-gray-700 mb-2">Input Data</p>
-                        <pre className="bg-white border rounded p-3 text-xs overflow-x-auto">
+                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Input Data</p>
+                        <pre className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded p-3 text-xs dark:text-gray-200 overflow-x-auto">
                           {JSON.stringify(step.input_data, null, 2)}
                         </pre>
                       </div>
@@ -286,8 +286,8 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
                     {/* Output Data */}
                     {step.output_data && Object.keys(step.output_data).length > 0 && (
                       <div>
-                        <p className="text-xs font-semibold text-gray-700 mb-2">Output Data</p>
-                        <pre className="bg-white border rounded p-3 text-xs overflow-x-auto">
+                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Output Data</p>
+                        <pre className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded p-3 text-xs dark:text-gray-200 overflow-x-auto">
                           {JSON.stringify(step.output_data, null, 2)}
                         </pre>
                       </div>
@@ -306,10 +306,10 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
                     {/* Logs */}
                     {step.logs && step.logs.length > 0 && (
                       <div>
-                        <p className="text-xs font-semibold text-gray-700 mb-2">Logs</p>
-                        <div className="bg-white border rounded p-3 space-y-1 max-h-48 overflow-y-auto">
+                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Logs</p>
+                        <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded p-3 space-y-1 max-h-48 overflow-y-auto">
                           {step.logs.map((log, i) => (
-                            <p key={i} className="text-xs font-mono text-gray-700">{log}</p>
+                            <p key={i} className="text-xs font-mono text-gray-700 dark:text-gray-300">{log}</p>
                           ))}
                         </div>
                       </div>
@@ -323,7 +323,7 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t bg-gray-50">
+        <div className="p-6 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <button
             onClick={onClose}
             className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"

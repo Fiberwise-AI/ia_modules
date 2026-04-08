@@ -351,92 +351,99 @@ class PipelineService:
         return tags
 
     async def get_pipeline(self, pipeline_id: str) -> Optional[Dict[str, Any]]:
-        """Get pipeline by ID from database"""
-        # First check memory cache
-        if pipeline_id in self.pipelines:
-            return self.pipelines[pipeline_id]
-        
-        # If not in cache, load from database
-        if self.db_manager:
-            try:
-                query = """
-                    SELECT id, slug, name, description, pipeline_json, file_path, is_system, created_at, updated_at
-                    FROM pipelines 
-                    WHERE id = :id AND is_active = true
-                """
-                
-                import asyncio
-                loop = asyncio.get_event_loop()
-                result = await loop.run_in_executor(None, self.db_manager.fetch_one, query, {"id": pipeline_id})
-                
-                if result:
-                    config = json.loads(result["pipeline_json"])
-                    pipeline_data = {
-                        "id": result["id"],
-                        "name": result["name"],
-                        "description": result["description"],
+        """Get pipeline by ID"""
+        return self.pipelines.get(pipeline_id)
+
+    async def load_pipelines_from_db(self):
+        """Load all active pipelines from database into in-memory cache"""
+        if not self.db_manager:
+            return
+        try:
+            query = "SELECT id, slug, name, description, pipeline_json, file_path, is_system FROM pipelines WHERE is_active = TRUE"
+            rows = self.db_manager.fetch_all(query)
+            for row in rows:
+                pipeline_id = row["id"]
+                if pipeline_id not in self.pipelines:
+                    config = json.loads(row["pipeline_json"]) if isinstance(row["pipeline_json"], str) else row["pipeline_json"]
+                    self.pipelines[pipeline_id] = {
+                        "id": pipeline_id,
+                        "name": row["name"],
+                        "description": row.get("description", ""),
                         "config": config,
                         "tags": self._get_pipeline_tags(config),
-                        "created_at": result["created_at"],
-                        "updated_at": result["updated_at"],
-                        "file_path": result["file_path"],
-                        "is_system": result["is_system"]
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_at": datetime.now(timezone.utc).isoformat()
                     }
-                    
-                    # Cache in memory for future use
-                    self.pipelines[pipeline_id] = pipeline_data
-                    return pipeline_data
-                    
-            except Exception as e:
-                logger.error(f"Error loading pipeline {pipeline_id} from database: {e}")
-        
-        return None
+            logger.info(f"Loaded {len(self.pipelines)} pipelines from database")
+        except Exception as e:
+            logger.error(f"Failed to load pipelines from database: {e}")
 
     async def list_pipelines(self) -> List[Dict[str, Any]]:
-        """List all active pipelines from database"""
-        pipelines = []
-        
-        # Load from database if available
-        if self.db_manager:
-            try:
-                query = """
-                    SELECT id, slug, name, description, pipeline_json, file_path, is_system, created_at, updated_at
-                    FROM pipelines 
-                    WHERE is_active = true
-                    ORDER BY name
-                """
-                
-                import asyncio
-                loop = asyncio.get_event_loop()
-                results = await loop.run_in_executor(None, self.db_manager.fetch_all, query)
-                
-                for result in results:
-                    config = json.loads(result["pipeline_json"])
-                    pipeline_data = {
-                        "id": result["id"],
-                        "name": result["name"],
-                        "description": result["description"],
-                        "config": config,
-                        "tags": self._get_pipeline_tags(config),
-                        "created_at": result["created_at"],
-                        "updated_at": result["updated_at"],
-                        "file_path": result["file_path"],
-                        "is_system": result["is_system"]
-                    }
-                    
-                    # Cache in memory
-                    self.pipelines[result["id"]] = pipeline_data
-                    pipelines.append(pipeline_data)
-                    
-            except Exception as e:
-                logger.error(f"Error loading pipelines from database: {e}")
-                # Fall back to memory cache
-                pipelines = list(self.pipelines.values())
-        else:
-            # Fall back to memory cache
-            pipelines = list(self.pipelines.values())
-        
-        return pipelines
+        """List all active pipelines"""
+        return list(self.pipelines.values())
+
+    async def create_pipeline(self, pipeline_data: Dict[str, Any]) -> str:
+        """Create a new pipeline (in-memory only due to SQLite threading limitations)"""
+        import uuid
+        import datetime
+
+        pipeline_id = str(uuid.uuid4())
+        slug = pipeline_data.get("name", "pipeline").lower().replace(" ", "-")[:50] + "-" + str(uuid.uuid4())[:8]
+        now = datetime.datetime.now().isoformat()
+
+        # Cache in memory only - SQLite threading issues prevent DB writes from async context
+        pipeline_data_for_cache = {
+            "id": pipeline_id,
+            "name": pipeline_data.get("name", "Untitled Pipeline"),
+            "description": pipeline_data.get("description", ""),
+            "config": pipeline_data.get("config", {"steps": [], "connections": []}),
+            "tags": pipeline_data.get("tags", []),
+            "created_at": now,
+            "updated_at": now
+        }
+        self.pipelines[pipeline_id] = pipeline_data_for_cache
+        logger.info(f"Created pipeline in memory: {pipeline_id} - {pipeline_data_for_cache['name']}")
+
+        return pipeline_id
+
+    async def update_pipeline(self, pipeline_id: str, update_data: Dict[str, Any]) -> bool:
+        """Update an existing pipeline (in-memory only due to SQLite threading limitations)"""
+        import datetime
+
+        existing = await self.get_pipeline(pipeline_id)
+        if not existing:
+            return False
+
+        now = datetime.datetime.now().isoformat()
+
+        # Merge updates
+        if "name" in update_data:
+            existing["name"] = update_data["name"]
+        if "description" in update_data:
+            existing["description"] = update_data["description"]
+        if "config" in update_data:
+            existing["config"] = update_data["config"]
+        if "tags" in update_data:
+            existing["tags"] = update_data["tags"]
+        existing["updated_at"] = now
+
+        # Update cache only - no DB writes due to SQLite threading issues
+        self.pipelines[pipeline_id] = existing
+        logger.info(f"Updated pipeline in memory: {pipeline_id}")
+        return True
+
+    async def delete_pipeline(self, pipeline_id: str) -> bool:
+        """Delete a pipeline (in-memory only due to SQLite threading limitations)"""
+        existing = await self.get_pipeline(pipeline_id)
+        if not existing:
+            return False
+
+        # Remove from cache only - no DB deletes due to SQLite threading issues
+        if pipeline_id in self.pipelines:
+            del self.pipelines[pipeline_id]
+        logger.info(f"Deleted pipeline from memory: {pipeline_id}")
+
+        return True
 
     async def execute_pipeline(
         self,
@@ -497,6 +504,8 @@ class PipelineService:
         # Get WebSocket manager for real-time updates
         from api.websocket import get_ws_manager
         ws_manager = get_ws_manager()
+
+        result = None
 
         try:
             execution["status"] = "running"
@@ -639,10 +648,16 @@ class PipelineService:
 
             # Update execution tracker
             if self.tracker:
-                # Count actual step executions from database
-                step_records = await self.tracker.get_execution_steps(job_id)
-                completed_steps = len([s for s in step_records if s.status.value == 'completed'])
-                failed_steps = len([s for s in step_records if s.status.value == 'failed'])
+                # Use steps from result if available
+                result_steps = result.get("steps", []) if result else []
+                if result_steps:
+                    completed_steps = len([s for s in result_steps if s.get("status") == "completed"])
+                    failed_steps = len([s for s in result_steps if s.get("status") == "failed"])
+                else:
+                    # Count actual step executions from database
+                    step_records = await self.tracker.get_execution_steps(job_id)
+                    completed_steps = len([s for s in step_records if s.status.value == 'completed'])
+                    failed_steps = len([s for s in step_records if s.status.value == 'failed'])
 
                 # Determine final status
                 if execution["status"] == "waiting_for_human":

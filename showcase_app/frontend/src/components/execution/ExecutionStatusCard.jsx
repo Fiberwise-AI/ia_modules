@@ -28,7 +28,7 @@ export default function ExecutionStatusCard({ execution }) {
       case 'pending':
         return 'text-yellow-600 bg-yellow-50 border-yellow-200'
       default:
-        return 'text-gray-600 bg-gray-50 border-gray-200'
+        return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
     }
   }
 

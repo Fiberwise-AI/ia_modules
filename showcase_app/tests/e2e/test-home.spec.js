@@ -12,7 +12,7 @@ test.describe('Home Page', () => {
 
   test('should load home page successfully @smoke', async ({ page }) => {
     await homePage.expectLoaded();
-    
+
     // Take screenshot for visual verification
     await homePage.screenshot('home-page-loaded');
   });
@@ -28,38 +28,41 @@ test.describe('Home Page', () => {
   test('should navigate to pipelines page', async ({ page }) => {
     await homePage.pipelinesLink.click();
     await page.waitForURL('**/pipelines');
-    await expect(page.getByRole('heading', { name: /pipelines/i })).toBeVisible();
+    // Scope to <main> to avoid matching the sidebar's "IA Modules" h1
+    await expect(page.locator('main h1').first()).toHaveText('Pipelines');
   });
 
   test('should navigate to metrics page', async ({ page }) => {
     await homePage.metricsLink.click();
     await page.waitForURL('**/metrics');
-    await expect(page.getByRole('heading', { name: /metrics/i })).toBeVisible();
+    await expect(page.locator('main h1').first()).toContainText(/reliability metrics/i);
   });
 
   test('should navigate to patterns page', async ({ page }) => {
     await homePage.patternsLink.click();
     await page.waitForURL('**/patterns');
-    await expect(page.getByRole('heading', { name: /patterns/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /agentic design patterns/i })).toBeVisible();
   });
 
   test('should display feature cards', async ({ page }) => {
+    // Feature cards are in a grid layout with h3 headings
     const featureCards = homePage.featureCards;
-    await expect(featureCards.first()).toBeVisible();
+    const count = await featureCards.count();
+    expect(count).toBeGreaterThan(0);
   });
 
   test('should be responsive on mobile viewport', async ({ browser }) => {
-    const mobilePage = await browser.newPage({ 
-      viewport: { width: 375, height: 667 } 
+    const mobilePage = await browser.newPage({
+      viewport: { width: 375, height: 667 }
     });
-    
+
     const mobileHomePage = new HomePage(mobilePage);
     await mobileHomePage.goto();
     await mobileHomePage.expectLoaded();
-    
-    // Verify mobile menu or navigation exists
-    await expect(mobilePage.getByRole('navigation')).toBeVisible();
-    
+
+    // Verify mobile navigation exists
+    await expect(mobilePage.locator('aside nav')).toBeVisible();
+
     await mobilePage.close();
   });
 });

@@ -3,6 +3,7 @@ Core Pipeline Implementation
 """
 
 from typing import Dict, Any, List, Optional
+import asyncio
 import logging
 from dataclasses import dataclass, field
 
@@ -202,6 +203,9 @@ class Step:
                 return await strategy.execute_with_retry(self.run, data)
             else:
                 return await self.run(data)
+
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            raise
 
         except PipelineError as e:
             # Handle known pipeline errors
@@ -630,7 +634,7 @@ class Pipeline:
                                     step_ctx.set_attribute('usage', llm_resp['usage'])
                     else:
                         step_result = await step.execute_with_error_handling(current_data)
-                except Exception as e:
+                except BaseException as e:
                     step_error = e
                     step_result = None
                 finally:
@@ -819,6 +823,16 @@ class Pipeline:
 
             self.logger.info("Pipeline execution completed successfully")
             return results
+
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            self.logger.warning("Pipeline interrupted by user")
+            if ndjson:
+                dur = int((_time.monotonic() - pipeline_t0) * 1000)
+                await ndjson.log_pipeline_end(
+                    self.name, execution_context.execution_id,
+                    duration_ms=dur, error="interrupted",
+                )
+            raise
 
         except Exception as e:
             self.logger.error(f"Pipeline execution failed: {e}")

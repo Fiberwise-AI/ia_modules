@@ -206,7 +206,8 @@ class TestAgentStepRun:
 
         result = await step.run({})
 
-        assert result["result"] == "Analysis complete"
+        # TEXT events are preferred over RESULT events for result capture
+        assert result["result"] == "Looking at files..."
         assert result["event_count"] == 4
         assert "agent_job_id" in result
 
@@ -303,9 +304,8 @@ class TestAgentStepRun:
         mock_executor.execute = mock_execute
         step._executor = mock_executor
 
-        result = await step.run({})
-        assert "error" in result
-        assert "Agent crashed" in result["error"]
+        with pytest.raises(RuntimeError, match="Agent crashed"):
+            await step.run({})
 
 
 # --- Step convenience methods ---

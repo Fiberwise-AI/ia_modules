@@ -76,9 +76,9 @@ export default function ExecutionTimeline({ execution }) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-800">
       {/* Header with Metrics */}
-      <div className="p-4 border-b bg-gray-50">
+      <div className="p-4 border-b dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Activity className="w-5 h-5" />
           Execution Timeline
@@ -143,10 +143,10 @@ export default function ExecutionTimeline({ execution }) {
 
 function MetricCard({ icon, label, value, color }) {
   return (
-    <div className="bg-white p-3 rounded-lg border">
+    <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
       <div className="flex items-center gap-2 mb-1">
         <span className={color}>{icon}</span>
-        <span className="text-sm text-gray-600">{label}</span>
+        <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
       </div>
       <div className={`text-xl font-bold ${color}`}>{value}</div>
     </div>

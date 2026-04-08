@@ -28,7 +28,7 @@ async def get_pipeline(pipeline_id: str, service=Depends(get_pipeline_service)):
     return pipeline
 
 
-@router.post("/", response_model=PipelineResponse)
+@router.post("", response_model=PipelineResponse)
 async def create_pipeline(data: PipelineCreate, service=Depends(get_pipeline_service)):
     """Create new pipeline"""
     pipeline_id = await service.create_pipeline(data.model_dump())

@@ -23,6 +23,7 @@ Usage in pipeline config:
     })
 """
 
+import asyncio
 import logging
 import os
 import uuid
@@ -110,9 +111,17 @@ class AgentStep(Step):
             else:
                 tools = ["Read", "Glob", "Grep"]
 
+        # Resolve cwd template with input data
+        cwd = self.config.get("cwd", os.getcwd())
+        if isinstance(cwd, str):
+            try:
+                cwd = cwd.format(**data)
+            except (KeyError, IndexError):
+                pass
+
         return AgentConfig(
             task=task,
-            cwd=self.config.get("cwd", os.getcwd()),
+            cwd=cwd,
             cli_type=_CLI_MAP.get(cli_str, CLIType.CLAUDE_CODE),
             mode=_MODE_MAP.get(mode_str, AgentMode.RESEARCH),
             tools=tools,
@@ -200,11 +209,11 @@ class AgentStep(Step):
                     output=event.output,
                 )
 
-                # Capture final result
+                # Capture final result (prefer TEXT over generic RESULT)
                 if event.type == EventType.TEXT and event.text:
                     result_text = event.text
                 elif event.type == EventType.RESULT:
-                    if event.result:
+                    if event.result and not result_text:
                         result_text = event.result
                     if event.error:
                         error_text = event.error
@@ -215,6 +224,14 @@ class AgentStep(Step):
         except (FileNotFoundError, OSError) as e:
             error_text = f"Agent setup failed: {e}"
             self.logger.error("Agent setup failed: %s", e)
+        except asyncio.CancelledError:
+            self.logger.warning("Agent %s cancelled", job_id)
+            await agent_logger.close()
+            raise
+        except KeyboardInterrupt:
+            self.logger.warning("Agent %s interrupted", job_id)
+            await agent_logger.close()
+            raise
         finally:
             await agent_logger.close()
 
@@ -252,10 +269,17 @@ class AgentStep(Step):
             "event_count": event_count,
         }
         if error_text:
-            output["error"] = error_text
-            # Raise so pipeline stops on agent failure
-            raise RuntimeError(
-                f"Agent step '{self.name}' failed: {error_text}"
-            )
+            if "interrupted" in error_text.lower():
+                self.logger.warning("Agent %s interrupted by user", job_id)
+                raise KeyboardInterrupt()
+            if result_text:
+                # Agent produced output but exited non-zero (common with opencode).
+                # Treat as a warning, not a failure.
+                self.logger.warning("Agent %s exited non-zero but produced output", job_id)
+            else:
+                output["error"] = error_text
+                raise RuntimeError(
+                    f"Agent step '{self.name}' failed: {error_text}"
+                )
 
         return output

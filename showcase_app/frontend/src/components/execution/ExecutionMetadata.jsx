@@ -20,31 +20,31 @@ export default function ExecutionMetadata({ execution }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <div className="flex items-center space-x-3">
           <Calendar size={24} className="text-blue-600" />
           <div>
-            <p className="text-sm text-gray-600">Started At</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Started At</p>
             <p className="font-medium">{formatTime(execution.started_at)}</p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <div className="flex items-center space-x-3">
           <Clock size={24} className="text-green-600" />
           <div>
-            <p className="text-sm text-gray-600">Duration</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Duration</p>
             <p className="font-medium">{calculateDuration()}</p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <div className="flex items-center space-x-3">
           <Calendar size={24} className="text-purple-600" />
           <div>
-            <p className="text-sm text-gray-600">Completed At</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Completed At</p>
             <p className="font-medium">{formatTime(execution.completed_at)}</p>
           </div>
         </div>

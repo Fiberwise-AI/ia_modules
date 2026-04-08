@@ -7,10 +7,10 @@ export default function StepDetailsList({ steps }) {
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-800">Step Execution Details</h2>
-          <p className="text-sm text-gray-600 mt-1">Click on a step to view detailed information</p>
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Step Execution Details</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Click on a step to view detailed information</p>
         </div>
         <div className="p-6">
           {steps && steps.length > 0 ? (

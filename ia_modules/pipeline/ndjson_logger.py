@@ -99,7 +99,7 @@ class NdjsonLogger:
         event.update(extra)
 
         line = json.dumps(event, default=str, separators=(",", ":"))
-        await asyncio.to_thread(self._write_sync, line)
+        self._write_sync(line)
         return event
 
     # ── Convenience methods for pipeline lifecycle ──

@@ -18,9 +18,9 @@ class ExecutionsPage extends BasePage {
     this.executionRows = page.locator('tbody tr');
     
     // Table headers
-    this.jobIdHeader = page.getByText(/job id/i);
-    this.statusHeader = page.getByText(/status/i);
-    this.progressHeader = page.getByText(/progress/i);
+    this.jobIdHeader = page.getByRole('columnheader', { name: /job id/i });
+    this.statusHeader = page.getByRole('columnheader', { name: /status/i });
+    this.progressHeader = page.getByRole('columnheader', { name: /progress/i });
     
     // Status indicators
     this.successStatus = page.locator('[class*="success"], [class*="complete"]').first();
