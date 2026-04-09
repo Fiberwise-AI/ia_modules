@@ -56,6 +56,10 @@ export default function PipelineGraph({ pipeline, execution }) {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
+        defaultEdgeOptions={{
+          type: 'smoothstep',
+          style: { strokeWidth: 1.5 },
+        }}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         attributionPosition="bottom-left"

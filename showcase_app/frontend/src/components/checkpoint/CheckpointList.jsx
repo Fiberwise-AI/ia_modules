@@ -45,17 +45,7 @@ export default function CheckpointList({ jobId }) {
   const checkpoints = data?.checkpoints || []
 
   if (checkpoints.length === 0) {
-    return (
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-          <Database size={20} />
-          Checkpoints
-        </h3>
-        <div className="text-center py-8 text-gray-500">
-          No checkpoints available for this execution
-        </div>
-      </div>
-    )
+    return null
   }
 
   return (

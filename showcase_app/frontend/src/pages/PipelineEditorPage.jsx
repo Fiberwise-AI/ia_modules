@@ -7,6 +7,7 @@ import ExecutionDetailsModal from '../components/execution/ExecutionDetailsModal
 import { pipelinesAPI, executionAPI, hitlAPI } from '../services/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import HITLInteractionModal from '../components/hitl/HITLInteractionModal';
+import { useToast } from '../hooks/useToast';
 
 
 const DEFAULT_INPUTS = {
@@ -67,6 +68,7 @@ export default function PipelineEditorPage() {
   const [showExecutionsTable, setShowExecutionsTable] = useState(true);
   const [selectedExecution, setSelectedExecution] = useState(null);
   const [selectedHITLInteraction, setSelectedHITLInteraction] = useState(null);
+  const toast = useToast();
 
   const { data: executions = [] } = useQuery({
     queryKey: ['executions', pipelineId],
@@ -76,8 +78,10 @@ export default function PipelineEditorPage() {
       return response.data.filter(e => e.pipeline_id === pipelineId);
     },
     enabled: !!pipelineId,
-    refetchInterval: 2000, // Refetch every 2 seconds for real-time updates
   });
+
+  // Only poll when there's an actively running/waiting execution
+  const hasActiveExecution = executions.some(e => e.status === 'running' || e.status === 'waiting_for_human');
 
   // Fetch pending HITL interactions for this pipeline
   const { data: hitlInteractions = [] } = useQuery({
@@ -87,8 +91,8 @@ export default function PipelineEditorPage() {
       const response = await hitlAPI.getPending(null, pipelineId);
       return response.data;
     },
-    enabled: !!pipelineId,
-    refetchInterval: 5000, // Poll every 5 seconds for new interactions
+    enabled: !!pipelineId && hasActiveExecution,
+    refetchInterval: hasActiveExecution ? 5000 : false,
   });
 
   // Load existing pipeline if pipelineId is provided
@@ -212,7 +216,7 @@ export default function PipelineEditorPage() {
 
       if (response.status === 200 || response.status === 201) {
         const result = response.data;
-        alert(`Pipeline saved successfully! ID: ${result.id}`);
+        toast.success('Pipeline saved successfully!');
         setHasChanges(false);
         // Update URL if this was a new pipeline
         if (!pipelineId) {
@@ -222,7 +226,7 @@ export default function PipelineEditorPage() {
         throw new Error('Failed to save pipeline');
       }
     } catch (error) {
-      alert(`Error saving pipeline: ${error.message}`);
+      toast.error(`Error saving pipeline: ${error.message}`);
     }
   };
 
@@ -247,7 +251,7 @@ export default function PipelineEditorPage() {
       // Invalidate executions query to refetch the list
       queryClient.invalidateQueries({ queryKey: ['executions', pipelineId] });
     } catch (error) {
-      alert(`Error executing pipeline: ${error.message}`);
+      toast.error(`Error executing pipeline: ${error.message}`);
     } finally {
       setIsExecuting(false);
     }
@@ -413,10 +417,10 @@ export default function PipelineEditorPage() {
                     </td>
                     <td className="px-4 py-2 text-xs">
                       <span className={`px-2 py-1 rounded text-xs ${
-                        execution.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        execution.status === 'failed' ? 'bg-red-100 text-red-800' :
-                        execution.status === 'waiting_for_human' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
+                        execution.status === 'completed' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' :
+                        execution.status === 'failed' ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300' :
+                        execution.status === 'waiting_for_human' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300' :
+                        'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
                       }`}>
                         {execution.status.replace('_', ' ')}
                       </span>

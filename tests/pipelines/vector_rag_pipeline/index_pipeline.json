@@ -11,7 +11,12 @@
             "config": {
                 "docs_dir": "../rag_with_guardrails_pipeline/sample_docs",
                 "file_types": [".txt", ".md", ".json"]
-            }
+            },
+            "inputs": [],
+            "outputs": [
+                {"name": "documents", "required": true},
+                {"name": "num_documents", "required": true}
+            ]
         },
         {
             "id": "index_vectors",
@@ -22,7 +27,15 @@
                 "collection_name": "documents",
                 "persist_directory": "./chroma_db",
                 "embedding_model": "text-embedding-3-small"
-            }
+            },
+            "inputs": [
+                {"name": "documents", "source": "{steps.load_documents.output.documents}", "required": true}
+            ],
+            "outputs": [
+                {"name": "indexed_count", "required": true},
+                {"name": "collection_name", "required": true},
+                {"name": "vector_db_path", "required": true}
+            ]
         }
     ],
     "flow": {

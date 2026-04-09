@@ -23,20 +23,16 @@ export function generateGraph(pipeline) {
 
 /**
  * Normalize different flow path formats
+ * Handles both from_step/to_step and from/to conventions
  */
 function normalizePaths(flow) {
-  if (flow.paths) return flow.paths
+  const rawPaths = flow.paths || flow.transitions || []
 
-  if (flow.transitions) {
-    // Convert transitions format to paths format
-    return flow.transitions.map(t => ({
-      from_step: t.from,
-      to_step: t.to,
-      condition: t.condition
-    }))
-  }
-
-  return []
+  return rawPaths.map(p => ({
+    from_step: p.from_step || p.from,
+    to_step: p.to_step || p.to,
+    condition: p.condition,
+  }))
 }
 
 /**
@@ -56,6 +52,7 @@ function generateSequentialGraph(steps) {
       id: `e${i}-${i + 1}`,
       source: nodes[i].id,
       target: nodes[i + 1].id,
+      type: 'smoothstep',
       animated: true,
     })
   }
@@ -73,7 +70,7 @@ function generateFlowGraph(steps, flow) {
   const stepsByLevel = groupByLevel(levels)
 
   const nodes = generateNodes(stepsByLevel, stepMap, outgoing, incoming)
-  const edges = generateEdges(flow.paths)
+  const edges = generateEdges(flow.paths, levels)
 
   return { nodes, edges }
 }
@@ -128,19 +125,29 @@ function generateNodes(stepsByLevel, stepMap, outgoing, incoming) {
 
 /**
  * Generate edges from flow paths
+ * Detects back-edges (loops) where target level <= source level
  */
-function generateEdges(paths) {
+function generateEdges(paths, levels) {
   return paths.map(path => {
     const edgeId = `e-${path.from_step}-${path.to_step}`
-    const { label, style } = formatEdge(path)
+    const sourceLevel = levels[path.from_step] ?? 0
+    const targetLevel = levels[path.to_step] ?? 0
+    const isBackEdge = targetLevel <= sourceLevel && path.from_step !== path.to_step
+
+    const { label, style } = formatEdge(path, isBackEdge)
 
     return {
       id: edgeId,
       source: path.from_step,
       target: path.to_step,
+      type: 'smoothstep',
       label,
       style,
-      animated: true,
+      animated: !isBackEdge,
+      labelStyle: { fontSize: 11, fontWeight: 500, fill: '#6b7280' },
+      labelBgStyle: { fill: '#f9fafb', fillOpacity: 0.9 },
+      labelBgPadding: [6, 3],
+      labelBgBorderRadius: 4,
     }
   })
 }

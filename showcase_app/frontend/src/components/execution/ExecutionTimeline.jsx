@@ -79,7 +79,7 @@ export default function ExecutionTimeline({ execution }) {
     <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-800">
       {/* Header with Metrics */}
       <div className="p-4 border-b dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
           <Activity className="w-5 h-5" />
           Execution Timeline
         </h2>
@@ -89,31 +89,31 @@ export default function ExecutionTimeline({ execution }) {
             icon={<Activity className="w-4 h-4" />}
             label="Total Steps"
             value={metrics.total}
-            color="text-blue-600"
+            color="text-blue-600 dark:text-blue-400"
           />
           <MetricCard
             icon={<CheckCircle className="w-4 h-4" />}
             label="Completed"
             value={metrics.completed}
-            color="text-green-600"
+            color="text-green-600 dark:text-green-400"
           />
           <MetricCard
             icon={<XCircle className="w-4 h-4" />}
             label="Failed"
             value={metrics.failed}
-            color="text-red-600"
+            color="text-red-600 dark:text-red-400"
           />
           <MetricCard
             icon={<Loader className="w-4 h-4" />}
             label="Running"
             value={metrics.running}
-            color="text-yellow-600"
+            color="text-yellow-600 dark:text-yellow-400"
           />
           <MetricCard
             icon={<Clock className="w-4 h-4" />}
             label="Duration"
             value={formatDuration(metrics.duration)}
-            color="text-purple-600"
+            color="text-purple-600 dark:text-purple-400"
           />
         </div>
       </div>

@@ -75,12 +75,12 @@ export default function DecisionTimeline({ jobId }) {
   };
 
   if (!jobId) {
-    return (
-      <div className="p-8 text-center text-gray-500">
-        <GitBranch className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-        <p>Select an execution to view decision trail</p>
-      </div>
-    );
+    return null;
+  }
+
+  // Don't render empty panel when trail has no nodes
+  if (!trailLoading && !trail?.nodes?.length) {
+    return null;
   }
 
   return (
@@ -191,10 +191,10 @@ function PathStep({ step, isLast }) {
   return (
     <div className="flex items-start gap-3">
       <div className="flex flex-col items-center">
-        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold text-sm">
+        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center font-semibold text-sm">
           {step.step}
         </div>
-        {!isLast && <div className="w-0.5 h-8 bg-blue-200 my-1" />}
+        {!isLast && <div className="w-0.5 h-8 bg-blue-200 dark:bg-blue-800 my-1" />}
       </div>
       <div className="flex-1 bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
         <div className="font-medium">{step.decision_type}</div>
@@ -285,9 +285,9 @@ function DecisionNodeCard({ node, isExpanded, isSelected, onToggle, onSelect, ev
 
 function EvidenceCard({ evidence }) {
   const typeColors = {
-    direct: 'bg-green-100 text-green-700',
-    inferred: 'bg-blue-100 text-blue-700',
-    contextual: 'bg-purple-100 text-purple-700',
+    direct: 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300',
+    inferred: 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300',
+    contextual: 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300',
   };
 
   return (

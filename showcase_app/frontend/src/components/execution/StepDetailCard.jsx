@@ -18,11 +18,11 @@ export default function StepDetailCard({ step }) {
   const getStepColor = (status) => {
     switch (status) {
       case 'completed':
-        return 'border-green-200 bg-green-50'
+        return 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30'
       case 'failed':
-        return 'border-red-200 bg-red-50'
+        return 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30'
       case 'running':
-        return 'border-blue-200 bg-blue-50'
+        return 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30'
       default:
         return 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
     }
@@ -30,10 +30,10 @@ export default function StepDetailCard({ step }) {
 
   const getStatusBadge = (status) => {
     const colors = {
-      completed: 'bg-green-100 text-green-800 border-green-300',
-      failed: 'bg-red-100 text-red-800 border-red-300',
-      running: 'bg-blue-100 text-blue-800 border-blue-300',
-      pending: 'bg-gray-100 text-gray-800 border-gray-300',
+      completed: 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700',
+      failed: 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700',
+      running: 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700',
+      pending: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-600',
     }
 
     return (
@@ -100,7 +100,7 @@ export default function StepDetailCard({ step }) {
                 </div>
               )}
               {step.retry_count > 0 && (
-                <div className="text-xs text-orange-600 flex items-center gap-1 mt-1">
+                <div className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1 mt-1">
                   <AlertCircle size={12} />
                   Retried {step.retry_count}x
                 </div>
@@ -110,7 +110,7 @@ export default function StepDetailCard({ step }) {
 
           {/* Error Display */}
           {step.error_message && (
-            <div className="mb-3 p-3 bg-red-100 border border-red-300 rounded text-sm text-red-900">
+            <div className="mb-3 p-3 bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700 rounded text-sm text-red-900 dark:text-red-300">
               <strong className="block mb-1">Error:</strong>
               <div className="font-mono text-xs whitespace-pre-wrap break-words">
                 {step.error_message}

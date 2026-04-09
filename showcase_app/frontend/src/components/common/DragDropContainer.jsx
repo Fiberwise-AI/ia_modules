@@ -14,7 +14,6 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { ComponentRenderer } from './ComponentRenderer'
-import PipelineLoader from './PipelineLoader'
 import DraggableItem from './DraggableItem'
 import ComponentToolbar from './ComponentToolbar'
 import { pipelinesAPI } from '../../services/api'
@@ -314,11 +313,6 @@ export default function DragDropContainer({
 
   return (
     <div className="space-y-4">
-      {/* Pipeline Loader */}
-      <PipelineLoader
-        onImportPipeline={handleTemplateImport}
-      />
-
       {/* Toolbar for adding new components */}
       <ComponentToolbar
         availableComponents={[

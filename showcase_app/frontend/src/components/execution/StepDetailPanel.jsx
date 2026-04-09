@@ -21,10 +21,10 @@ export default function StepDetailPanel({ step, onClose }) {
 
   const getStatusBadge = (status) => {
     const colors = {
-      completed: 'bg-green-100 text-green-800 border-green-300',
-      failed: 'bg-red-100 text-red-800 border-red-300',
-      running: 'bg-blue-100 text-blue-800 border-blue-300',
-      pending: 'bg-gray-100 text-gray-800 border-gray-300',
+      completed: 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700',
+      failed: 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700',
+      running: 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700',
+      pending: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-600',
     }
 
     return (
@@ -63,7 +63,7 @@ export default function StepDetailPanel({ step, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl font-bold"
           >
             ×
           </button>
@@ -146,9 +146,9 @@ function OverviewTab({ step }) {
     <div className="space-y-6">
       {/* Error Display */}
       {step.error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h3 className="text-red-900 font-semibold mb-2">Error Details</h3>
-          <p className="text-red-800 font-mono text-sm whitespace-pre-wrap">{step.error}</p>
+        <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <h3 className="text-red-900 dark:text-red-300 font-semibold mb-2">Error Details</h3>
+          <p className="text-red-800 dark:text-red-400 font-mono text-sm whitespace-pre-wrap">{step.error}</p>
         </div>
       )}
 

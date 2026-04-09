@@ -56,19 +56,19 @@ export default function ConversationHistory({ sessionId }) {
   };
 
   // Ensure displayMessages is always an array
-  const displayMessages = Array.isArray(searchMutation.data?.results) 
-    ? searchMutation.data.results 
-    : Array.isArray(messages) 
-    ? messages 
+  const displayMessages = Array.isArray(searchMutation.data?.results)
+    ? searchMutation.data.results
+    : Array.isArray(messages)
+    ? messages
     : [];
 
   if (!sessionId) {
-    return (
-      <div className="p-8 text-center text-gray-500">
-        <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-        <p>Select an execution to view conversation history</p>
-      </div>
-    );
+    return null;
+  }
+
+  // Don't render an empty panel when there are no messages and no active search
+  if (!messagesLoading && displayMessages.length === 0 && !searchMutation.data) {
+    return null;
   }
 
   return (
@@ -171,10 +171,10 @@ function MessageCard({ message }) {
     <div
       className={`p-4 rounded-lg border ${
         isUser
-          ? 'bg-blue-50 border-blue-200'
+          ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'
           : isSystem
           ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
-          : 'bg-purple-50 border-purple-200'
+          : 'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800'
       }`}
     >
       {/* Header */}
@@ -187,7 +187,7 @@ function MessageCard({ message }) {
           ) : (
             <Bot className="w-4 h-4 text-purple-600" />
           )}
-          <span className="font-medium text-sm capitalize">{message.role}</span>
+          <span className="font-medium text-sm capitalize text-gray-900 dark:text-gray-100">{message.role}</span>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <Clock className="w-3 h-3" />

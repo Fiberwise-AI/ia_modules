@@ -18,7 +18,20 @@
             "module": "tests.pipelines.agent_pipeline.steps.simple_agent_step",
             "config": {
                 "processing_type": "ingestion"
-            }
+            },
+            "inputs": [
+                {"name": "task", "source": "{parameters.input_data.task}", "required": false},
+                {"name": "text", "source": "{parameters.input_data.text}", "required": false}
+            ],
+            "outputs": [
+                {"name": "agent_name", "required": true},
+                {"name": "processing_type", "required": true},
+                {"name": "processed_at", "required": true},
+                {"name": "original_task", "required": true},
+                {"name": "original_content", "required": true},
+                {"name": "llm_response", "required": false},
+                {"name": "metadata", "required": true}
+            ]
         },
         {
             "id": "step2",
@@ -27,7 +40,22 @@
                 "module": "tests.pipelines.agent_pipeline.steps.decision_agent_step",
             "config": {
                 "decision_logic": "validation"
-            }
+            },
+            "inputs": [
+                {"name": "task", "source": "{steps.step1.output.original_task}", "required": false},
+                {"name": "text", "source": "{steps.step1.output.original_content}", "required": false},
+                {"name": "llm_response", "source": "{steps.step1.output.llm_response}", "required": false}
+            ],
+            "outputs": [
+                {"name": "agent_name", "required": true},
+                {"name": "decision_logic", "required": true},
+                {"name": "processed_at", "required": true},
+                {"name": "original_task", "required": true},
+                {"name": "original_content", "required": true},
+                {"name": "final_decision", "required": true},
+                {"name": "confidence", "required": true},
+                {"name": "metadata", "required": true}
+            ]
         },
         {
             "id": "step3",
@@ -36,7 +64,20 @@
             "module": "tests.pipelines.agent_pipeline.steps.simple_agent_step",
             "config": {
                 "processing_type": "final_processing"
-            }
+            },
+            "inputs": [
+                {"name": "task", "source": "{steps.step2.output.original_task}", "required": false},
+                {"name": "text", "source": "{steps.step2.output.original_content}", "required": false}
+            ],
+            "outputs": [
+                {"name": "agent_name", "required": true},
+                {"name": "processing_type", "required": true},
+                {"name": "processed_at", "required": true},
+                {"name": "original_task", "required": true},
+                {"name": "original_content", "required": true},
+                {"name": "llm_response", "required": false},
+                {"name": "metadata", "required": true}
+            ]
         }
     ],
     "flow": {

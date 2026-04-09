@@ -118,7 +118,7 @@ export default function StepCodeEditor({ pipelineId, stepId, onClose }) {
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading step code...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading step code...</p>
         </div>
       </div>
     );
@@ -129,8 +129,8 @@ export default function StepCodeEditor({ pipelineId, stepId, onClose }) {
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600">{error.message}</p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-red-600 dark:text-red-400">{error.message}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
             Step code may not be in database. Try importing the pipeline first.
           </p>
         </div>
@@ -145,9 +145,9 @@ export default function StepCodeEditor({ pipelineId, stepId, onClose }) {
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <FileCode className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-lg">{stepModule?.class_name || 'Step Code'}</h3>
+            <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{stepModule?.class_name || 'Step Code'}</h3>
             {hasChanges && (
-              <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
+              <span className="text-xs bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 px-2 py-1 rounded">
                 ● Unsaved changes
               </span>
             )}
@@ -185,12 +185,12 @@ export default function StepCodeEditor({ pipelineId, stepId, onClose }) {
 
       {/* Validation Error */}
       {validationError && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4">
+        <div className="bg-red-50 dark:bg-red-950/40 border-l-4 border-red-500 p-4">
           <div className="flex items-start gap-2">
             <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
             <div className="flex-1">
-              <h4 className="text-sm font-semibold text-red-800">Validation Error</h4>
-              <p className="text-sm text-red-700 mt-1 font-mono">{validationError}</p>
+              <h4 className="text-sm font-semibold text-red-800 dark:text-red-300">Validation Error</h4>
+              <p className="text-sm text-red-700 dark:text-red-400 mt-1 font-mono">{validationError}</p>
             </div>
           </div>
         </div>
@@ -198,10 +198,10 @@ export default function StepCodeEditor({ pipelineId, stepId, onClose }) {
 
       {/* Success Message */}
       {saveMutation.isSuccess && !hasChanges && (
-        <div className="bg-green-50 border-l-4 border-green-500 p-3">
+        <div className="bg-green-50 dark:bg-green-950/40 border-l-4 border-green-500 p-3">
           <div className="flex items-center gap-2">
             <Check className="w-5 h-5 text-green-500" />
-            <p className="text-sm text-green-700">Step code saved successfully</p>
+            <p className="text-sm text-green-700 dark:text-green-300">Step code saved successfully</p>
           </div>
         </div>
       )}
@@ -219,11 +219,11 @@ export default function StepCodeEditor({ pipelineId, stepId, onClose }) {
               <div className="flex items-center gap-1">
                 <Database className="w-3 h-3" />
                 <span className="font-medium">Storage:</span>
-                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded">Database</span>
+                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded">Database</span>
               </div>
               <div>
                 <span className="font-medium">Hash:</span>{' '}
-                <code className="bg-gray-100 px-1 py-0.5 rounded">
+                <code className="bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded">
                   {stepModule.content_hash?.substring(0, 8)}
                 </code>
               </div>

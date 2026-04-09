@@ -43,8 +43,8 @@ export default function ModulePalette({ onAddStep }) {
         ))}
       </div>
 
-      <div className="mt-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
-        <p className="text-xs text-blue-700">
+      <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+        <p className="text-xs text-blue-700 dark:text-blue-300">
           <strong>Tip:</strong> Drag modules onto the canvas or click to add. Connect nodes by dragging from one
           node's edge to another.
         </p>
@@ -62,7 +62,7 @@ function ModuleCard({ module, onAdd }) {
       className="w-full p-3 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-left group"
     >
       <div className="flex items-start gap-3">
-        <div className="p-2 bg-blue-50 rounded group-hover:bg-blue-100 transition-colors">
+        <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
           <Icon className="w-4 h-4 text-blue-600" />
         </div>
         <div className="flex-1 min-w-0">

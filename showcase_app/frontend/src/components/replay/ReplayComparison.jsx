@@ -53,12 +53,12 @@ export default function ReplayComparison({ jobId }) {
   };
 
   if (!jobId) {
-    return (
-      <div className="p-8 text-center text-gray-500">
-        <Play className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-        <p>Select an execution to replay</p>
-      </div>
-    );
+    return null;
+  }
+
+  // Don't render empty panel when there's no replay history
+  if (!historyLoading && !history?.history?.length && !replayMutation.data) {
+    return null;
   }
 
   return (
@@ -177,7 +177,7 @@ function ComparisonDetails({ comparison, expandedDiffs, toggleDiff }) {
           {/* Step Header */}
           <div
             className={`p-3 cursor-pointer flex items-center justify-between ${
-              diff.identical ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'
+              diff.identical ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800'
             }`}
             onClick={() => toggleDiff(idx)}
           >
@@ -192,13 +192,13 @@ function ComparisonDetails({ comparison, expandedDiffs, toggleDiff }) {
               ) : (
                 <AlertTriangle className="w-5 h-5 text-orange-600" />
               )}
-              <span className="font-medium">{diff.step_name}</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{diff.step_name}</span>
             </div>
             <span
               className={`text-sm px-2 py-1 rounded ${
                 diff.identical
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-orange-100 text-orange-700'
+                  ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                  : 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300'
               }`}
             >
               {diff.identical ? 'Identical' : 'Different'}

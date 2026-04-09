@@ -4,7 +4,18 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { executionAPI, pipelinesAPI } from '../services/api'
 import { useExecutionWebSocket } from '../hooks/useWebSocket'
 import axios from 'axios'
-import DragDropContainer from '../components/common/DragDropContainer'
+import ExecutionHeader from '../components/execution/ExecutionHeader'
+import ExecutionStatusCard from '../components/execution/ExecutionStatusCard'
+import ExecutionError from '../components/execution/ExecutionError'
+import ExecutionTimeline from '../components/execution/ExecutionTimeline'
+import PipelineGraphSection from '../components/execution/PipelineGraphSection'
+import SpanTimeline from '../components/telemetry/SpanTimeline'
+import CheckpointList from '../components/checkpoint/CheckpointList'
+import ConversationHistory from '../components/memory/ConversationHistory'
+import ReplayComparison from '../components/replay/ReplayComparison'
+import DecisionTimeline from '../components/decision/DecisionTimeline'
+import StepDetailsList from '../components/execution/StepDetailsList'
+import DataViewer from '../components/execution/DataViewer'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
@@ -68,43 +79,36 @@ export default function ExecutionDetailPage() {
     )
   }
 
-  const handleTemplateImport = (templateItems, templateName) => {
-    console.log('Imported template:', templateName, templateItems)
-    // Could show a toast or update the page title
-  }
+  const hasSteps = execution.steps && execution.steps.length > 0
+  const hasSpans = telemetryData?.timeline && telemetryData.timeline.length > 0
 
   return (
-    <DragDropContainer
-      onLayoutChange={(layout) => console.log('Layout changed:', layout)}
-      onTemplateImport={handleTemplateImport}
-      layoutKey="execution-detail-layout"
-      execution={execution}
-      pipeline={pipeline}
-      jobId={jobId}
-      telemetryData={telemetryData}
-    >
-      {/* Pass execution data to all components that need it */}
-      <div id="execution-header" data-component="ExecutionHeader" data-props={{ onBack: () => navigate('/executions') }} />
-      <div id="execution-status" data-component="ExecutionStatusCard" data-props={{ execution }} />
-      <div id="execution-error" data-component="ExecutionError" data-props={{ error: execution.error }} />
-      <div id="execution-timeline" data-component="ExecutionTimeline" data-props={{ execution }} />
-      <div id="pipeline-graph" data-component="PipelineGraphSection" data-props={{ pipeline, execution }} />
+    <div className="space-y-4">
+      <ExecutionHeader onBack={() => navigate('/executions')} />
+      <ExecutionStatusCard execution={execution} />
+      <ExecutionError error={execution.error} />
 
-      {telemetryData?.timeline && telemetryData.timeline.length > 0 && (
-        <div id="span-timeline" data-component="SpanTimeline" data-props={{ jobId, spans: telemetryData.timeline }} />
+      {hasSteps && <ExecutionTimeline execution={execution} />}
+
+      <PipelineGraphSection pipeline={pipeline} execution={execution} />
+
+      {hasSpans && (
+        <SpanTimeline jobId={jobId} spans={telemetryData.timeline} />
       )}
 
-      <div id="checkpoints" data-component="CheckpointList" data-props={{ jobId }} />
-      <div id="conversation-history" data-component="ConversationHistory" data-props={{ sessionId: jobId }} />
-      <div id="replay-comparison" data-component="ReplayComparison" data-props={{ jobId }} />
-      <div id="decision-timeline" data-component="DecisionTimeline" data-props={{ jobId }} />
-      <div id="step-details" data-component="StepDetailsList" data-props={{ steps: execution.steps }} />
-      <div id="input-data-viewer" data-component="DataViewer" data-props={{ title: "Input Data", data: execution.input_data }} />
-      <div id="output-data-viewer" data-component="DataViewer" data-props={{
-        title: "Final Output",
-        data: execution.output_data,
-        maxHeight: "max-h-96 overflow-y-auto"
-      }} />
-    </DragDropContainer>
+      {hasSteps && <StepDetailsList steps={execution.steps} />}
+
+      <DataViewer title="Input Data" data={execution.input_data} />
+      <DataViewer
+        title="Final Output"
+        data={execution.output_data}
+        maxHeight="max-h-96 overflow-y-auto"
+      />
+
+      <CheckpointList jobId={jobId} />
+      <ConversationHistory sessionId={jobId} />
+      <ReplayComparison jobId={jobId} />
+      <DecisionTimeline jobId={jobId} />
+    </div>
   )
 }

@@ -34,9 +34,11 @@ class A2AExecutor:
         self,
         a2a_url: Optional[str] = None,
         callback_url: Optional[str] = None,
+        auth_token: Optional[str] = None,
     ):
         self.a2a_url = a2a_url or os.getenv("A2A_SERVER_URL", "http://localhost:3008")
         self.callback_url = callback_url
+        self.auth_token = auth_token
 
     async def execute(self, config: AgentConfig) -> AsyncIterator[AgentEvent]:
         """Send agent execution to A2A server and yield events."""
@@ -47,8 +49,11 @@ class A2AExecutor:
                     config.mode.value, config.cli_type.value)
 
         try:
+            headers = {}
+            if self.auth_token:
+                headers["Authorization"] = f"Bearer {self.auth_token}"
             async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
-                resp = await client.post(url, json=payload)
+                resp = await client.post(url, json=payload, headers=headers)
                 resp.raise_for_status()
         except Exception as e:
             logger.error("[%s] A2A request failed: %s", label, e)
@@ -109,10 +114,8 @@ class A2AExecutor:
                         "cli_type": config.cli_type.value,
                         "model": config.model,
                         "provider": config.provider,
-                        "api_key": config.api_key or "",
-                        "business_id": config.business_id,
+                        "api_key": config.api_key,
                         "callback_url": self.callback_url,
-                        "task_id": config.task_id,
                     },
                 }
             },
@@ -127,9 +130,12 @@ class A2AExecutor:
                 "method": "tasks/cancel",
                 "params": {"id": job_id},
             }
+            headers = {}
+            if self.auth_token:
+                headers["Authorization"] = f"Bearer {self.auth_token}"
             async with httpx.AsyncClient(timeout=httpx.Timeout(5.0)) as client:
                 resp = await client.post(
-                    f"{self.a2a_url}/api/a2a/jsonrpc", json=payload
+                    f"{self.a2a_url}/api/a2a/jsonrpc", json=payload, headers=headers
                 )
                 return resp.is_success
         except Exception as e:

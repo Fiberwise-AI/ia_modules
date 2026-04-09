@@ -40,12 +40,10 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
 
     try {
       await hitlAPI.respond(hitlInteraction.interaction_id, formData);
-      alert('Response submitted successfully! Pipeline will resume.');
+      toast.success('Response submitted! Pipeline will resume.');
       onClose();
-      // Refresh page to see updated status
-      window.location.reload();
     } catch (error) {
-      alert(`Error submitting response: ${error.message}`);
+      toast.error(`Error submitting response: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -134,7 +132,7 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
           >
             <X size={24} />
           </button>
@@ -145,29 +143,29 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
         <div className="p-6 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <p className="text-xs text-gray-500">Status</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Status</p>
               <div className="flex items-center gap-2 mt-1">
                 {getStatusIcon(execution.status)}
-                <span className="font-semibold capitalize">{execution.status.replace('_', ' ')}</span>
+                <span className="font-semibold capitalize text-gray-900 dark:text-gray-100">{execution.status.replace('_', ' ')}</span>
               </div>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Duration</p>
-              <p className="font-semibold mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400">Duration</p>
+              <p className="font-semibold mt-1 text-gray-900 dark:text-gray-100">
                 {execution.execution_time_ms ? `${(execution.execution_time_ms / 1000).toFixed(2)}s` : '-'}
               </p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Steps</p>
-              <p className="font-semibold mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400">Steps</p>
+              <p className="font-semibold mt-1 text-gray-900 dark:text-gray-100">
                 {execution.completed_steps || 0} / {execution.total_steps || 0}
               </p>
             </div>
           </div>
           {execution.error_message && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
-              <p className="text-sm font-semibold text-red-900">Error</p>
-              <p className="text-sm text-red-700 mt-1">{execution.error_message}</p>
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded">
+              <p className="text-sm font-semibold text-red-900 dark:text-red-300">Error</p>
+              <p className="text-sm text-red-700 dark:text-red-400 mt-1">{execution.error_message}</p>
             </div>
           )}
         </div>
@@ -191,10 +189,10 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
               const isHITLStep = hitlInteraction && hitlInteraction.step_name === step.step_name;
 
               return (
-              <div key={index} className={`border dark:border-gray-700 rounded-lg overflow-hidden ${isHITLStep ? 'border-yellow-400 bg-yellow-50' : ''}`}>
+              <div key={index} className={`border dark:border-gray-700 rounded-lg overflow-hidden ${isHITLStep ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-950/20' : ''}`}>
                 <button
                   onClick={() => toggleStep(step.step_name)}
-                  className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition ${isHITLStep ? 'bg-yellow-50' : 'bg-white dark:bg-gray-900'}`}
+                  className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition ${isHITLStep ? 'bg-yellow-50 dark:bg-yellow-950/20' : 'bg-white dark:bg-gray-900'}`}
                 >
                   <div className="flex items-center gap-3">
                     {expandedSteps[step.step_name] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -215,13 +213,13 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
                   <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-t dark:border-gray-700 space-y-4">
                     {/* HITL Approval Form */}
                     {isHITLStep && (
-                      <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-4">
-                        <p className="text-sm font-semibold text-yellow-900 mb-3">{hitlInteraction.prompt}</p>
+                      <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 mb-4">
+                        <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-200 mb-3">{hitlInteraction.prompt}</p>
 
                         {/* Show non-decision fields (like comments) */}
                         {hitlInteraction.ui_schema?.fields?.filter(f => f.name !== 'decision' && f.type !== 'radio').map((field, idx) => (
                           <div key={idx} className="mb-3">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                               {field.label} {field.required && <span className="text-red-500">*</span>}
                             </label>
                             {renderField(field)}
@@ -296,8 +294,8 @@ export default function ExecutionDetailsModal({ execution, hitlInteraction, onCl
                     {/* Error */}
                     {step.error && (
                       <div>
-                        <p className="text-xs font-semibold text-red-700 mb-2">Error</p>
-                        <pre className="bg-red-50 border border-red-200 rounded p-3 text-xs text-red-700 overflow-x-auto">
+                        <p className="text-xs font-semibold text-red-700 dark:text-red-300 mb-2">Error</p>
+                        <pre className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded p-3 text-xs text-red-700 dark:text-red-400 overflow-x-auto">
                           {step.error}
                         </pre>
                       </div>

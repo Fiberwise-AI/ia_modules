@@ -7,7 +7,7 @@ export default function ExecutionHeader({ onBack }) {
       <div className="flex items-center space-x-4">
         <button
           onClick={onBack}
-          className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+          className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         >
           <ArrowLeft size={20} />
           <span>Back to Executions</span>
