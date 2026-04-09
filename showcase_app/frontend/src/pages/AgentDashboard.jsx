@@ -1,7 +1,8 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { telemetryAPI } from '../services/api'
-import { Users, MessageSquare, Zap, AlertCircle } from 'lucide-react'
+import { Users, MessageSquare, Zap, AlertCircle, FileText } from 'lucide-react'
 import AgentPerformanceChart from '../components/charts/AgentPerformanceChart'
 import MessageFlowChart from '../components/charts/MessageFlowChart'
 
@@ -20,9 +21,18 @@ export default function AgentDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Agent Dashboard</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">Real-time agent execution and communication metrics</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Agent Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Real-time agent execution and communication metrics</p>
+        </div>
+        <Link
+          to="/agents/executions"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition"
+        >
+          <FileText size={16} />
+          View Executions
+        </Link>
       </div>
 
       {/* Summary Cards */}

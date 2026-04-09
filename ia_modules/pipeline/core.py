@@ -329,6 +329,51 @@ class Step:
             return self.services.get('central_logger')
         return None
 
+    def get_state_manager(self):
+        """Get shared StateManager from registry (if registered).
+
+        Only available when running inside an Orchestrator or when
+        a StateManager has been explicitly registered on the ServiceRegistry.
+        Returns None for regular pipeline steps that don't use shared state.
+        """
+        if self.services:
+            return self.services.get('state_manager')
+        return None
+
+    async def read_state(self, key: str, default: Any = None) -> Any:
+        """Read from shared StateManager (orchestrator context only).
+
+        No-op if no StateManager is registered — safe to call from
+        any Step regardless of runner context.
+        """
+        sm = self.get_state_manager()
+        if sm:
+            return await sm.get(key, default)
+        self.logger.warning("read_state('%s') called but no StateManager — step '%s' may not be registered with orchestrator", key, self.name)
+        return default
+
+    async def write_state(self, key: str, value: Any) -> None:
+        """Write to shared StateManager (orchestrator context only).
+
+        No-op if no StateManager is registered — safe to call from
+        any Step regardless of runner context.
+        """
+        sm = self.get_state_manager()
+        if sm:
+            await sm.set(key, value)
+        else:
+            self.logger.warning("write_state('%s') called but no StateManager — step '%s' may not be registered with orchestrator", key, self.name)
+
+    async def get_state_snapshot(self) -> Dict[str, Any]:
+        """Get immutable snapshot of entire shared state.
+
+        Returns empty dict if no StateManager is registered.
+        """
+        sm = self.get_state_manager()
+        if sm:
+            return await sm.snapshot()
+        return {}
+
 
 class Pipeline:
     """Main pipeline executor"""

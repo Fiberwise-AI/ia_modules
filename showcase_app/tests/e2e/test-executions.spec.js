@@ -27,7 +27,7 @@ test.describe('Executions Page', () => {
 });
 
 test.describe('Executions API', () => {
-  const API_BASE = 'http://localhost:5555';
+  const API_BASE = 'http://localhost:7331';
 
   test('should list executions via API', async ({ request }) => {
     const response = await request.get(`${API_BASE}/api/execute`);

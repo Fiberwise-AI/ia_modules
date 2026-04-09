@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Metrics Dashboard', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173/metrics');
+    await page.goto('http://localhost:5174/metrics');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
   });
@@ -14,7 +14,7 @@ test.describe('Metrics Dashboard', () => {
   });
 
   test('should update metrics after pipeline execution', async ({ page }) => {
-    await page.goto('http://localhost:5173/pipelines');
+    await page.goto('http://localhost:5174/pipelines');
     await page.waitForLoadState('networkidle');
     const hasEmptyState = await page.getByText(/no pipelines yet/i).first().isVisible().catch(() => false);
     if (!hasEmptyState) {
@@ -26,7 +26,7 @@ test.describe('Metrics Dashboard', () => {
         await page.waitForTimeout(3000);
       }
     }
-    await page.goto('http://localhost:5173/metrics');
+    await page.goto('http://localhost:5174/metrics');
     await page.waitForLoadState('networkidle');
     await expect(page.locator('body')).toBeVisible();
   });

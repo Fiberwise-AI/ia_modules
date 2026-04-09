@@ -1,15 +1,15 @@
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
-// Use environment variable for API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5555'
+// In dev, use relative URLs so Vite proxy handles routing to the backend.
+// In production, use VITE_API_URL if set.
+const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Include credentials for CORS
 })
 
 // Request interceptor for loading state
@@ -159,11 +159,28 @@ export const collaborationAPI = {
     loadingMessage: 'Running peer-to-peer collaboration...',
     successMessage: 'Peer-to-peer collaboration completed',
   }),
+  getExecutions: (pattern) => api.get('/collaboration/executions', {
+    params: pattern ? { pattern } : {},
+    showLoading: false,
+  }),
+  getExecution: (runId) => api.get(`/collaboration/executions/${runId}`),
+}
+
+// Agent Executions
+export const agentExecutionsAPI = {
+  list: (params) => api.get('/agents/executions', { params, showLoading: false }),
+  get: (jobId) => api.get(`/agents/executions/${jobId}`, { showLoading: false }),
+  getEvents: (jobId, params) => api.get(`/agents/executions/${jobId}/events`, { params, showLoading: false }),
+  getSummary: (jobId) => api.get(`/agents/executions/${jobId}/summary`, { showLoading: false }),
+  scan: () => api.post('/agents/executions/scan', {}, {
+    loadingMessage: 'Scanning agent logs...',
+    successMessage: 'Agent logs indexed',
+  }),
 }
 
 // Health
 export const healthAPI = {
-  check: () => axios.get('http://localhost:5555/health'),
+  check: () => axios.get(`${API_BASE_URL}/health`),
 }
 
 export default api

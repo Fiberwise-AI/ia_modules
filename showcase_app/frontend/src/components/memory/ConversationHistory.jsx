@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, MessageSquare, Clock, User, Bot, TrendingUp } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 export default function ConversationHistory({ sessionId }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState('semantic');
@@ -11,7 +13,7 @@ export default function ConversationHistory({ sessionId }) {
   const { data: messages, isLoading: messagesLoading } = useQuery({
     queryKey: ['conversation', sessionId],
     queryFn: async () => {
-      const response = await fetch(`http://localhost:5555/api/memory/${sessionId}?limit=50`);
+      const response = await fetch(`${API_BASE}/api/memory/${sessionId}?limit=50`);
       if (!response.ok) throw new Error('Failed to fetch conversation history');
       return response.json();
     },
@@ -22,7 +24,7 @@ export default function ConversationHistory({ sessionId }) {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['memory-stats', sessionId],
     queryFn: async () => {
-      const response = await fetch(`http://localhost:5555/api/memory/${sessionId}/stats`);
+      const response = await fetch(`${API_BASE}/api/memory/${sessionId}/stats`);
       if (!response.ok) throw new Error('Failed to fetch memory stats');
       return response.json();
     },
@@ -32,7 +34,7 @@ export default function ConversationHistory({ sessionId }) {
   // Search memory
   const searchMutation = useMutation({
     mutationFn: async ({ query, type }) => {
-      const response = await fetch('http://localhost:5555/api/memory/search', {
+      const response = await fetch(`${API_BASE}/api/memory/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

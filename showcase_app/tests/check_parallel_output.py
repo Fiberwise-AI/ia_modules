@@ -1,7 +1,7 @@
 """Check parallel pipeline execution data"""
 import requests
 
-API_URL = "http://localhost:5555"
+API_URL = "http://localhost:7331"
 
 # Get recent executions
 response = requests.get(f"{API_URL}/api/execute/")

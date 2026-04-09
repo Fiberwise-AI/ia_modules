@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('API Integration', () => {
-  const API_BASE = 'http://localhost:5555';
+  const API_BASE = 'http://localhost:7331';
 
   test('should have backend API running', async ({ request }) => {
     const response = await request.get(`${API_BASE}/health`);

@@ -6,7 +6,7 @@
  * @returns {Promise<{success: boolean, pipelineId?: string, name?: string}>}
  */
 async function createTestPipeline(request) {
-  const API_BASE = 'http://localhost:5555';
+  const API_BASE = 'http://localhost:7331';
 
   const pipelineData = {
     name: "E2E Test Pipeline",

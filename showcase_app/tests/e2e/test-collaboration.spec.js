@@ -34,7 +34,7 @@ test.describe('Collaboration Page', () => {
 });
 
 test.describe('Collaboration API', () => {
-  const API_BASE = 'http://localhost:5555';
+  const API_BASE = 'http://localhost:7331';
 
   test('should list collaboration patterns', async ({ request }) => {
     const response = await request.get(`${API_BASE}/api/collaboration/patterns`);

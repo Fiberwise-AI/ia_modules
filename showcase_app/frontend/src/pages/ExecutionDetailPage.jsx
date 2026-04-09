@@ -6,7 +6,7 @@ import { useExecutionWebSocket } from '../hooks/useWebSocket'
 import axios from 'axios'
 import DragDropContainer from '../components/common/DragDropContainer'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5555'
+const API_URL = import.meta.env.VITE_API_URL || ''
 
 export default function ExecutionDetailPage() {
   const { jobId } = useParams()

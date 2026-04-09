@@ -13,6 +13,7 @@ import PatternsPage from './pages/PatternsPage'
 import WebScrapingPage from './pages/WebScrapingPage'
 import MultiAgentDashboard from './components/MultiAgent/MultiAgentDashboard'
 import AgentDashboard from './pages/AgentDashboard'
+import AgentExecutionsPage from './pages/AgentExecutionsPage'
 import LLMDashboard from './pages/LLMDashboard'
 import CollaborationPage from './pages/CollaborationPage'
 import PluginsPage from './pages/PluginsPage'
@@ -38,7 +39,7 @@ function AppContent() {
   useEffect(() => {
     const checkBackend = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5555'
+        const apiUrl = import.meta.env.VITE_API_URL || ''
         const response = await axios.get(`${apiUrl}/health`, {
           timeout: 5000,
           headers: { 'Accept': 'application/json' }
@@ -67,7 +68,7 @@ function AppContent() {
   useEffect(() => {
     if (!backendStatus.connected) return
 
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5555'
+    const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.host}`
     const ws = new WebSocket(`${wsUrl}/ws/metrics`)
 
     ws.onopen = () => {
@@ -253,6 +254,7 @@ function AppContent() {
             <Route path="/guardrails" element={<GuardrailsPage />} />
             <Route path="/metrics" element={<MetricsPage />} />
             <Route path="/agents" element={<AgentDashboard />} />
+            <Route path="/agents/executions" element={<AgentExecutionsPage />} />
             <Route path="/plugins" element={<PluginsPage />} />
             <Route path="/llm" element={<LLMDashboard />} />
           </Routes>

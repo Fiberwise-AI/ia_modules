@@ -25,6 +25,7 @@ class ConnectionManager:
         self.execution_connections: Dict[str, Set[WebSocket]] = {}
         self.pipeline_connections: Dict[str, Set[WebSocket]] = {}  # pipeline_id -> connections
         self.hitl_connections: Dict[str, Set[WebSocket]] = {}  # user_id -> connections
+        self.collaboration_connections: Set[WebSocket] = set()  # collab pattern streaming
 
     async def connect_metrics(self, websocket: WebSocket):
         """Connect to metrics stream"""
@@ -92,6 +93,31 @@ class ConnectionManager:
         # Clean up disconnected
         for connection in disconnected:
             self.execution_connections[job_id].discard(connection)
+
+    async def connect_collaboration(self, websocket: WebSocket):
+        """Connect to collaboration pattern stream"""
+        await websocket.accept()
+        self.collaboration_connections.add(websocket)
+        logger.info(f"Collaboration WebSocket connected. Total: {len(self.collaboration_connections)}")
+
+    def disconnect_collaboration(self, websocket: WebSocket):
+        """Disconnect from collaboration stream"""
+        self.collaboration_connections.discard(websocket)
+        logger.info(f"Collaboration WebSocket disconnected. Remaining: {len(self.collaboration_connections)}")
+
+    async def broadcast_collaboration(self, message: dict):
+        """Broadcast to all collaboration connections"""
+        if not self.collaboration_connections:
+            return
+        disconnected = set()
+        for connection in self.collaboration_connections:
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                logger.error(f"Error sending to collaboration WebSocket: {e}")
+                disconnected.add(connection)
+        for connection in disconnected:
+            self.collaboration_connections.discard(connection)
 
     async def connect_pipeline(self, pipeline_id: str, websocket: WebSocket):
         """Connect to pipeline stream"""
@@ -365,6 +391,38 @@ async def websocket_hitl_endpoint(websocket: WebSocket, user_id: str):
     except Exception as e:
         logger.error(f"HITL WebSocket error for user {user_id}: {e}", exc_info=True)
         manager.disconnect_hitl(user_id, websocket)
+
+
+@router.websocket("/collaboration")
+async def websocket_collaboration_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time collaboration pattern updates"""
+    await manager.connect_collaboration(websocket)
+
+    try:
+        await websocket.send_json({
+            "type": "connected",
+            "message": "Connected to collaboration stream",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+
+        while True:
+            try:
+                await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                await websocket.send_json({
+                    "type": "pong",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+            except asyncio.TimeoutError:
+                await websocket.send_json({
+                    "type": "keepalive",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+
+    except WebSocketDisconnect:
+        manager.disconnect_collaboration(websocket)
+    except Exception as e:
+        logger.error(f"Collaboration WebSocket error: {e}", exc_info=True)
+        manager.disconnect_collaboration(websocket)
 
 
 # Export manager for use in other modules

@@ -6,6 +6,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
+const API_BASE = import.meta.env.VITE_API_URL || '';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +44,7 @@ const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({ onTemplateSelect 
   const loadTemplates = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:5555/api/multi-agent/templates');
+      const response = await fetch(`${API_BASE}/api/multi-agent/templates`);
       if (!response.ok) throw new Error('Failed to load templates');
       const data = await response.json();
       setTemplates(data.templates);

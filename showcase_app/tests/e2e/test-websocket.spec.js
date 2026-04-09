@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('WebSocket Connections', () => {
   test('should establish WebSocket connection for metrics', async ({ page }) => {
-    await page.goto('http://localhost:5173/metrics');
+    await page.goto('http://localhost:5174/metrics');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
@@ -15,7 +15,7 @@ test.describe('WebSocket Connections', () => {
   });
 
   test('should show WebSocket status in header', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
@@ -24,7 +24,7 @@ test.describe('WebSocket Connections', () => {
   });
 
   test('should reconnect WebSocket after disconnection', async ({ page }) => {
-    await page.goto('http://localhost:5173/metrics');
+    await page.goto('http://localhost:5174/metrics');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
@@ -38,7 +38,7 @@ test.describe('WebSocket Connections', () => {
   });
 
   test('should establish WebSocket for execution updates', async ({ page }) => {
-    await page.goto('http://localhost:5173/executions');
+    await page.goto('http://localhost:5174/executions');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
@@ -46,7 +46,7 @@ test.describe('WebSocket Connections', () => {
   });
 
   test('should display database status indicator', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
@@ -55,7 +55,7 @@ test.describe('WebSocket Connections', () => {
   });
 
   test('should poll backend health periodically', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 

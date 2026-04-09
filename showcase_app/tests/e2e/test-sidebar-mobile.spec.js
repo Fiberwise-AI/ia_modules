@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Sidebar & Mobile Menu', () => {
   test('should display sidebar by default', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     const sidebar = page.locator('aside');
@@ -11,7 +11,7 @@ test.describe('Sidebar & Mobile Menu', () => {
   });
 
   test('should collapse sidebar to icon-only mode', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     // Toggle to collapse
@@ -27,7 +27,7 @@ test.describe('Sidebar & Mobile Menu', () => {
   });
 
   test('should expand sidebar from collapsed state', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     // Collapse first
@@ -50,7 +50,7 @@ test.describe('Sidebar & Mobile Menu', () => {
     });
     const page = await context.newPage();
     
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     // Mobile menu button should be visible
@@ -67,7 +67,7 @@ test.describe('Sidebar & Mobile Menu', () => {
     });
     const page = await context.newPage();
     
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     // Click mobile menu button
@@ -85,7 +85,7 @@ test.describe('Sidebar & Mobile Menu', () => {
   });
 
   test('should display version in sidebar', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     await expect(page.getByText(/showcase v/i)).toBeVisible();

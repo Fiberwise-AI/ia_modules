@@ -35,7 +35,7 @@ test.describe('Plugins Page', () => {
 });
 
 test.describe('Plugins API', () => {
-  const API_BASE = 'http://localhost:5555';
+  const API_BASE = 'http://localhost:7331';
 
   test('should list plugins via API', async ({ request }) => {
     const response = await request.get(`${API_BASE}/api/plugins`);

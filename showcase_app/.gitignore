@@ -48,6 +48,9 @@ logs/
 workflows/
 *.json.bak
 
+# Agent workspace (shared collaborative workspace for CLI agents)
+workspace/
+
 # Node modules (frontend)
 frontend/node_modules/
 frontend/dist/

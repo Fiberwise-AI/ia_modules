@@ -4,7 +4,7 @@ const { test, expect } = require('@playwright/test');
 test.describe('Pipeline Editor - Build Pipeline', () => {
   test('should add nodes, connect them, save, and view on pipelines page', async ({ page }) => {
     // Step 1: Navigate to editor
-    await page.goto('http://localhost:5173/editor');
+    await page.goto('http://localhost:5174/editor');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
 
@@ -64,7 +64,7 @@ test.describe('Pipeline Editor - Build Pipeline', () => {
     }
 
     // Step 5: Navigate to pipelines page
-    await page.goto('http://localhost:5173/pipelines');
+    await page.goto('http://localhost:5174/pipelines');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
 
@@ -102,7 +102,7 @@ test.describe('Pipeline Editor - Build Pipeline', () => {
 
   test('should add decision and parallel nodes', async ({ page }) => {
     // Navigate to editor
-    await page.goto('http://localhost:5173/editor');
+    await page.goto('http://localhost:5174/editor');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
 

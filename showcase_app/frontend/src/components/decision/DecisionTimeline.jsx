@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { GitBranch, CircleDot, TrendingUp, FileText, Download, ChevronRight, ChevronDown } from 'lucide-react';
 import ReactJson from '@microlink/react-json-view';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 export default function DecisionTimeline({ jobId }) {
   const [expandedNodes, setExpandedNodes] = useState(new Set());
   const [selectedNode, setSelectedNode] = useState(null);
@@ -11,7 +13,7 @@ export default function DecisionTimeline({ jobId }) {
   const { data: trail, isLoading: trailLoading } = useQuery({
     queryKey: ['decision-trail', jobId],
     queryFn: async () => {
-      const response = await fetch(`http://localhost:5555/api/reliability/decision-trail/${jobId}`);
+      const response = await fetch(`${API_BASE}/api/reliability/decision-trail/${jobId}`);
       if (!response.ok) throw new Error('Failed to fetch decision trail');
       return response.json();
     },
@@ -22,7 +24,7 @@ export default function DecisionTimeline({ jobId }) {
   const { data: pathData } = useQuery({
     queryKey: ['execution-path', jobId],
     queryFn: async () => {
-      const response = await fetch(`http://localhost:5555/api/reliability/decision-trail/${jobId}/path`);
+      const response = await fetch(`${API_BASE}/api/reliability/decision-trail/${jobId}/path`);
       if (!response.ok) throw new Error('Failed to fetch execution path');
       return response.json();
     },
@@ -34,7 +36,7 @@ export default function DecisionTimeline({ jobId }) {
     queryKey: ['decision-evidence', jobId, selectedNode],
     queryFn: async () => {
       const response = await fetch(
-        `http://localhost:5555/api/reliability/decision-trail/${jobId}/evidence/${selectedNode}`
+        `${API_BASE}/api/reliability/decision-trail/${jobId}/evidence/${selectedNode}`
       );
       if (!response.ok) throw new Error('Failed to fetch evidence');
       return response.json();
@@ -57,7 +59,7 @@ export default function DecisionTimeline({ jobId }) {
   const handleExport = async (format) => {
     try {
       const response = await fetch(
-        `http://localhost:5555/api/reliability/decision-trail/${jobId}/export?format=${format}`
+        `${API_BASE}/api/reliability/decision-trail/${jobId}/export?format=${format}`
       );
       const data = await response.json();
       

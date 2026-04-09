@@ -30,7 +30,7 @@ test.describe('LLM Usage Page', () => {
 });
 
 test.describe('LLM Usage API', () => {
-  const API_BASE = 'http://localhost:5555';
+  const API_BASE = 'http://localhost:7331';
 
   test('should get LLM usage metrics', async ({ request }) => {
     const response = await request.get(`${API_BASE}/api/telemetry/llm/usage`);

@@ -45,7 +45,7 @@ test.describe('Guardrails Page', () => {
 });
 
 test.describe('Guardrails API', () => {
-  const API_BASE = 'http://localhost:5555';
+  const API_BASE = 'http://localhost:7331';
 
   test('should list available rails', async ({ request }) => {
     const response = await request.get(`${API_BASE}/api/guardrails/rails`);

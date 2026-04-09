@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5555'
+const WS_BASE_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.host}`
 
 export function useExecutionWebSocket(jobId, onUpdate) {
   const ws = useRef(null)

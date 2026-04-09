@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('API CRUD Operations', () => {
-  const API_BASE = 'http://localhost:5555';
+  const API_BASE = 'http://localhost:7331';
 
   test('should create a new pipeline via POST', async ({ request }) => {
     const newPipeline = {

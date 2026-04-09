@@ -209,6 +209,21 @@ def normalize_event(raw: dict, seq: int = 0, job_id: str = None) -> AgentEvent:
             type=evt_type, seq=seq, job_id=job_id, timestamp=timestamp, raw=raw,
         )
 
+    # error events (OpenCode: {"type":"error","error":{"name":"...","data":{"message":"..."}}})
+    if etype == "error":
+        err = raw.get("error", {})
+        err_msg = err.get("message", "") if isinstance(err, str) else ""
+        if isinstance(err, dict):
+            err_data = err.get("data", {})
+            err_msg = err_data.get("message", "") if isinstance(err_data, dict) else str(err_data)
+            if not err_msg:
+                err_msg = err.get("name", "Unknown error")
+        return AgentEvent(
+            type=EventType.RESULT, subtype="error",
+            error=err_msg, result=err_msg,
+            seq=seq, job_id=job_id, timestamp=timestamp, raw=raw,
+        )
+
     # Unknown — wrap as system
     return AgentEvent(
         type=EventType.SYSTEM, subtype="unknown",

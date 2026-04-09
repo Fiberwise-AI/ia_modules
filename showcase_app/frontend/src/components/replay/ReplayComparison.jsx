@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Play, History, AlertTriangle, CheckCircle, XCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import ReactDiffViewer from 'react-diff-viewer-continued';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 export default function ReplayComparison({ jobId }) {
   const [useCached, setUseCached] = useState(false);
   const [expandedDiffs, setExpandedDiffs] = useState(new Set());
@@ -12,7 +14,7 @@ export default function ReplayComparison({ jobId }) {
   const { data: history, isLoading: historyLoading } = useQuery({
     queryKey: ['replay-history', jobId],
     queryFn: async () => {
-      const response = await fetch(`http://localhost:5555/api/reliability/replay/${jobId}/history`);
+      const response = await fetch(`${API_BASE}/api/reliability/replay/${jobId}/history`);
       if (!response.ok) throw new Error('Failed to fetch replay history');
       return response.json();
     },
@@ -23,7 +25,7 @@ export default function ReplayComparison({ jobId }) {
   const replayMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(
-        `http://localhost:5555/api/reliability/replay/${jobId}?use_cached=${useCached}`,
+        `${API_BASE}/api/reliability/replay/${jobId}?use_cached=${useCached}`,
         { method: 'POST' }
       );
       if (!response.ok) throw new Error('Replay failed');

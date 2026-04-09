@@ -18,6 +18,7 @@ Or register on ServiceRegistry for automatic pipeline integration:
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, IO, Optional
@@ -50,7 +51,7 @@ class NdjsonLogger:
     def _ensure_open(self):
         """Lazily open the file on first write (called in thread)."""
         if self._file is None:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
+            os.makedirs(str(self.path.parent), exist_ok=True)
             self._file = open(self.path, "a", encoding="utf-8")
 
     def _write_sync(self, line: str):

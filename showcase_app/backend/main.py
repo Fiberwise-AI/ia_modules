@@ -45,6 +45,8 @@ from api.step_modules import router as step_modules_router  # noqa: E402
 from api.hitl import router as hitl_router  # noqa: E402
 from api.plugins import router as plugins_router  # noqa: E402
 from api.guardrails import router as guardrails_router  # noqa: E402
+from api.patterns import router as patterns_router  # noqa: E402
+from api.collaboration import router as collaboration_router  # noqa: E402
 from services.container import ServiceContainer  # noqa: E402
 from services.metrics_service import MetricsService  # noqa: E402
 from services.pipeline_service import PipelineService  # noqa: E402
@@ -56,7 +58,9 @@ from services.memory_service import MemoryService  # noqa: E402
 from services.replay_service import ReplayService  # noqa: E402
 from services.decision_trail_service import DecisionTrailService  # noqa: E402
 from services.plugin_service import PluginService  # noqa: E402
-from services.guardrails_service import GuardrailsService  # noqa: E402
+from services.guardrails_service import GuardrailsService
+from services.agent_execution_service import AgentExecutionService
+from services.llm_config import get_agent_config  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -147,6 +151,15 @@ async def lifespan(app: FastAPI):
     services.guardrails_service = GuardrailsService()
     logger.info("✓ Guardrails service initialized")
 
+    # Initialize agent execution service
+    agent_cfg = get_agent_config()
+    services.agent_execution_service = AgentExecutionService(
+        services.db_manager, agent_cfg["logs_dir"]
+    )
+    await services.agent_execution_service.initialize()
+    backfill = await services.agent_execution_service.scan_and_backfill()
+    logger.info("✓ Agent execution service initialized (backfill: %s)", backfill)
+
     logger.info("✓ Services initialized successfully")
 
     # Import test pipelines on startup
@@ -190,9 +203,8 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
         "http://localhost:5174",
-        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -275,6 +287,8 @@ app.include_router(agents_router, prefix="/api/agents", tags=["Agents"])
 app.include_router(advanced_tools_router, prefix="/api/tools", tags=["Advanced Tools"])
 app.include_router(plugins_router, prefix="/api/plugins", tags=["Plugins"])
 app.include_router(guardrails_router, prefix="/api/guardrails", tags=["Guardrails"])
+app.include_router(patterns_router, tags=["Patterns"])
+app.include_router(collaboration_router, tags=["Collaboration"])
 
 
 # Global exception handler
@@ -286,8 +300,6 @@ async def global_exception_handler(request, exc):
         status_code=500,
         content={
             "error": "Internal server error",
-            "message": str(exc),
-            "type": type(exc).__name__
         }
     )
 
@@ -343,7 +355,7 @@ if __name__ == "__main__":
         uvicorn.run(
             app,  # Pass app object directly instead of "main:app" string
             host="0.0.0.0",
-            port=5555,
+            port=7331,
             reload=False,
             log_level="info",
             access_log=True

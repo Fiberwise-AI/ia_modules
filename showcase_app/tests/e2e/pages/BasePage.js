@@ -10,7 +10,7 @@ class BasePage {
    */
   constructor(page) {
     this.page = page;
-    this.baseUrl = process.env.BASE_URL || 'http://localhost:5173';
+    this.baseUrl = process.env.BASE_URL || 'http://localhost:5174';
   }
 
   /**

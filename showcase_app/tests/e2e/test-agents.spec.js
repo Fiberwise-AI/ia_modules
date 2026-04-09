@@ -24,7 +24,7 @@ test.describe('Agents Page', () => {
 });
 
 test.describe('Agents API', () => {
-  const API_BASE = 'http://localhost:5555';
+  const API_BASE = 'http://localhost:7331';
 
   test('should get agent metrics via API', async ({ request }) => {
     const response = await request.get(`${API_BASE}/api/telemetry/agents`);

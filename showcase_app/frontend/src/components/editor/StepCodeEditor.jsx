@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Save, X, Check, AlertCircle, Database, FileCode } from 'lucide-react';
 import CodeEditor from './CodeEditor';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 /**
  * StepCodeEditor - Component for viewing and editing step Python code
  *
@@ -24,7 +26,7 @@ export default function StepCodeEditor({ pipelineId, stepId, onClose }) {
     queryKey: ['step-module', pipelineId, stepId],
     queryFn: async () => {
       const response = await fetch(
-        `http://localhost:5555/api/pipelines/${pipelineId}/steps/${stepId}/code`
+        `${API_BASE}/api/pipelines/${pipelineId}/steps/${stepId}/code`
       );
       if (!response.ok) {
         throw new Error('Failed to load step code');
@@ -45,7 +47,7 @@ export default function StepCodeEditor({ pipelineId, stepId, onClose }) {
   const validateMutation = useMutation({
     mutationFn: async (codeToValidate) => {
       const response = await fetch(
-        `http://localhost:5555/api/pipelines/${pipelineId}/steps/${stepId}/validate`,
+        `${API_BASE}/api/pipelines/${pipelineId}/steps/${stepId}/validate`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -73,7 +75,7 @@ export default function StepCodeEditor({ pipelineId, stepId, onClose }) {
       }
 
       const response = await fetch(
-        `http://localhost:5555/api/pipelines/${pipelineId}/steps/${stepId}/code`,
+        `${API_BASE}/api/pipelines/${pipelineId}/steps/${stepId}/code`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },

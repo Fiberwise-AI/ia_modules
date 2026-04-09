@@ -8,6 +8,7 @@ from services.reliability_service import ReliabilityService
 from services.scheduler_service import SchedulerService
 from services.plugin_service import PluginService
 from services.guardrails_service import GuardrailsService
+from services.agent_execution_service import AgentExecutionService
 
 
 class ServiceContainer:
@@ -21,3 +22,4 @@ class ServiceContainer:
         self.scheduler_service: Optional[SchedulerService] = None
         self.plugin_service: Optional[PluginService] = None
         self.guardrails_service: Optional[GuardrailsService] = None
+        self.agent_execution_service: Optional[AgentExecutionService] = None

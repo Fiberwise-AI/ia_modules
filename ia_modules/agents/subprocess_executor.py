@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import shutil
+import subprocess
 import time
 from pathlib import Path
 from typing import AsyncIterator, Optional
@@ -28,6 +29,66 @@ logger = logging.getLogger(__name__)
 
 def _find_executable(name: str) -> Optional[str]:
     return shutil.which(name)
+
+
+def _write_opencode_json(cwd: str, provider: str, api_key: str, model: Optional[str] = None):
+    """Write temporary opencode.json to CWD for provider auth.
+
+    Matches the a0c bridge (run_agent_opencode.mjs) — writes provider name,
+    apiKey, and model so opencode can authenticate with the correct provider.
+    Returns a cleanup function that restores/removes the file.
+    """
+    # Ensure CWD exists — create each level individually (WSL/NTFS compat)
+    if not os.path.isdir(cwd):
+        to_create = []
+        current = cwd
+        while current and not os.path.isdir(current):
+            to_create.append(current)
+            parent = os.path.dirname(current)
+            if parent == current:
+                break
+            current = parent
+        for p in reversed(to_create):
+            try:
+                os.mkdir(p)
+            except FileExistsError:
+                pass
+        if not os.path.isdir(cwd):
+            raise OSError(f"Failed to create CWD: {cwd}")
+
+    oc_path = Path(cwd) / "opencode.json"
+    original = None
+    if oc_path.exists():
+        original = oc_path.read_text()
+
+    oc_config = {
+        "$schema": "https://opencode.ai/config.json",
+        "provider": {
+            provider: {
+                "options": {"apiKey": api_key},
+            },
+        },
+    }
+    if model:
+        m = model.strip()
+        if not m.startswith(f"{provider}/"):
+            m = f"{provider}/{m}"
+        oc_config["provider"][provider]["models"] = {model: {"name": model}}
+        oc_config["model"] = m
+
+    oc_path.write_text(json.dumps(oc_config, indent=2))
+    logger.info("Wrote temporary opencode.json for provider=%s in %s", provider, cwd)
+
+    def cleanup():
+        try:
+            if original is not None:
+                oc_path.write_text(original)
+            else:
+                oc_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    return cleanup
 
 
 class SubprocessExecutor:
@@ -79,7 +140,6 @@ class SubprocessExecutor:
                         event.job_id = job_id
                         yield event
 
-                        # Capture result text (prefer TEXT over generic RESULT)
                         if event.type == EventType.TEXT and event.text:
                             result_text = event.text
                         elif event.type == EventType.RESULT and event.result:
@@ -96,7 +156,6 @@ class SubprocessExecutor:
                     seq=seq, job_id=job_id,
                 )
 
-        # Always yield stream_end
         duration_ms = int((time.monotonic() - t_start) * 1000)
         seq += 1
         yield AgentEvent(
@@ -125,7 +184,6 @@ class SubprocessExecutor:
         if not script.exists():
             raise FileNotFoundError(f"Bridge script not found: {script}")
 
-        # Build stdin config (camelCase keys for Node.js bridge)
         stdin_config = {
             "task": self._build_prompt(config),
             "cwd": config.cwd,
@@ -148,7 +206,6 @@ class SubprocessExecutor:
             stdin_config["provider"] = config.provider
         if config.api_key:
             stdin_config["apiKey"] = config.api_key
-        # OpenCode bridge needs providerConfig to write opencode.json for auth
         if config.cli_type == CLIType.OPENCODE and config.provider and config.api_key:
             stdin_config["providerConfig"] = {
                 "provider": config.provider,
@@ -171,11 +228,13 @@ class SubprocessExecutor:
     async def _run_direct(self, config: AgentConfig) -> AsyncIterator[AgentEvent]:
         """Run CLI agent directly without bridge scripts."""
         prompt = self._build_prompt(config)
+        _cleanup = None
 
         if config.cli_type == CLIType.OPENCODE:
             cli = _find_executable("opencode")
             if not cli:
                 raise FileNotFoundError("opencode CLI not found on PATH")
+
             cmd = [cli, "run", "--format", "json"]
             if config.model:
                 m = config.model.strip()
@@ -184,6 +243,12 @@ class SubprocessExecutor:
                     m = f"{p}/{m}"
                 cmd.extend(["-m", m])
             cmd.append(prompt)
+
+            # Write opencode.json to CWD for provider auth (matches a0c bridge)
+            if config.provider and config.api_key:
+                _cleanup = _write_opencode_json(
+                    config.cwd, config.provider, config.api_key, config.model
+                )
         else:
             cli = _find_executable("claude")
             if not cli:
@@ -197,8 +262,12 @@ class SubprocessExecutor:
             if tools_str:
                 cmd.extend(["--allowedTools", tools_str])
 
-        async for event in self._run_subprocess(cmd, None, config):
-            yield event
+        try:
+            async for event in self._run_subprocess(cmd, None, config):
+                yield event
+        finally:
+            if _cleanup:
+                _cleanup()
 
     async def _run_subprocess(
         self,
@@ -211,13 +280,24 @@ class SubprocessExecutor:
         logger.info("[%s] Spawning: %s (cwd=%s, mode=%s)",
                     label, cmd[0], config.cwd, config.mode.value)
 
-        # Strip env vars that prevent nested CLI agent launches
         child_env = {k: v for k, v in os.environ.items()
                      if k not in ("CLAUDECODE", "CLAUDE_CODE")}
 
+        # Give each opencode agent its own data dir to avoid SQLite WAL lock
+        # contention on the shared ~/.local/share/opencode/opencode.db.
+        # opencode resolves data path as $XDG_DATA_HOME/opencode/.
+        # We point XDG_DATA_HOME to a per-agent dir under our logs so we
+        # control the DB location and can inspect it per-agent.
+        if config.cli_type == CLIType.OPENCODE:
+            logs_dir = config.metadata.get("logs_dir", "./logs") if config.metadata else "./logs"
+            agent_data_dir = Path(logs_dir) / config.job_id / "data"
+            agent_data_dir.mkdir(parents=True, exist_ok=True)
+            child_env["XDG_DATA_HOME"] = str(agent_data_dir)
+            logger.info("[%s] OPENCODE data dir: %s", label, agent_data_dir)
+
         proc = await asyncio.create_subprocess_exec(
             *cmd,
-            stdin=asyncio.subprocess.PIPE if stdin_config else None,
+            stdin=asyncio.subprocess.PIPE if stdin_config else asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=config.cwd if os.path.isdir(config.cwd) else None,
@@ -227,13 +307,11 @@ class SubprocessExecutor:
 
         self._running[config.job_id] = proc
 
-        # Write stdin config if provided
         if stdin_config and proc.stdin:
             proc.stdin.write(json.dumps(stdin_config).encode())
             await proc.stdin.drain()
             proc.stdin.close()
 
-        # Collect stderr in background
         stderr_lines: list[str] = []
 
         async def _read_stderr():
@@ -245,7 +323,6 @@ class SubprocessExecutor:
 
         stderr_task = asyncio.create_task(_read_stderr())
 
-        # Stream stdout NDJSON
         seq = 0
         try:
             while True:
@@ -278,7 +355,6 @@ class SubprocessExecutor:
 
             logger.info("[%s] Exited: code=%s, events=%d", label, proc.returncode, seq)
 
-            # Yield error event if process failed
             if proc.returncode and proc.returncode != 0:
                 _noise = ("INFO", "DEBUG", "TRACE", "Allowed:", "Denied:",
                           "Ruleset:", "Permission", "  -",

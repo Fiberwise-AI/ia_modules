@@ -4,7 +4,7 @@ const { test, expect } = require('@playwright/test');
 test.describe('Error Boundary', () => {
   test('should display error UI when component crashes', async ({ page }) => {
     // Force an error by navigating to invalid route or injecting error
-    await page.goto('http://localhost:5173/this-route-does-not-exist-and-might-crash');
+    await page.goto('http://localhost:5174/this-route-does-not-exist-and-might-crash');
     await page.waitForLoadState('networkidle');
 
     // The app should handle errors gracefully
@@ -19,7 +19,7 @@ test.describe('Error Boundary', () => {
   test('should show Try Again button on error', async ({ page }) => {
     // This requires triggering an error manually
     // We can inject a script that causes a React error
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     // Inject error to trigger error boundary
@@ -37,7 +37,7 @@ test.describe('Error Boundary', () => {
   });
 
   test('should show Go Home button on error', async ({ page }) => {
-    await page.goto('http://localhost:5173/pipelines');
+    await page.goto('http://localhost:5174/pipelines');
     await page.waitForLoadState('networkidle');
     
     // Similar to above - error boundary should have Go Home button
@@ -48,7 +48,7 @@ test.describe('Error Boundary', () => {
   });
 
   test('should recover after Try Again click', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     // In a real error scenario, clicking Try Again should reset state
@@ -60,7 +60,7 @@ test.describe('Error Boundary', () => {
   });
 
   test('should navigate home after Go Home click', async ({ page }) => {
-    await page.goto('http://localhost:5173/metrics');
+    await page.goto('http://localhost:5174/metrics');
     await page.waitForLoadState('networkidle');
 
     // Navigate home
@@ -77,7 +77,7 @@ test.describe('Error Boundary', () => {
       errors.push(error.message);
     });
     
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     // In dev mode, error details might be shown
@@ -94,7 +94,7 @@ test.describe('Error Boundary', () => {
       });
     });
     
-    await page.goto('http://localhost:5173/pipelines');
+    await page.goto('http://localhost:5174/pipelines');
     await page.waitForLoadState('networkidle');
 
     // Should handle error gracefully - page should still render
@@ -108,7 +108,7 @@ test.describe('Error Boundary', () => {
       route.abort('failed');
     });
 
-    await page.goto('http://localhost:5173/pipelines');
+    await page.goto('http://localhost:5174/pipelines');
     await page.waitForLoadState('networkidle');
 
     // Page should still render even without API data
@@ -124,7 +124,7 @@ test.describe('Error Boundary', () => {
       });
     });
 
-    await page.goto('http://localhost:5173/pipelines');
+    await page.goto('http://localhost:5174/pipelines');
     await page.waitForLoadState('networkidle');
 
     // Verify the page is still functional by checking any visible element exists
@@ -140,7 +140,7 @@ test.describe('Error Boundary', () => {
       });
     });
 
-    await page.goto('http://localhost:5173/pipelines');
+    await page.goto('http://localhost:5174/pipelines');
     await page.waitForLoadState('networkidle');
 
     // Should show empty state or list

@@ -5,7 +5,7 @@ import requests
 import json
 
 # Get recent executions
-response = requests.get('http://localhost:5555/api/execute/')
+response = requests.get('http://localhost:7331/api/execute/')
 print("=" * 80)
 print("GET /api/execute/")
 print("=" * 80)
@@ -26,7 +26,7 @@ if response.status_code == 200:
         print()
         
         # Get detailed execution
-        detail_response = requests.get(f'http://localhost:5555/api/execute/{job_id}')
+        detail_response = requests.get(f'http://localhost:7331/api/execute/{job_id}')
         print("=" * 80)
         print(f"GET /api/execute/{job_id}")
         print("=" * 80)

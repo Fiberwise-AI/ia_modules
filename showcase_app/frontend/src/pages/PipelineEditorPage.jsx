@@ -142,7 +142,7 @@ export default function PipelineEditorPage() {
   useEffect(() => {
     if (!pipelineId) return;
 
-    const ws = new WebSocket(`${import.meta.env.VITE_WS_URL || 'ws://localhost:5555'}/ws/pipeline/${pipelineId}`);
+    const ws = new WebSocket(`${import.meta.env.VITE_WS_URL || `ws://${window.location.host}`}/ws/pipeline/${pipelineId}`);
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);

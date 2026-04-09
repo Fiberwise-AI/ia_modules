@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { collaborationAPI } from '../services/api'
+import { collaborationAPI, agentExecutionsAPI } from '../services/api'
 import toast from 'react-hot-toast'
 import {
   Users,
@@ -16,6 +16,9 @@ import {
   CheckCircle2,
   Shield,
   Share2,
+  FileText,
+  Loader2,
+  History,
 } from 'lucide-react'
 
 const PATTERN_ICONS = {
@@ -70,6 +73,9 @@ export default function CollaborationPage() {
   const [configs, setConfigs] = useState(DEFAULT_CONFIGS)
   const [results, setResults] = useState({})
   const [expandedSteps, setExpandedSteps] = useState({})
+  const [liveSteps, setLiveSteps] = useState([]) // WS-streamed steps during a run
+  const [activeRunId, setActiveRunId] = useState(null)
+  const wsRef = useRef(null)
 
   const { data: patternsData } = useQuery({
     queryKey: ['collaboration-patterns'],
@@ -79,45 +85,70 @@ export default function CollaborationPage() {
     },
   })
 
-  const consensusMutation = useMutation({
-    mutationFn: (data) => collaborationAPI.runConsensus(data),
+  // Fetch previous collaboration executions
+  const { data: execData, refetch: refetchExecs } = useQuery({
+    queryKey: ['collaboration-executions', selectedPattern],
+    queryFn: async () => {
+      const response = await collaborationAPI.getExecutions(selectedPattern)
+      return response.data
+    },
+    enabled: !!selectedPattern,
+    refetchInterval: 15000,
+  })
+
+  // WebSocket connection for real-time collaboration updates
+  useEffect(() => {
+    const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.host}`
+    let ws
+
+    try {
+      ws = new WebSocket(`${wsUrl}/ws/collaboration`)
+      wsRef.current = ws
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data)
+          if (msg.type === 'collab_step' && msg.run_id) {
+            setLiveSteps((prev) => [...prev, msg])
+          }
+          if (msg.type === 'collab_complete' && msg.run_id) {
+            setActiveRunId(null)
+            refetchExecs()
+          }
+        } catch {}
+      }
+
+      ws.onerror = () => {}
+      ws.onclose = () => { wsRef.current = null }
+    } catch {}
+
+    return () => {
+      if (ws && ws.readyState === WebSocket.OPEN) ws.close()
+    }
+  }, [refetchExecs])
+
+  const mutationOpts = (fn, key) => ({
+    mutationFn: fn,
+    onMutate: () => {
+      setLiveSteps([])
+      setActiveRunId('pending')
+    },
     onSuccess: (response) => {
-      setResults((prev) => ({ ...prev, consensus: response.data }))
+      setResults((prev) => ({ ...prev, [key]: response.data }))
+      setActiveRunId(null)
+      setLiveSteps([])
+      refetchExecs()
     },
     onError: (err) => {
-      toast.error(`Consensus failed: ${err.message}`)
+      setActiveRunId(null)
+      toast.error(`${key} failed: ${err.message}`)
     },
   })
 
-  const debateMutation = useMutation({
-    mutationFn: (data) => collaborationAPI.runDebate(data),
-    onSuccess: (response) => {
-      setResults((prev) => ({ ...prev, debate: response.data }))
-    },
-    onError: (err) => {
-      toast.error(`Debate failed: ${err.message}`)
-    },
-  })
-
-  const hierarchicalMutation = useMutation({
-    mutationFn: (data) => collaborationAPI.runHierarchical(data),
-    onSuccess: (response) => {
-      setResults((prev) => ({ ...prev, hierarchical: response.data }))
-    },
-    onError: (err) => {
-      toast.error(`Hierarchical failed: ${err.message}`)
-    },
-  })
-
-  const peerToPeerMutation = useMutation({
-    mutationFn: (data) => collaborationAPI.runPeerToPeer(data),
-    onSuccess: (response) => {
-      setResults((prev) => ({ ...prev, peer_to_peer: response.data }))
-    },
-    onError: (err) => {
-      toast.error(`Peer-to-peer failed: ${err.message}`)
-    },
-  })
+  const consensusMutation = useMutation(mutationOpts((d) => collaborationAPI.runConsensus(d), 'consensus'))
+  const debateMutation = useMutation(mutationOpts((d) => collaborationAPI.runDebate(d), 'debate'))
+  const hierarchicalMutation = useMutation(mutationOpts((d) => collaborationAPI.runHierarchical(d), 'hierarchical'))
+  const peerToPeerMutation = useMutation(mutationOpts((d) => collaborationAPI.runPeerToPeer(d), 'peer_to_peer'))
 
   const mutations = {
     consensus: consensusMutation,
@@ -144,6 +175,7 @@ export default function CollaborationPage() {
 
   const patterns = patternsData?.patterns || []
   const isRunning = (id) => mutations[id]?.isPending
+  const prevExecutions = execData?.executions || []
 
   return (
     <div className="space-y-6">
@@ -208,7 +240,7 @@ export default function CollaborationPage() {
               >
                 {isRunning(selectedPattern) ? (
                   <>
-                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                    <Loader2 size={18} className="animate-spin" />
                     Running...
                   </>
                 ) : (
@@ -238,20 +270,256 @@ export default function CollaborationPage() {
       )}
 
       {/* Results */}
-      {selectedPattern && results[selectedPattern] && (
+      {selectedPattern && (isRunning(selectedPattern) || results[selectedPattern]) && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-              Results
-            </h2>
-            <ResultsDisplay
-              result={results[selectedPattern]}
-              patternId={selectedPattern}
-              expandedSteps={expandedSteps}
-              toggleStep={toggleStep}
-            />
+            <div className="flex items-center gap-2 mb-4">
+              {isRunning(selectedPattern) && <Loader2 size={18} className="animate-spin text-blue-500" />}
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                {isRunning(selectedPattern) ? 'Running...' : 'Results'}
+              </h2>
+            </div>
+            {results[selectedPattern] && (
+              <ResultSummary result={results[selectedPattern]} patternId={selectedPattern} />
+            )}
+            <div className="mt-4 space-y-2">
+              {isRunning(selectedPattern) && liveSteps.map((step, idx) => (
+                <StepAccordion
+                  key={`live-${idx}`}
+                  step={step}
+                  stepKey={`live_${idx}`}
+                  isExpanded={expandedSteps[`live_${idx}`] ?? idx === liveSteps.length - 1}
+                  onToggle={toggleStep}
+                />
+              ))}
+              {results[selectedPattern] && (results[selectedPattern].history || []).map((step, idx) => (
+                <StepAccordion
+                  key={`${selectedPattern}_${idx}`}
+                  step={step}
+                  stepKey={`${selectedPattern}_${idx}`}
+                  isExpanded={expandedSteps[`${selectedPattern}_${idx}`]}
+                  onToggle={toggleStep}
+                />
+              ))}
+            </div>
           </div>
         </div>
+      )}
+
+      {/* Previous Executions */}
+      {selectedPattern && prevExecutions.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <History size={18} className="text-gray-500" />
+              <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Previous Executions</h2>
+            </div>
+            <div className="space-y-2">
+              {prevExecutions.map((exec) => (
+                <PreviousExecutionRow key={exec.job_id} exec={exec} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+// ==================== Live Step Row (WS streamed) ====================
+
+
+// ==================== Previous Execution Row ====================
+
+function PreviousExecutionRow({ exec }) {
+  const [expanded, setExpanded] = useState(false)
+  const [fullResult, setFullResult] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [expandedSteps, setExpandedSteps] = useState({})
+
+  const handleExpand = async () => {
+    if (expanded) {
+      setExpanded(false)
+      return
+    }
+    setExpanded(true)
+    if (fullResult === null) {
+      setLoading(true)
+      try {
+        const resp = await collaborationAPI.getExecution(exec.job_id)
+        setFullResult(resp.data)
+      } catch {
+        setFullResult({ history: [], result: {} })
+      }
+      setLoading(false)
+    }
+  }
+
+  const toggleStep = (key) => {
+    setExpandedSteps((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const statusColor = exec.status === 'completed'
+    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+    : exec.status === 'failed'
+    ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+    : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+
+  const patternId = fullResult?.pattern || exec.agent_role
+
+  return (
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+      <button
+        onClick={handleExpand}
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left"
+      >
+        <div className="flex items-center gap-3">
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>
+            {exec.status}
+          </span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {exec.agent_role}
+          </span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {exec.started_at ? new Date(exec.started_at).toLocaleString() : ''}
+          </span>
+          {exec.duration_seconds && (
+            <span className="text-xs text-gray-400">
+              {exec.duration_seconds.toFixed(1)}s
+            </span>
+          )}
+        </div>
+        {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+      </button>
+
+      {expanded && (
+        <div className="px-4 py-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 space-y-4">
+          {loading && (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Loader2 size={16} className="animate-spin" /> Loading...
+            </div>
+          )}
+
+          {fullResult && (
+            <>
+              {/* Same ResultSummary cards as the live run */}
+              <ResultSummary result={fullResult} patternId={patternId} />
+
+              {/* Same accordion timeline as the live run */}
+              <div className="space-y-2">
+                {(fullResult.history || []).map((step, idx) => (
+                  <StepAccordion
+                    key={`prev_${exec.job_id}_${idx}`}
+                    step={step}
+                    stepKey={`prev_${exec.job_id}_${idx}`}
+                    isExpanded={expandedSteps[`prev_${exec.job_id}_${idx}`]}
+                    onToggle={toggleStep}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+// ==================== NDJSON Events Panel (loads events for a job_id) ====================
+
+function NdjsonEventsPanel({ jobId }) {
+  const [events, setEvents] = useState(null)
+  const [expanded, setExpanded] = useState(false)
+
+  const loadEvents = async () => {
+    if (events !== null) {
+      setExpanded(!expanded)
+      return
+    }
+    try {
+      const resp = await agentExecutionsAPI.getEvents(jobId, { limit: 50 })
+      setEvents(resp.data?.events || resp.data || [])
+      setExpanded(true)
+    } catch {
+      setEvents([])
+      setExpanded(true)
+    }
+  }
+
+  return (
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+      <button
+        onClick={loadEvents}
+        className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left"
+      >
+        <div className="flex items-center gap-2">
+          <FileText size={14} className="text-blue-500" />
+          <span className="text-xs font-mono text-gray-600 dark:text-gray-400">{jobId.slice(0, 8)}...</span>
+          {events && <span className="text-[10px] text-gray-400">{events.length} events</span>}
+        </div>
+        {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </button>
+
+      {expanded && events && (
+        <div className="px-3 py-2 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 space-y-1 max-h-64 overflow-y-auto">
+          {events.length === 0 && (
+            <p className="text-xs text-gray-400 py-2">No events found</p>
+          )}
+          {events.map((evt, i) => (
+            <NdjsonEventRow key={i} event={evt} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+// ==================== Single NDJSON Event Row ====================
+
+const EVENT_COLORS = {
+  text: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+  tool_use: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+  tool_result: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+  reasoning: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
+  system: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+  step_start: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400',
+  step_finish: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400',
+}
+
+function NdjsonEventRow({ event }) {
+  const [showRaw, setShowRaw] = useState(false)
+  const etype = event.type || 'unknown'
+  const colorClass = EVENT_COLORS[etype] || EVENT_COLORS.system
+
+  const preview = event.text
+    || event.result
+    || (event.tool ? `${event.tool}(${event.tool_use_id || ''})` : '')
+    || event.subtype
+    || etype
+
+  return (
+    <div>
+      <button
+        onClick={() => setShowRaw(!showRaw)}
+        className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition"
+      >
+        <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${colorClass}`}>
+          {etype}
+        </span>
+        {event.step_name && (
+          <span className="text-[10px] text-gray-400 font-mono">{event.step_name}</span>
+        )}
+        <span className="text-xs text-gray-600 dark:text-gray-400 truncate flex-1">
+          {String(preview).slice(0, 120)}
+        </span>
+      </button>
+      {showRaw && (
+        <pre className="text-[10px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 px-3 py-2 rounded mt-1 whitespace-pre-wrap overflow-x-auto max-h-48 overflow-y-auto">
+          {JSON.stringify(event, null, 2)}
+        </pre>
       )}
     </div>
   )
@@ -436,78 +704,6 @@ function PeerToPeerConfig({ config, onChange }) {
 }
 
 
-// ==================== Results Display ====================
-
-function ResultsDisplay({ result, patternId, expandedSteps, toggleStep }) {
-  const history = result.history || []
-
-  return (
-    <div className="space-y-4">
-      {/* Summary Banner */}
-      <ResultSummary result={result} patternId={patternId} />
-
-      {/* Step-by-step History */}
-      <div>
-        <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-          Collaboration Timeline
-        </h3>
-        <div className="space-y-2">
-          {history.map((step, idx) => {
-            const key = `${patternId}_${idx}`
-            const isExpanded = expandedSteps[key]
-            const phaseColor = getPhaseColor(step.phase)
-
-            return (
-              <div
-                key={key}
-                className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
-              >
-                <button
-                  onClick={() => toggleStep(key)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${phaseColor}`}>
-                      {formatPhase(step.phase)}
-                    </span>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
-                      {step.message || step.phase}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {step.agent && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
-                        {step.agent}
-                      </span>
-                    )}
-                    {step.side && (
-                      <span className={`text-xs px-2 py-0.5 rounded ${
-                        step.side === 'proponent' || step.side === 'proponents'
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                      }`}>
-                        {step.side}
-                      </span>
-                    )}
-                    {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </div>
-                </button>
-                {isExpanded && (
-                  <div className="px-4 py-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-                    <pre className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap overflow-x-auto max-h-64 overflow-y-auto">
-                      {JSON.stringify(stripMeta(step), null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function ResultSummary({ result, patternId }) {
   if (patternId === 'consensus') {
     const r = result.result || {}
@@ -637,6 +833,69 @@ function SummaryCard({ label, value, icon }) {
 }
 
 
+// ==================== Step Accordion (shared by live + previous) ====================
+
+function StepAccordion({ step, stepKey, isExpanded, onToggle }) {
+  const phaseColor = getPhaseColor(step.phase)
+  const summary = stepSummary(step)
+  const fullMsg = cleanMessage(step.message || '')
+
+  return (
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+      {/* Clickable header — short summary only */}
+      <button
+        onClick={() => onToggle(stepKey)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${phaseColor}`}>
+            {formatPhase(step.phase)}
+          </span>
+          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+            {summary}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          {step.agent && (
+            <span className="text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+              {step.agent}
+            </span>
+          )}
+          {step.job_id && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-mono">
+              NDJSON
+            </span>
+          )}
+          {step.side && (
+            <span className={`text-xs px-2 py-0.5 rounded ${
+              step.side === 'proponent' || step.side === 'proponents'
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+            }`}>
+              {step.side}
+            </span>
+          )}
+          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </div>
+      </button>
+
+      {/* Expanded detail — selectable text */}
+      {isExpanded && (
+        <div className="px-4 py-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 space-y-3">
+          {fullMsg && fullMsg !== summary && (
+            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap select-text">
+              {fullMsg}
+            </p>
+          )}
+          <StepDetail step={step} />
+          {step.job_id && <NdjsonEventsPanel jobId={step.job_id} />}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
 // ==================== Helpers ====================
 
 function getPhaseColor(phase) {
@@ -651,6 +910,7 @@ function getPhaseColor(phase) {
   if (phase.includes('error')) return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
   if (phase.includes('worker') || phase.includes('task')) return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
   if (phase.includes('contribution')) return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+  if (phase.includes('complete')) return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
   return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
 }
 
@@ -660,7 +920,83 @@ function formatPhase(phase) {
     .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-function stripMeta(step) {
-  const { phase, message, timestamp, ...rest } = step
-  return rest
+/** Strip markdown code fences and parse embedded JSON into plain text */
+function cleanMessage(msg) {
+  if (!msg || typeof msg !== 'string') return msg || ''
+  // Strip ```json ... ``` blocks — extract the JSON inside
+  let cleaned = msg.replace(/```(?:json)?\s*([\s\S]*?)```/g, (_, inner) => {
+    try {
+      const obj = JSON.parse(inner.trim())
+      // Convert JSON object to readable key: value lines
+      return Object.entries(obj)
+        .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
+        .join('\n')
+    } catch {
+      return inner.trim()
+    }
+  })
+  return cleaned.trim()
+}
+
+/** Get a short one-line summary for the accordion header */
+function stepSummary(step) {
+  const raw = step.message || step.phase || ''
+  const clean = cleanMessage(raw)
+  // Take first line, cap at 120 chars
+  const firstLine = clean.split('\n')[0]
+  return firstLine.length > 120 ? firstLine.slice(0, 117) + '...' : firstLine
+}
+
+function StepDetail({ step }) {
+  // Strip meta fields already shown in the accordion header
+  const { phase, message, timestamp, run_id, job_id, ...data } = step
+  const entries = Object.entries(data).filter(([, v]) => v !== null && v !== undefined && v !== '')
+
+  if (entries.length === 0) {
+    return (
+      <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+        {message || phase || 'No additional details'}
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {entries.map(([key, val]) => (
+        <div key={key}>
+          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase block mb-1">
+            {key.replace(/_/g, ' ')}
+          </span>
+          {typeof val === 'string' ? (
+            <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2 whitespace-pre-wrap">
+              {val}
+            </p>
+          ) : Array.isArray(val) ? (
+            <div className="space-y-1">
+              {val.map((item, i) => (
+                <div key={i} className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 rounded px-3 py-1.5">
+                  {typeof item === 'string' ? item : JSON.stringify(item, null, 2)}
+                </div>
+              ))}
+            </div>
+          ) : typeof val === 'object' ? (
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2 space-y-1">
+              {Object.entries(val).map(([k, v]) => (
+                <div key={k} className="flex gap-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 font-mono min-w-[100px]">{k}:</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    {typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
+              {String(val)}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  )
 }

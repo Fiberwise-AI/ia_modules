@@ -26,7 +26,6 @@ Usage in pipeline config:
 import asyncio
 import logging
 import os
-import uuid
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -135,7 +134,7 @@ class AgentStep(Step):
             task_id=self.config.get("task_id"),
             docs_dir=self.config.get("docs_dir"),
             timeout_seconds=self.config.get("timeout_seconds", 1800.0),
-            metadata=data,
+            metadata={**data, "logs_dir": self.config.get("logs_dir", "./logs")},
         )
 
     async def run(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -270,8 +269,9 @@ class AgentStep(Step):
         }
         if error_text:
             if "interrupted" in error_text.lower():
-                self.logger.warning("Agent %s interrupted by user", job_id)
-                raise KeyboardInterrupt()
+                self.logger.warning("Agent %s interrupted", job_id)
+                output["error"] = "Agent interrupted"
+                return output
             if result_text:
                 # Agent produced output but exited non-zero (common with opencode).
                 # Treat as a warning, not a failure.

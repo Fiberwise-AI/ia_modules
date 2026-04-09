@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Dark Mode & Theme', () => {
   test('should default to light theme', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     // HTML should not have dark class initially
@@ -13,7 +13,7 @@ test.describe('Dark Mode & Theme', () => {
   });
 
   test('should toggle dark mode with button', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     // Find and click theme toggle button
@@ -29,7 +29,7 @@ test.describe('Dark Mode & Theme', () => {
   });
 
   test('should persist theme to localStorage', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     // Toggle to dark mode
@@ -47,7 +47,7 @@ test.describe('Dark Mode & Theme', () => {
       localStorage.setItem('theme', 'dark');
     });
     
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     // Should have dark class
@@ -57,7 +57,7 @@ test.describe('Dark Mode & Theme', () => {
   });
 
   test('should apply dark theme styles', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
 
     // Toggle to dark mode
@@ -71,7 +71,7 @@ test.describe('Dark Mode & Theme', () => {
   });
 
   test('should toggle theme with keyboard shortcut cmd+d', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     // Use keyboard shortcut (Meta+D for Mac, or we can simulate with Ctrl+D)
@@ -87,7 +87,7 @@ test.describe('Dark Mode & Theme', () => {
   });
 
   test('should maintain theme across page navigations', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     // Toggle to dark mode
@@ -95,7 +95,7 @@ test.describe('Dark Mode & Theme', () => {
     await themeToggle.click();
     
     // Navigate to different pages
-    await page.goto('http://localhost:5173/pipelines');
+    await page.goto('http://localhost:5174/pipelines');
     await page.waitForLoadState('networkidle');
     
     // Theme should still be dark
@@ -103,7 +103,7 @@ test.describe('Dark Mode & Theme', () => {
     let hasDarkClass = await htmlElement.evaluate(el => el.classList.contains('dark'));
     expect(hasDarkClass).toBe(true);
     
-    await page.goto('http://localhost:5173/metrics');
+    await page.goto('http://localhost:5174/metrics');
     await page.waitForLoadState('networkidle');
     
     hasDarkClass = await htmlElement.evaluate(el => el.classList.contains('dark'));
@@ -111,7 +111,7 @@ test.describe('Dark Mode & Theme', () => {
   });
 
   test('should toggle between light and dark multiple times', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
     
     const themeToggle = page.getByRole('button', { name: /toggle dark mode/i });

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Clock, Play, Database, Trash2 } from 'lucide-react'
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5555'
+const API_URL = import.meta.env.VITE_API_URL || ''
 
 export default function CheckpointList({ jobId }) {
   const queryClient = useQueryClient()

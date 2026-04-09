@@ -6,7 +6,7 @@ test.describe('Keyboard Shortcuts', () => {
   // These tests verify the sidebar toggle and theme toggle shortcuts work
 
   test('should toggle sidebar with ctrl+b', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
 
     const sidebar = page.locator('aside');
@@ -22,7 +22,7 @@ test.describe('Keyboard Shortcuts', () => {
   });
 
   test('should toggle theme with ctrl+d', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5174/');
     await page.waitForLoadState('networkidle');
 
     const html = page.locator('html');

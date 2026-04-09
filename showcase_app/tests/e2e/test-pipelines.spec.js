@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 const { PipelinesPage } = require('./pages/PipelinesPage');
 
-const API_BASE = 'http://localhost:5555';
+const API_BASE = 'http://localhost:7331';
 
 test.describe('Pipelines Page', () => {
   let pipelinesPage;

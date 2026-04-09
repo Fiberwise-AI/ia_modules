@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Pipeline Editor', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173/editor');
+    await page.goto('http://localhost:5174/editor');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
   });
@@ -46,7 +46,7 @@ test.describe('Pipeline Editor', () => {
       await backLink.click();
     } else {
       // Navigate directly
-      await page.goto('http://localhost:5173/pipelines');
+      await page.goto('http://localhost:5174/pipelines');
     }
 
     await page.waitForLoadState('networkidle');

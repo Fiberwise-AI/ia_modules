@@ -3,6 +3,7 @@
   "version": "0.0.3",
   "description": "IA Modules Showcase Application - Frontend",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -19,7 +20,7 @@
     "react-diff-viewer-continued": "^3.4.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.6.0",
-    "react-is": "^19.2.0",
+    "react-is": "^18.3.0",
     "@microlink/react-json-view": "^1.23.1",
     "react-router-dom": "7.9.4",
     "reactflow": "11.11.4",

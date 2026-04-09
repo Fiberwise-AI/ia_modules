@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Patterns Page Interactions', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173/patterns');
+    await page.goto('http://localhost:5174/patterns');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
   });
