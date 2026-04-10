@@ -29,6 +29,7 @@ from .executor import (
 )
 from .subprocess_executor import SubprocessExecutor
 from .a2a_executor import A2AExecutor
+from .permissions import enforce_agent_claims, ClaimsViolation
 
 
 __all__ = [
@@ -49,4 +50,6 @@ __all__ = [
     "normalize_event",
     "SubprocessExecutor",
     "A2AExecutor",
+    "enforce_agent_claims",
+    "ClaimsViolation",
 ]

@@ -48,8 +48,8 @@ export default function MetricsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-800">Reliability Metrics</h1>
-        <p className="text-gray-600 mt-1">Real-time EARF compliance monitoring and analytics</p>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Reliability Metrics</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Real-time EARF compliance monitoring and analytics</p>
       </div>
 
       {/* Core Metrics */}
@@ -181,12 +181,12 @@ export default function MetricsPage() {
 
           <div className="mt-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-800">Overall Compliance</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-100">Overall Compliance</span>
               <span
                 className={`px-3 py-1 rounded-full text-sm font-medium ${
                   slo.overall_compliant
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
+                    ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'
+                    : 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300'
                 }`}
               >
                 {slo.overall_compliant ? 'Compliant' : 'Non-Compliant'}
@@ -210,7 +210,7 @@ export default function MetricsPage() {
       {/* EARF Three Pillars */}
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">EARF Three Pillars</h2>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
           Enterprise Agent Reliability Framework - Production-ready AI agent development
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -279,15 +279,15 @@ export default function MetricsPage() {
 
 function EARFPillar({ title, description, features, metrics, color }) {
   const colors = {
-    blue: 'border-blue-500 bg-blue-50',
-    green: 'border-green-500 bg-green-50',
-    purple: 'border-purple-500 bg-purple-50',
+    blue: 'border-blue-500 bg-blue-50 dark:bg-blue-950/30',
+    green: 'border-green-500 bg-green-50 dark:bg-green-950/30',
+    purple: 'border-purple-500 bg-purple-50 dark:bg-purple-950/30',
   }
 
   const badgeColors = {
-    blue: 'bg-blue-100 text-blue-700',
-    green: 'bg-green-100 text-green-700',
-    purple: 'bg-purple-100 text-purple-700',
+    blue: 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300',
+    green: 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300',
+    purple: 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300',
   }
 
   const formatValue = (value, format) => {
@@ -300,14 +300,14 @@ function EARFPillar({ title, description, features, metrics, color }) {
 
   return (
     <div className={`border-l-4 ${colors[color]} p-4 rounded-lg`}>
-      <h3 className="text-lg font-bold text-gray-800 mb-2">{title}</h3>
-      <p className="text-sm text-gray-600 mb-4">{description}</p>
+      <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">{title}</h3>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{description}</p>
 
       <div className="mb-4">
-        <p className="text-sm font-semibold text-gray-700 mb-2">Key Features:</p>
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Key Features:</p>
         <ul className="space-y-1">
           {features.map((feature, index) => (
-            <li key={index} className="text-xs text-gray-600 flex items-start">
+            <li key={index} className="text-xs text-gray-600 dark:text-gray-400 flex items-start">
               <span className="mr-1">•</span>
               <span>{feature}</span>
             </li>
@@ -315,8 +315,8 @@ function EARFPillar({ title, description, features, metrics, color }) {
         </ul>
       </div>
 
-      <div className="border-t border-gray-200 pt-3">
-        <p className="text-sm font-semibold text-gray-700 mb-2">Metrics:</p>
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Metrics:</p>
         <div className="flex flex-wrap gap-2">
           {metrics.map((metric, index) => (
             <span key={index} className={`px-2 py-1 rounded text-xs font-medium ${badgeColors[color]}`}>
@@ -331,12 +331,12 @@ function EARFPillar({ title, description, features, metrics, color }) {
 
 function MetricCard({ label, value, icon, color, target, compliant }) {
   const colors = {
-    green: 'bg-green-100 text-green-600',
-    yellow: 'bg-yellow-100 text-yellow-600',
-    blue: 'bg-blue-100 text-blue-600',
-    purple: 'bg-purple-100 text-purple-600',
-    orange: 'bg-orange-100 text-orange-600',
-    indigo: 'bg-indigo-100 text-indigo-600',
+    green: 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400',
+    yellow: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400',
+    blue: 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400',
+    purple: 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400',
+    orange: 'bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400',
+    indigo: 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400',
   }
 
   return (
@@ -347,7 +347,7 @@ function MetricCard({ label, value, icon, color, target, compliant }) {
       <div className={`${colors[color]} rounded-lg p-2 w-fit mb-2`}>{icon}</div>
       <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">{value}</div>
       <div className="text-sm text-gray-600 dark:text-gray-400">{label}</div>
-      {target && <div className="text-xs text-gray-500 mt-1">{target}</div>}
+      {target && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{target}</div>}
     </div>
   )
 }
@@ -360,11 +360,11 @@ function SLOStatus({ metric, current, target, compliant, inverse = false }) {
     <div>
       <div className="flex items-center justify-between mb-1">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{metric}</span>
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-gray-600 dark:text-gray-400">
           {(current * 100).toFixed(1)}% / {(target * 100).toFixed(1)}%
         </span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
+      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
         <div
           className={`h-2 rounded-full transition-all ${isGood ? 'bg-green-500' : 'bg-red-500'}`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
@@ -376,14 +376,14 @@ function SLOStatus({ metric, current, target, compliant, inverse = false }) {
 
 function StatRow({ label, value, color }) {
   const colors = {
-    green: 'text-green-600',
-    red: 'text-red-600',
+    green: 'text-green-600 dark:text-green-400',
+    red: 'text-red-600 dark:text-red-400',
   }
 
   return (
-    <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-      <span className="text-gray-600">{label}</span>
-      <span className={`font-semibold ${colors[color] || 'text-gray-800'}`}>{value}</span>
+    <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+      <span className="text-gray-600 dark:text-gray-400">{label}</span>
+      <span className={`font-semibold ${colors[color] || 'text-gray-800 dark:text-gray-100'}`}>{value}</span>
     </div>
   )
 }

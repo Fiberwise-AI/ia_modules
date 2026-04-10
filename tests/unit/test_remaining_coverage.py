@@ -1835,18 +1835,23 @@ class TestSubprocessExecutorCancel:
 
 
 class TestSubprocessExecute:
+    @patch("ia_modules.agents.subprocess_executor._find_executable", return_value="/usr/bin/claude")
     @patch("asyncio.create_subprocess_exec")
-    async def test_execute_timeout(self, mock_create):
+    async def test_execute_timeout(self, mock_create, mock_find):
         """Test that timeout yields error event."""
         exc = SubprocessExecutor()
         config = AgentConfig(task="test", cwd=".", timeout_seconds=0.001)
 
-        # Make the subprocess hang
+        # Make the subprocess hang by sleeping forever on readline
+        async def hang_forever():
+            await asyncio.sleep(999)
+            return b""
+
         proc = AsyncMock()
-        proc.stdout.readline = AsyncMock(side_effect=asyncio.CancelledError)
+        proc.stdout.readline = hang_forever
         proc.stderr.readline = AsyncMock(return_value=b"")
-        proc.returncode = 0
-        proc.wait = AsyncMock()
+        proc.returncode = None
+        proc.wait = AsyncMock(side_effect=lambda: asyncio.sleep(999))
         proc.kill = MagicMock()
         proc.stdin = None
         mock_create.return_value = proc
@@ -1855,8 +1860,9 @@ class TestSubprocessExecute:
         async for event in exc.execute(config):
             events.append(event)
 
-        # Should have stream_end at minimum
+        # Should have timeout error and stream_end
         assert any(e.type == EventType.SYSTEM and e.subtype == "stream_end" for e in events)
+        assert any(e.type == EventType.SYSTEM and "timed out" in (e.error or "") for e in events)
 
     @patch("asyncio.create_subprocess_exec")
     async def test_run_direct_claude(self, mock_create):
