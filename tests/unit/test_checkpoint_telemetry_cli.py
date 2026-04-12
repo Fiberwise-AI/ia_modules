@@ -670,7 +670,7 @@ class TestSQLCheckpointer:
         """Test listing checkpoints without pipeline filter"""
         db = self._make_db_mock()
         ts = datetime.now().isoformat()
-        db.fetch_all = MagicMock(return_value=[
+        db.fetch_all = AsyncMock(return_value=[
             {
                 "checkpoint_id": "ckpt-1",
                 "thread_id": "t1",
@@ -704,7 +704,7 @@ class TestSQLCheckpointer:
     async def test_list_checkpoints_error(self):
         """Test list wraps exceptions in CheckpointLoadError"""
         db = self._make_db_mock()
-        db.fetch_all = MagicMock(side_effect=Exception("DB error"))
+        db.fetch_all = AsyncMock(side_effect=Exception("DB error"))
         cp = self._make_checkpointer(db)
 
         with pytest.raises(CheckpointLoadError, match="Failed to list"):
