@@ -10,6 +10,27 @@ import random
 from datetime import datetime, timezone
 
 
+class TransformStep(Step):
+    """Simple text transform step"""
+
+    def __init__(self, name: str, config: dict):
+        super().__init__(name, config)
+
+    async def run(self, data: dict) -> dict:
+        text = data.get("text", "")
+        operation = self.config.get("operation", "uppercase")
+        await asyncio.sleep(0.3)
+
+        if operation == "uppercase":
+            text = text.upper()
+        elif operation == "lowercase":
+            text = text.lower()
+        elif operation == "reverse":
+            text = text[::-1]
+
+        return {"text": text}
+
+
 class GreetingStep(Step):
     """Simple greeting step"""
 

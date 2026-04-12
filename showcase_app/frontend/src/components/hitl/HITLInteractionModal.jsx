@@ -172,11 +172,11 @@ export default function HITLInteractionModal({ interaction, onRespond, onCancel,
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Human Input Required</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Human Input Required</h2>
             <p className="text-sm text-gray-500 mt-1">Step: {interaction.step_name}</p>
           </div>
           <button
@@ -207,16 +207,16 @@ export default function HITLInteractionModal({ interaction, onRespond, onCancel,
         <div className="flex-1 overflow-y-auto p-6">
           {/* Prompt */}
           <div className="mb-6">
-            <h3 className="font-semibold text-gray-900 mb-2">Prompt</h3>
-            <p className="text-gray-700">{interaction.prompt}</p>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Prompt</h3>
+            <p className="text-gray-700 dark:text-gray-300">{interaction.prompt}</p>
           </div>
 
           {/* Context Data */}
           {interaction.context_data && Object.keys(interaction.context_data).length > 0 && (
             <div className="mb-6">
-              <h3 className="font-semibold text-gray-900 mb-2">Context</h3>
-              <div className="bg-gray-50 border rounded-lg p-4">
-                <pre className="text-xs text-gray-700 overflow-x-auto">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Context</h3>
+              <div className="bg-gray-50 dark:bg-gray-800/50 border dark:border-gray-700 rounded-lg p-4">
+                <pre className="text-xs text-gray-700 dark:text-gray-300 overflow-x-auto">
                   {JSON.stringify(interaction.context_data, null, 2)}
                 </pre>
               </div>
@@ -229,7 +229,7 @@ export default function HITLInteractionModal({ interaction, onRespond, onCancel,
               {interaction.ui_schema?.fields?.map((field) => (
                 <div key={field.name}>
                   {field.type !== 'checkbox' && (
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {field.label || field.name}
                       {field.required && <span className="text-red-500 ml-1">*</span>}
                     </label>
@@ -245,11 +245,11 @@ export default function HITLInteractionModal({ interaction, onRespond, onCancel,
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t bg-gray-50 flex items-center justify-between">
+        <div className="p-6 border-t bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
           <button
             type="button"
             onClick={handleCancel}
-            className="px-4 py-2 text-gray-700 hover:text-gray-900"
+            className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
           >
             Cancel Interaction
           </button>
@@ -257,7 +257,7 @@ export default function HITLInteractionModal({ interaction, onRespond, onCancel,
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               Close
             </button>

@@ -30,6 +30,8 @@
 
 ## 📦 Available Patterns
 
+Three reusable pattern `Step` subclasses live in `backend/pipelines/pattern_steps.py`. Two additional patterns (Agentic RAG, Metacognition) exist as service-layer demos in `backend/services/pattern_service.py` — see [PATTERNS_GUIDE.md](PATTERNS_GUIDE.md) for details.
+
 ### ReflectionStep
 ```json
 {

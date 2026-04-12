@@ -19,7 +19,14 @@
             "config": {
                 "content_field": "query",
                 "fail_on_block": true
-            }
+            },
+            "inputs": [
+                {"name": "query", "source": "{parameters.query}", "required": true}
+            ],
+            "outputs": [
+                {"name": "query", "required": true},
+                {"name": "input_guardrails_result", "required": true}
+            ]
         },
         {
             "id": "embed_query",
@@ -30,7 +37,14 @@
                 "text_field": "query",
                 "output_field": "embedding",
                 "embedding_model": "text-embedding-3-small"
-            }
+            },
+            "inputs": [
+                {"name": "query", "source": "{steps.input_guardrails.output.query}", "required": true}
+            ],
+            "outputs": [
+                {"name": "embedding", "required": true},
+                {"name": "embedding_model", "required": true}
+            ]
         },
         {
             "id": "retrieve_vectors",
@@ -42,7 +56,14 @@
                 "persist_directory": "./chroma_db",
                 "top_k": 3,
                 "embedding_field": "embedding"
-            }
+            },
+            "inputs": [
+                {"name": "embedding", "source": "{steps.embed_query.output.embedding}", "required": true}
+            ],
+            "outputs": [
+                {"name": "retrieved_docs", "required": true},
+                {"name": "num_retrieved", "required": true}
+            ]
         },
         {
             "id": "retrieval_guardrails",
@@ -52,7 +73,14 @@
             "config": {
                 "docs_field": "retrieved_docs",
                 "max_doc_length": 5000
-            }
+            },
+            "inputs": [
+                {"name": "retrieved_docs", "source": "{steps.retrieve_vectors.output.retrieved_docs}", "required": true}
+            ],
+            "outputs": [
+                {"name": "retrieved_docs", "required": true},
+                {"name": "retrieval_guardrails_result", "required": true}
+            ]
         },
         {
             "id": "build_context",
@@ -62,7 +90,14 @@
             "config": {
                 "docs_field": "retrieved_docs",
                 "max_length": 3000
-            }
+            },
+            "inputs": [
+                {"name": "retrieved_docs", "source": "{steps.retrieval_guardrails.output.retrieved_docs}", "required": true}
+            ],
+            "outputs": [
+                {"name": "context", "required": true},
+                {"name": "context_length", "required": true}
+            ]
         },
         {
             "id": "generate_answer",
@@ -75,7 +110,14 @@
                 "output_field": "answer",
                 "temperature": 0.7,
                 "max_tokens": 500
-            }
+            },
+            "inputs": [
+                {"name": "query", "source": "{steps.input_guardrails.output.query}", "required": true},
+                {"name": "context", "source": "{steps.build_context.output.context}", "required": true}
+            ],
+            "outputs": [
+                {"name": "answer", "required": true}
+            ]
         },
         {
             "id": "output_guardrails",
@@ -86,7 +128,14 @@
                 "content_field": "answer",
                 "fail_on_block": true,
                 "max_length": 1000
-            }
+            },
+            "inputs": [
+                {"name": "answer", "source": "{steps.generate_answer.output.answer}", "required": true}
+            ],
+            "outputs": [
+                {"name": "answer", "required": true},
+                {"name": "output_guardrails_result", "required": true}
+            ]
         }
     ],
     "flow": {

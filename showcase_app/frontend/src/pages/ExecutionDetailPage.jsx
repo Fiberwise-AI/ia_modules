@@ -4,9 +4,20 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { executionAPI, pipelinesAPI } from '../services/api'
 import { useExecutionWebSocket } from '../hooks/useWebSocket'
 import axios from 'axios'
-import DragDropContainer from '../components/common/DragDropContainer'
+import ExecutionHeader from '../components/execution/ExecutionHeader'
+import ExecutionStatusCard from '../components/execution/ExecutionStatusCard'
+import ExecutionError from '../components/execution/ExecutionError'
+import ExecutionTimeline from '../components/execution/ExecutionTimeline'
+import { /* PipelineGraphCard, */ PipelineFlowCard } from '../components/execution/PipelineGraphSection'
+import SpanTimeline from '../components/telemetry/SpanTimeline'
+import CheckpointList from '../components/checkpoint/CheckpointList'
+import ConversationHistory from '../components/memory/ConversationHistory'
+import ReplayComparison from '../components/replay/ReplayComparison'
+import DecisionTimeline from '../components/decision/DecisionTimeline'
+import StepDetailsList from '../components/execution/StepDetailsList'
+import DataViewer from '../components/execution/DataViewer'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5555'
+const API_URL = import.meta.env.VITE_API_URL || ''
 
 export default function ExecutionDetailPage() {
   const { jobId } = useParams()
@@ -19,7 +30,10 @@ export default function ExecutionDetailPage() {
       const response = await executionAPI.get(jobId)
       return response.data
     },
-    refetchInterval: false,
+    refetchInterval: (query) => {
+      const s = query.state.data?.status
+      return s === 'completed' || s === 'failed' ? false : 1000
+    },
   })
 
   const { data: pipeline } = useQuery({
@@ -48,6 +62,17 @@ export default function ExecutionDetailPage() {
       ...old,
       ...data
     }))
+    // Terminal frames are partial (no progress/counts/current_step) — force a
+    // final refetch so the cache reflects the canonical server state. Without
+    // this, the status flip to "completed" stops the refetchInterval and the
+    // derived fields stay stale (e.g. "67% / Running 1" after finish).
+    if (
+      data?.type === 'execution_completed' ||
+      data?.type === 'execution_failed' ||
+      data?.type === 'execution_paused'
+    ) {
+      queryClient.invalidateQueries({ queryKey: ['execution', jobId] })
+    }
   }, [jobId, queryClient])
 
   useExecutionWebSocket(jobId, handleWebSocketUpdate)
@@ -55,7 +80,7 @@ export default function ExecutionDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Loading execution details...</div>
+        <div className="text-gray-600 dark:text-gray-400">Loading execution details...</div>
       </div>
     )
   }
@@ -63,48 +88,45 @@ export default function ExecutionDetailPage() {
   if (!execution) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-red-600">Execution not found</div>
+        <div className="text-red-600 dark:text-red-400">Execution not found</div>
       </div>
     )
   }
 
-  const handleTemplateImport = (templateItems, templateName) => {
-    console.log('Imported template:', templateName, templateItems)
-    // Could show a toast or update the page title
-  }
+  const hasSteps = execution.steps && execution.steps.length > 0
+  const hasSpans = telemetryData?.timeline && telemetryData.timeline.length > 0
 
   return (
-    <DragDropContainer
-      onLayoutChange={(layout) => console.log('Layout changed:', layout)}
-      onTemplateImport={handleTemplateImport}
-      layoutKey="execution-detail-layout"
-      execution={execution}
-      pipeline={pipeline}
-      jobId={jobId}
-      telemetryData={telemetryData}
-    >
-      {/* Pass execution data to all components that need it */}
-      <div id="execution-header" data-component="ExecutionHeader" data-props={{ onBack: () => navigate('/executions') }} />
-      <div id="execution-status" data-component="ExecutionStatusCard" data-props={{ execution }} />
-      <div id="execution-error" data-component="ExecutionError" data-props={{ error: execution.error }} />
-      <div id="execution-timeline" data-component="ExecutionTimeline" data-props={{ execution }} />
-      <div id="pipeline-graph" data-component="PipelineGraphSection" data-props={{ pipeline, execution }} />
+    <div className="space-y-4">
+      <ExecutionHeader onBack={() => navigate('/executions')} />
 
-      {telemetryData?.timeline && telemetryData.timeline.length > 0 && (
-        <div id="span-timeline" data-component="SpanTimeline" data-props={{ jobId, spans: telemetryData.timeline }} />
+      <section id="section-status"><ExecutionStatusCard execution={execution} /></section>
+      <ExecutionError error={execution.error} />
+
+      <section id="section-timeline"><ExecutionTimeline execution={execution} pipeline={pipeline} /></section>
+
+      {/* <section id="section-pipeline-graph"><PipelineGraphCard pipeline={pipeline} execution={execution} /></section> */}
+      <section id="section-pipeline-flow"><PipelineFlowCard execution={execution} /></section>
+
+      {hasSpans && (
+        <section id="section-trace"><SpanTimeline jobId={jobId} spans={telemetryData.timeline} /></section>
       )}
 
-      <div id="checkpoints" data-component="CheckpointList" data-props={{ jobId }} />
-      <div id="conversation-history" data-component="ConversationHistory" data-props={{ sessionId: jobId }} />
-      <div id="replay-comparison" data-component="ReplayComparison" data-props={{ jobId }} />
-      <div id="decision-timeline" data-component="DecisionTimeline" data-props={{ jobId }} />
-      <div id="step-details" data-component="StepDetailsList" data-props={{ steps: execution.steps }} />
-      <div id="input-data-viewer" data-component="DataViewer" data-props={{ title: "Input Data", data: execution.input_data }} />
-      <div id="output-data-viewer" data-component="DataViewer" data-props={{
-        title: "Final Output",
-        data: execution.output_data,
-        maxHeight: "max-h-96 overflow-y-auto"
-      }} />
-    </DragDropContainer>
+      {hasSteps && <section id="section-step-details"><StepDetailsList steps={execution.steps} /></section>}
+
+      {execution.input_data && (
+        <section id="section-input"><DataViewer title="Input Data" data={execution.input_data} /></section>
+      )}
+      {execution.output_data && (
+        <section id="section-output">
+          <DataViewer title="Final Output" data={execution.output_data} />
+        </section>
+      )}
+
+      <section id="section-checkpoints"><CheckpointList jobId={jobId} /></section>
+      <section id="section-conversation"><ConversationHistory sessionId={jobId} /></section>
+      <section id="section-replay"><ReplayComparison jobId={jobId} /></section>
+      <section id="section-decisions"><DecisionTimeline jobId={jobId} /></section>
+    </div>
   )
 }

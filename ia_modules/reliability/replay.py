@@ -149,7 +149,7 @@ class Replayer:
 
             # Re-execute with same inputs
             replayed_state = await orchestrator.run(
-                start_agent=self.trail.execution_path[0] if self.trail.execution_path else "start",
+                start_step=self.trail.execution_path[0] if self.trail.execution_path else "start",
                 input_data=self.trail.input_data,
                 max_steps=100
             )
@@ -303,7 +303,7 @@ class Replayer:
 
             # Execute with alternative inputs
             replayed_state = await orchestrator.run(
-                start_agent=self.trail.execution_path[0] if self.trail.execution_path else "start",
+                start_step=self.trail.execution_path[0] if self.trail.execution_path else "start",
                 input_data=alternative_inputs,
                 max_steps=100
             )

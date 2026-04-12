@@ -11,7 +11,8 @@ from contextlib import contextmanager
 
 from .metrics import MetricsCollector
 from .tracing import Tracer, SimpleTracer
-from ..benchmarking.models import BenchmarkResult
+from .agent_telemetry import AgentTelemetry
+from .llm_telemetry import LLMTelemetry
 
 logger = logging.getLogger(__name__)
 
@@ -256,7 +257,7 @@ class PipelineTelemetry:
     def record_benchmark_result(
         self,
         pipeline_name: str,
-        result: BenchmarkResult
+        result: Any
     ):
         """
         Record benchmark results as telemetry metrics.
@@ -423,8 +424,10 @@ class _NoOpContext:
         pass
 
 
-# Global telemetry instance
+# Global telemetry instances
 _global_telemetry: Optional[PipelineTelemetry] = None
+_global_agent_telemetry: Optional[AgentTelemetry] = None
+_global_llm_telemetry: Optional[LLMTelemetry] = None
 
 
 def get_telemetry(
@@ -480,3 +483,61 @@ def configure_telemetry(
     )
 
     return _global_telemetry
+
+
+def get_agent_telemetry(
+    collector: Optional[MetricsCollector] = None,
+    tracer: Optional[Tracer] = None,
+    enabled: bool = True
+) -> AgentTelemetry:
+    """Get or create global agent telemetry instance."""
+    global _global_agent_telemetry
+    if _global_agent_telemetry is None:
+        _global_agent_telemetry = AgentTelemetry(
+            collector=collector,
+            tracer=tracer,
+            enabled=enabled
+        )
+    return _global_agent_telemetry
+
+
+def get_llm_telemetry(
+    collector: Optional[MetricsCollector] = None,
+    tracer: Optional[Tracer] = None,
+    enabled: bool = True
+) -> LLMTelemetry:
+    """Get or create global LLM telemetry instance."""
+    global _global_llm_telemetry
+    if _global_llm_telemetry is None:
+        _global_llm_telemetry = LLMTelemetry(
+            collector=collector,
+            tracer=tracer,
+            enabled=enabled
+        )
+    return _global_llm_telemetry
+
+
+def configure_agent_telemetry(
+    collector: Optional[MetricsCollector] = None,
+    tracer: Optional[Tracer] = None,
+    enabled: bool = True
+) -> AgentTelemetry:
+    """Configure global agent telemetry instance."""
+    global _global_agent_telemetry
+    _global_agent_telemetry = AgentTelemetry(
+        collector=collector, tracer=tracer, enabled=enabled
+    )
+    return _global_agent_telemetry
+
+
+def configure_llm_telemetry(
+    collector: Optional[MetricsCollector] = None,
+    tracer: Optional[Tracer] = None,
+    enabled: bool = True
+) -> LLMTelemetry:
+    """Configure global LLM telemetry instance."""
+    global _global_llm_telemetry
+    _global_llm_telemetry = LLMTelemetry(
+        collector=collector, tracer=tracer, enabled=enabled
+    )
+    return _global_llm_telemetry

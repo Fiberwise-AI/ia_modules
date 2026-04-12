@@ -4,17 +4,28 @@ Agentic Design Pattern Steps for Pipelines
 These demonstrate AI agent patterns as reusable pipeline steps.
 Each pattern is a building block that can be composed into larger workflows.
 
-Patterns:
-1. Reflection - Self-critique and iterative improvement
-2. Planning - Multi-step goal decomposition
-3. Tool Use - Dynamic capability selection
-4. Agentic RAG - Query refinement and relevance evaluation
-5. Metacognition - Self-monitoring and strategy adjustment
+Reusable Step subclasses:
+1. ReflectionStep - Self-critique and iterative improvement
+2. PlanningStep   - Multi-step goal decomposition
+3. ToolUseStep    - Dynamic capability selection
+
+Note: Agentic RAG and Metacognition patterns live in
+`backend/services/pattern_service.py` as demo methods (agentic_rag_example,
+metacognition_example) rather than reusable Step subclasses.
 """
 
 from ia_modules.pipeline.core import Step
+from ia_modules.utils.llm_adapters import SubprocessAgentAdapter
 from typing import Dict, Any, List
 import os
+
+
+def _make_adapter() -> SubprocessAgentAdapter:
+    """Create a SubprocessAgentAdapter with sensible defaults."""
+    return SubprocessAgentAdapter(
+        cwd=os.getcwd(),
+        timeout_seconds=120.0,
+    )
 
 
 class ReflectionStep(Step):
@@ -42,59 +53,10 @@ class ReflectionStep(Step):
 
     def __init__(self, name: str, config: dict):
         super().__init__(name, config)
-        self.llm_service = None
-        self._init_llm()
-
-    def _init_llm(self):
-        """Initialize LLM service if API keys available"""
-        try:
-            from ia_modules.pipeline.llm_provider_service import LLMProviderService, LLMProvider
-
-            if not os.getenv("OPENAI_API_KEY") and not os.getenv("ANTHROPIC_API_KEY") and not os.getenv("GEMINI_API_KEY"):
-                return
-
-            self.llm_service = LLMProviderService()
-
-            if os.getenv("OPENAI_API_KEY"):
-                self.llm_service.register_provider(
-                    "openai",
-                    LLMProvider.OPENAI,
-                    api_key=os.getenv("OPENAI_API_KEY"),
-                    model=os.getenv("OPENAI_MODEL", "gpt-4o"),
-                    is_default=True
-                )
-
-            if os.getenv("ANTHROPIC_API_KEY"):
-                self.llm_service.register_provider(
-                    "anthropic",
-                    LLMProvider.ANTHROPIC,
-                    api_key=os.getenv("ANTHROPIC_API_KEY"),
-                    model=os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
-                )
-
-            if os.getenv("GEMINI_API_KEY"):
-                self.llm_service.register_provider(
-                    "google",
-                    LLMProvider.GOOGLE,
-                    api_key=os.getenv("GEMINI_API_KEY"),
-                    model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
-                )
-        except ImportError as e:
-            raise ImportError(
-                "LLM provider service required for pattern steps. "
-                "Ensure ia_modules is properly installed."
-            ) from e
+        self.adapter = _make_adapter()
 
     async def run(self, data: dict) -> dict:
         """Execute reflection pattern"""
-
-        if not self.llm_service:
-            raise RuntimeError(
-                "LLM service not configured. Please set at least one API key:\n"
-                "- OPENAI_API_KEY\n"
-                "- ANTHROPIC_API_KEY\n"
-                "- GEMINI_API_KEY"
-            )
 
         # Get parameters
         initial_output = data.get("initial_output") or self.config.get("initial_output")
@@ -111,12 +73,7 @@ class ReflectionStep(Step):
         for iteration in range(max_iterations):
             # Generate critique
             critique_prompt = self._build_critique_prompt(current_output, criteria)
-            critique_response = await self.llm_service.generate_completion(
-                prompt=critique_prompt,
-                temperature=0.7,
-                max_tokens=500
-            )
-            critique = critique_response.content
+            critique = await self.adapter.generate(prompt=critique_prompt)
 
             # Parse critique score
             score = self._parse_score(critique)
@@ -138,12 +95,7 @@ class ReflectionStep(Step):
                 revision_prompt = self._build_revision_prompt(
                     current_output, critique, criteria
                 )
-                revision_response = await self.llm_service.generate_completion(
-                    prompt=revision_prompt,
-                    temperature=0.7,
-                    max_tokens=1000
-                )
-                current_output = revision_response.content
+                current_output = await self.adapter.generate(prompt=revision_prompt)
 
         return {
             "final_output": current_output,
@@ -232,37 +184,10 @@ class PlanningStep(Step):
 
     def __init__(self, name: str, config: dict):
         super().__init__(name, config)
-        self.llm_service = None
-        self._init_llm()
-
-    def _init_llm(self):
-        """Initialize LLM service"""
-        try:
-            from ia_modules.pipeline.llm_provider_service import LLMProviderService, LLMProvider
-
-            if not os.getenv("OPENAI_API_KEY") and not os.getenv("ANTHROPIC_API_KEY") and not os.getenv("GEMINI_API_KEY"):
-                return
-
-            self.llm_service = LLMProviderService()
-
-            if os.getenv("OPENAI_API_KEY"):
-                self.llm_service.register_provider(
-                    "openai",
-                    LLMProvider.OPENAI,
-                    api_key=os.getenv("OPENAI_API_KEY"),
-                    model=os.getenv("OPENAI_MODEL", "gpt-4o"),
-                    is_default=True
-                )
-        except ImportError:
-            pass
+        self.adapter = _make_adapter()
 
     async def run(self, data: dict) -> dict:
         """Execute planning pattern"""
-
-        if not self.llm_service:
-            raise RuntimeError(
-                "LLM service not configured. Please set at least one API key."
-            )
 
         # Get parameters
         goal = data.get("goal") or self.config.get("goal")
@@ -274,33 +199,23 @@ class PlanningStep(Step):
 
         # Generate plan
         planning_prompt = self._build_planning_prompt(goal, constraints, context)
-        plan_response = await self.llm_service.generate_completion(
-            prompt=planning_prompt,
-            temperature=0.7,
-            max_tokens=1000
-        )
+        plan_text = await self.adapter.generate(prompt=planning_prompt)
 
         # Parse plan into steps
-        plan_text = plan_response.content
         steps = self._parse_steps(plan_text)
 
         # Validate plan (check if achievable)
         validation_prompt = self._build_validation_prompt(goal, steps, constraints)
-        validation_response = await self.llm_service.generate_completion(
-            prompt=validation_prompt,
-            temperature=0.3,
-            max_tokens=500
-        )
+        validation_text = await self.adapter.generate(prompt=validation_prompt)
 
-        is_valid = "valid" in validation_response.content.lower()
-        validation_feedback = validation_response.content
+        is_valid = "valid" in validation_text.lower()
 
         return {
             "goal": goal,
             "plan": steps,
             "plan_text": plan_text,
             "is_valid": is_valid,
-            "validation_feedback": validation_feedback,
+            "validation_feedback": validation_text,
             "total_steps": len(steps),
             "estimated_time": self._estimate_time(steps)
         }
@@ -433,35 +348,10 @@ class ToolUseStep(Step):
 
     def __init__(self, name: str, config: dict):
         super().__init__(name, config)
-        self.llm_service = None
-        self._init_llm()
-
-    def _init_llm(self):
-        """Initialize LLM service"""
-        try:
-            from ia_modules.pipeline.llm_provider_service import LLMProviderService, LLMProvider
-
-            if not os.getenv("OPENAI_API_KEY") and not os.getenv("ANTHROPIC_API_KEY"):
-                return
-
-            self.llm_service = LLMProviderService()
-
-            if os.getenv("OPENAI_API_KEY"):
-                self.llm_service.register_provider(
-                    "openai",
-                    LLMProvider.OPENAI,
-                    api_key=os.getenv("OPENAI_API_KEY"),
-                    model=os.getenv("OPENAI_MODEL", "gpt-4o"),
-                    is_default=True
-                )
-        except ImportError:
-            pass
+        self.adapter = _make_adapter()
 
     async def run(self, data: dict) -> dict:
         """Execute tool use pattern"""
-
-        if not self.llm_service:
-            raise RuntimeError("LLM service not configured")
 
         task = data.get("task") or self.config.get("task")
         available_tools = data.get("available_tools") or self.config.get("available_tools", [])
@@ -471,13 +361,9 @@ class ToolUseStep(Step):
 
         # Tool selection
         tool_selection_prompt = self._build_tool_selection_prompt(task, available_tools)
-        selection_response = await self.llm_service.generate_completion(
-            prompt=tool_selection_prompt,
-            temperature=0.3,
-            max_tokens=300
-        )
+        selection_text = await self.adapter.generate(prompt=tool_selection_prompt)
 
-        selected_tools = self._parse_tool_selection(selection_response.content)
+        selected_tools = self._parse_tool_selection(selection_text)
 
         # Simulate tool execution (in real implementation, would call actual tools)
         tool_results = []
@@ -490,17 +376,13 @@ class ToolUseStep(Step):
 
         # Synthesize final answer
         synthesis_prompt = self._build_synthesis_prompt(task, tool_results)
-        synthesis_response = await self.llm_service.generate_completion(
-            prompt=synthesis_prompt,
-            temperature=0.7,
-            max_tokens=500
-        )
+        final_answer = await self.adapter.generate(prompt=synthesis_prompt)
 
         return {
             "task": task,
             "selected_tools": selected_tools,
             "tool_results": tool_results,
-            "final_answer": synthesis_response.content,
+            "final_answer": final_answer,
             "tools_used": len(selected_tools)
         }
 
@@ -649,25 +531,10 @@ class ContentAnalysisStep(Step):
 
     def __init__(self, name: str, config: dict):
         super().__init__(name, config)
-        self.llm_service = None
-        self._init_llm()
-
-    def _init_llm(self):
-        """Initialize LLM service"""
-        try:
-            from ia_modules.pipeline.llm_provider_service import LLMProviderService
-            self.llm_service = LLMProviderService()
-        except Exception as e:
-            self.logger.warning(f"Could not initialize LLM service: {e}")
+        self.adapter = _make_adapter()
 
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Execute content analysis"""
-        if not self.llm_service:
-            return {
-                "success": False,
-                "error": "LLM service not available",
-                "analysis": {}
-            }
 
         # Get scraped content from previous step
         scraped_data = context.get("scraped_content", [])
@@ -680,7 +547,6 @@ class ContentAnalysisStep(Step):
 
         analysis_type = self.config.get("analysis_type", "summarize")
         focus_areas = self.config.get("focus_areas", [])
-        max_tokens = self.config.get("max_tokens", 500)
 
         try:
             # Prepare content for analysis
@@ -704,12 +570,8 @@ class ContentAnalysisStep(Step):
             # Build analysis prompt
             prompt = self._build_analysis_prompt(combined_content, analysis_type, focus_areas)
 
-            # Get LLM analysis
-            response = await self.llm_service.generate_completion(
-                prompt=prompt,
-                max_tokens=max_tokens,
-                temperature=0.3
-            )
+            # Get agent analysis
+            result = await self.adapter.generate(prompt=prompt)
 
             return {
                 "success": True,
@@ -718,8 +580,7 @@ class ContentAnalysisStep(Step):
                     "focus_areas": focus_areas,
                     "content_analyzed": len(content_texts),
                     "total_characters": sum(len(text) for text in content_texts),
-                    "result": response.get("content", ""),
-                    "model_used": response.get("model", "")
+                    "result": result,
                 }
             }
 
@@ -801,25 +662,10 @@ class ReportGenerationStep(Step):
 
     def __init__(self, name: str, config: dict):
         super().__init__(name, config)
-        self.llm_service = None
-        self._init_llm()
-
-    def _init_llm(self):
-        """Initialize LLM service"""
-        try:
-            from ia_modules.pipeline.llm_provider_service import LLMProviderService
-            self.llm_service = LLMProviderService()
-        except Exception as e:
-            self.logger.warning(f"Could not initialize LLM service: {e}")
+        self.adapter = _make_adapter()
 
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Execute report generation"""
-        if not self.llm_service:
-            return {
-                "success": False,
-                "error": "LLM service not available",
-                "report": ""
-            }
 
         # Get analysis from previous step
         analysis = context.get("analysis", {})
@@ -849,13 +695,7 @@ class ReportGenerationStep(Step):
             prompt = self._build_report_prompt(analysis, sections, sources, report_format)
 
             # Generate report
-            response = await self.llm_service.generate_completion(
-                prompt=prompt,
-                max_tokens=2000,
-                temperature=0.2
-            )
-
-            report_content = response.get("content", "")
+            report_content = await self.adapter.generate(prompt=prompt)
 
             return {
                 "success": True,
@@ -863,7 +703,6 @@ class ReportGenerationStep(Step):
                 "format": report_format,
                 "sections": sections,
                 "sources_included": include_sources,
-                "model_used": response.get("model", "")
             }
 
         except Exception as e:

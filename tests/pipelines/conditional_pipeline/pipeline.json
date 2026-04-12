@@ -18,7 +18,7 @@
     ],
     "steps": [
         {
-            "id": "step1",
+            "id": "data_ingestor",
             "name": "Data Ingestor",
             "step_class": "DataIngestorStep",
             "module": "tests.pipelines.conditional_pipeline.steps.data_ingestor",
@@ -38,7 +38,7 @@
             ]
         },
         {
-            "id": "step2",
+            "id": "quality_checker",
             "name": "Quality Checker",
             "step_class": "QualityCheckerStep",
             "module": "tests.pipelines.conditional_pipeline.steps.quality_checker",
@@ -46,7 +46,7 @@
             "inputs": [
                 {
                     "name": "ingested_data",
-                    "source": "{steps.step1.output.ingested_data}",
+                    "source": "{steps.data_ingestor.output.ingested_data}",
                     "required": true
                 }
             ],
@@ -62,7 +62,7 @@
             ]
         },
         {
-            "id": "step3",
+            "id": "high_quality_processor",
             "name": "High Quality Processing",
             "step_class": "HighQualityProcessorStep",
             "module": "tests.pipelines.conditional_pipeline.steps.high_quality_processor",
@@ -72,12 +72,12 @@
             "inputs": [
                 {
                     "name": "ingested_data",
-                    "source": "{steps.step2.output.ingested_data}",
+                    "source": "{steps.quality_checker.output.ingested_data}",
                     "required": true
                 },
                 {
                     "name": "quality_score",
-                    "source": "{steps.step2.output.quality_score}",
+                    "source": "{steps.quality_checker.output.quality_score}",
                     "required": true
                 }
             ],
@@ -93,7 +93,7 @@
             ]
         },
         {
-            "id": "step4",
+            "id": "low_quality_processor",
             "name": "Low Quality Processing",
             "step_class": "LowQualityProcessorStep",
             "module": "tests.pipelines.conditional_pipeline.steps.low_quality_processor",
@@ -103,12 +103,12 @@
             "inputs": [
                 {
                     "name": "ingested_data",
-                    "source": "{steps.step2.output.ingested_data}",
+                    "source": "{steps.quality_checker.output.ingested_data}",
                     "required": true
                 },
                 {
                     "name": "quality_score",
-                    "source": "{steps.step2.output.quality_score}",
+                    "source": "{steps.quality_checker.output.quality_score}",
                     "required": true
                 }
             ],
@@ -124,7 +124,7 @@
             ]
         },
         {
-            "id": "step5",
+            "id": "results_aggregator",
             "name": "Results Aggregator",
             "step_class": "ResultsAggregatorStep",
             "module": "tests.pipelines.conditional_pipeline.steps.results_aggregator",
@@ -132,7 +132,7 @@
             "inputs": [
                 {
                     "name": "processed_data",
-                    "source": "{steps.step3.output.processed_data}|{steps.step4.output.processed_data}",
+                    "source": "{steps.high_quality_processor.output.processed_data}|{steps.low_quality_processor.output.processed_data}",
                     "required": true
                 }
             ],
@@ -145,45 +145,45 @@
         }
     ],
     "flow": {
-        "start_at": "step1",
+        "start_at": "data_ingestor",
         "paths": [
             {
-                "from_step": "step1",
-                "to_step": "step2",
+                "from_step": "data_ingestor",
+                "to_step": "quality_checker",
                 "condition": {"type": "always"}
             },
             {
-                "from_step": "step2",
-                "to_step": "step3",
+                "from_step": "quality_checker",
+                "to_step": "high_quality_processor",
                 "condition": {
-                    "type": "threshold_condition",
+                    "type": "expression",
                     "config": {
-                        "field": "quality_score",
-                        "operator": ">=",
+                        "source": "quality_score",
+                        "operator": "greater_than_or_equals",
                         "value": "{{ parameters.threshold }}"
                     }
                 }
             },
             {
-                "from_step": "step2",
-                "to_step": "step4",
+                "from_step": "quality_checker",
+                "to_step": "low_quality_processor",
                 "condition": {
-                    "type": "threshold_condition", 
+                    "type": "expression",
                     "config": {
-                        "field": "quality_score",
-                        "operator": "<",
+                        "source": "quality_score",
+                        "operator": "less_than",
                         "value": "{{ parameters.threshold }}"
                     }
                 }
             },
             {
-                "from_step": "step3",
-                "to_step": "step5",
+                "from_step": "high_quality_processor",
+                "to_step": "results_aggregator",
                 "condition": {"type": "always"}
             },
             {
-                "from_step": "step4", 
-                "to_step": "step5",
+                "from_step": "low_quality_processor",
+                "to_step": "results_aggregator",
                 "condition": {"type": "always"}
             }
         ]

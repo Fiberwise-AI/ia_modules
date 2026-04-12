@@ -8,7 +8,7 @@ import React from 'react';
 export function Card({ className = '', children, ...props }) {
   return (
     <div
-      className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}
+      className={`bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm ${className}`}
       {...props}
     >
       {children}
@@ -30,7 +30,7 @@ export function CardHeader({ className = '', children, ...props }) {
 export function CardTitle({ className = '', children, ...props }) {
   return (
     <h3
-      className={`text-lg font-semibold text-gray-900 ${className}`}
+      className={`text-lg font-semibold text-gray-900 dark:text-gray-100 ${className}`}
       {...props}
     >
       {children}

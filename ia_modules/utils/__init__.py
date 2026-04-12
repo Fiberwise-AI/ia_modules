@@ -2,6 +2,6 @@
 Utility modules for ia_modules.
 """
 
-from .llm_adapters import LLMProviderAdapter
+from .llm_adapters import SubprocessAgentAdapter
 
-__all__ = ['LLMProviderAdapter']
+__all__ = ['SubprocessAgentAdapter']

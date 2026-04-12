@@ -89,3 +89,13 @@ COMMIT_MESSAGE_*.md
 tmp/
 temp/
 .aider*
+
+# AI/Coder artifacts
+.claude/
+.qwen/
+.cursor/
+.copilot/
+.codeium/
+
+# Showcase app runtime logs
+showcase_app/logs*/

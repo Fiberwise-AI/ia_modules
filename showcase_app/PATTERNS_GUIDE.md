@@ -1,6 +1,6 @@
 # Agentic Design Patterns Guide
 
-This guide covers three AI agent patterns implemented as pipeline steps for the ia_modules framework.
+This guide covers the AI agent patterns implemented as pipeline steps in the showcase app.
 
 ## Table of Contents
 
@@ -14,15 +14,26 @@ This guide covers three AI agent patterns implemented as pipeline steps for the 
 
 ## Overview
 
-The ia_modules framework includes three fundamental AI agent patterns:
+The showcase app ships five agentic patterns, split across two layers.
 
-| Pattern | Purpose | Research |
-|---------|---------|----------|
-| **Reflection** | Self-critique and iterative improvement | [Bai et al., 2022](https://arxiv.org/abs/2212.08073) |
-| **Planning** | Multi-step goal decomposition | [Wei et al., 2022](https://arxiv.org/abs/2201.11903) |
-| **Tool Use** | Dynamic capability selection | [Schick et al., 2023](https://arxiv.org/abs/2302.04761) |
+**Reusable pipeline Steps** — live in [pattern_steps.py](backend/pipelines/pattern_steps.py) as `Step` subclasses and can be dropped into any JSON pipeline config:
 
-All patterns are implemented as `Step` subclasses and integrate seamlessly with the pipeline system.
+| Pattern | Class | Purpose | Research |
+|---------|-------|---------|----------|
+| **Reflection** | `ReflectionStep` | Self-critique and iterative improvement | [Bai et al., 2022](https://arxiv.org/abs/2212.08073) |
+| **Planning** | `PlanningStep` | Multi-step goal decomposition | [Wei et al., 2022](https://arxiv.org/abs/2201.11903) |
+| **Tool Use** | `ToolUseStep` | Dynamic capability selection | [Schick et al., 2023](https://arxiv.org/abs/2302.04761) |
+
+All three share the same shape (`__init__(name, config)` + `async run(data)`) and delegate LLM calls to `SubprocessAgentAdapter`, which shells out to a local CLI agent.
+
+**Service-layer demos** — live in [pattern_service.py](backend/services/pattern_service.py) as demo methods exposed through the pattern API (they power the frontend visualizations in [PatternsPage.jsx](frontend/src/pages/PatternsPage.jsx)):
+
+| Pattern | Method | Purpose |
+|---------|--------|---------|
+| **Agentic RAG** | `agentic_rag_example()` | Query refinement + relevance evaluation |
+| **Metacognition** | `metacognition_example()` | Self-monitoring and strategy adjustment |
+
+These two are not (yet) packaged as reusable `Step` subclasses — to use them from a pipeline, wrap them in an `LLMStep` or `FunctionStep`. This guide documents the three reusable Steps in detail.
 
 ## Quick Start
 

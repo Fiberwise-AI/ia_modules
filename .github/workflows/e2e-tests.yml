@@ -1,0 +1,155 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    name: Playwright E2E Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: showcase_app/frontend/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install frontend dependencies
+        working-directory: showcase_app/frontend
+        run: npm ci
+
+      - name: Install backend dependencies
+        working-directory: showcase_app/backend
+        run: |
+          pip install -e ../..
+          pip install uvicorn python-dotenv
+
+      - name: Install Playwright dependencies
+        working-directory: showcase_app
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Create .env file
+        working-directory: showcase_app/backend
+        run: |
+          echo "DATABASE_URL=sqlite:///./showcase.db" > .env
+          echo "ENVIRONMENT=testing" >> .env
+
+      - name: Run E2E tests
+        working-directory: showcase_app
+        run: npx playwright test --project=${{ matrix.browser }}
+        env:
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: showcase_app/playwright-report/
+          retention-days: 30
+
+      - name: Upload test screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-screenshots-${{ matrix.browser }}
+          path: showcase_app/test-results/
+          retention-days: 30
+
+  e2e-tests-headless:
+    name: Playwright E2E Tests (Headless Summary)
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    if: always()
+
+    steps:
+      - name: Download test reports
+        uses: actions/download-artifact@v4
+        with:
+          path: reports
+          pattern: playwright-report-*
+          merge-multiple: true
+
+      - name: Check test results
+        run: |
+          if [ -d "reports" ]; then
+            echo "Test reports available"
+            ls -la reports/
+          else
+            echo "No test reports found"
+          fi
+
+  smoke-tests:
+    name: Smoke Tests (Quick Validation)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: showcase_app/frontend/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install frontend dependencies
+        working-directory: showcase_app/frontend
+        run: npm ci
+
+      - name: Install backend dependencies
+        working-directory: showcase_app/backend
+        run: |
+          pip install -e ../..
+          pip install uvicorn python-dotenv
+
+      - name: Install Playwright
+        working-directory: showcase_app
+        run: npx playwright install --with-deps chromium
+
+      - name: Create .env file
+        working-directory: showcase_app/backend
+        run: |
+          echo "DATABASE_URL=sqlite:///./showcase.db" > .env
+          echo "ENVIRONMENT=testing" >> .env
+
+      - name: Run smoke tests only
+        working-directory: showcase_app
+        run: npx playwright test --grep @smoke --project=chromium
+        env:
+          CI: true
+
+      - name: Upload smoke test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-results
+          path: showcase_app/playwright-report/
+          retention-days: 30

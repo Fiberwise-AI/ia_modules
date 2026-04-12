@@ -20,6 +20,9 @@ try:
 except ImportError:
     pass  # python-dotenv not installed, use system environment variables
 
+# Force in-memory database for tests so the showcase app's file-based DB is never touched
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
 from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
 # This file can be used to define pytest fixtures that are shared across all tests

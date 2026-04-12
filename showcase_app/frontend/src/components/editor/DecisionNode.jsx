@@ -4,7 +4,7 @@ import { GitBranch } from 'lucide-react';
 
 export default memo(({ data, isConnectable }) => {
   return (
-    <div className="px-4 py-3 rounded-lg border-2 bg-orange-50 border-orange-300 text-orange-700 shadow-md min-w-[150px]">
+    <div className="px-4 py-3 rounded-lg border-2 bg-orange-50 dark:bg-orange-950/40 border-orange-300 dark:border-orange-800 text-orange-700 dark:text-orange-300 shadow-md min-w-[150px]">
       <Handle
         type="target"
         position={Position.Left}

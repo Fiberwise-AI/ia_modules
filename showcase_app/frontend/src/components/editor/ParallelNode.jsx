@@ -4,7 +4,7 @@ import { Box } from 'lucide-react';
 
 export default memo(({ data, isConnectable }) => {
   return (
-    <div className="px-4 py-3 rounded-lg border-2 bg-purple-50 border-purple-300 text-purple-700 shadow-md min-w-[180px]">
+    <div className="px-4 py-3 rounded-lg border-2 bg-purple-50 dark:bg-purple-950/40 border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 shadow-md min-w-[180px]">
       <Handle
         type="target"
         position={Position.Left}

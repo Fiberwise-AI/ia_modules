@@ -5,6 +5,75 @@ All notable changes to IA Modules will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-04-09
+
+### 🚀 Major Features
+
+**Agent Execution Framework**
+- New `ia_modules.agents` subpackage for running CLI agents (Claude Code SDK, OpenCode) as first-class citizens
+- Pluggable executor interface with workspace, mode, and tool constraints
+- Support for research and execute modes with per-mode tool allow-lists
+
+**Agent Authentication & Permissions (OIDC)**
+- Pluggable IDP adapter interface (`IDPAdapter`) for JWT validation
+- `MiniOIDCAdapter` — built-in mini OIDC provider for local development (no external IDP required)
+- `KeycloakAdapter` — production adapter compatible with Keycloak, Auth0, Cognito, and any OIDC-compliant provider
+- `get_adapter()` factory switches on `AGENT_AUTH_MODE` env var (`local` or `oidc`)
+- Custom `a2a` JWT claim namespace scopes tokens to specific CWDs, modes, and tools
+- `enforce_agent_claims()` zero-trust gate validates JWT claims against the actual execution context before any executor runs
+- `DEFAULT_A2A_PERMISSIONS` for sane research-vs-execute defaults
+- Raises `ClaimsViolation` when the requested CWD / mode / tools don't match the token
+
+**Built-in Pipeline Step Types**
+
+No more subclassing `Step` for common patterns — use the new built-ins:
+- `LLMStep` — prompt in, text out
+- `FunctionStep` — wrap any async callable
+- `AgentStep` — run a CLI agent locally with workspace constraints
+- `A2AStep` — dispatch work to a remote A2A agent server via JSON-RPC
+- `ParallelStep` — fan-out to concurrent child steps
+- `OrchestratorStep` — run a collaboration pattern (debate, reflection, planning, agentic RAG) as one atomic step
+
+**A2A (Agent-to-Agent) Client**
+- `A2AExecutor` for dispatching work to remote A2A-protocol servers
+- Bearer token auth with automatic JWT minting for local development
+- JSON-RPC request/response handling with streaming support
+
+**Collaboration Patterns**
+- Debate, reflection, planning, and agentic RAG patterns as reusable orchestrators
+- Runnable as atomic `OrchestratorStep` inside any pipeline
+
+### 🧪 Testing
+
+- **2,993+ test cases** across unit, integration, and e2e suites (up from 2,852)
+- New agent auth test suite covering MiniOIDCAdapter, JWT validation, and claim enforcement
+- New step-type tests for LLMStep, FunctionStep, A2AStep, ParallelStep, OrchestratorStep
+
+### 🔧 CI/CD
+
+- Updated pipelines to exercise the new `agents/` subpackage and step-type modules
+- Agent-auth tests run as part of the default `pytest` invocation
+
+### 📖 Documentation
+
+- README: new "Built-in Step Types" and "Agent Authentication" top-level sections
+- QUICK_START: added step-type table, agent auth snippet, and remote dispatch example
+- Package structure diagram now shows `agents/`, `auth/`, and the new step-type modules
+
+### ⚠️ Notes
+
+- No breaking changes to existing `Step` subclasses or pipeline JSON definitions
+- The new step types use a `type` field in JSON config (e.g., `"type": "llm"`) — existing `step_class`/`module` configs continue to work
+- `LLMProviderService.generate_completion()` and the LiteLLM-based completion API have been removed; use `LLMStep` / `AgentStep` instead. The service remains as a lightweight `provider_id → api_key/model` registry.
+
+---
+
+## [0.1.0] - [0.1.3] — Published to PyPI without release notes
+
+Versions 0.1.0 through 0.1.3 were published to PyPI (0.1.1 on 2025-11-21, 0.1.2 and 0.1.3 on 2025-11-25) but do not have dedicated CHANGELOG entries. See git history for details.
+
+---
+
 ## [0.0.4] - 2025-10-23 [WIP]
 
 ### 🔧 Bug Fixes & Improvements

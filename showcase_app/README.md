@@ -17,12 +17,13 @@ A web application demonstrating the capabilities of the IA Modules framework thr
 - **SLO Compliance** - Visualize service level objectives
 - **Historical Analysis** - Trend charts and performance over time
 
-### 🤖 LLM Integration
-- **Multi-Provider Support** - OpenAI, Anthropic, Google Gemini
-- **Agentic Patterns** - Reflection, Planning, Tool Use, RAG, Metacognition
+### 🤖 LLM & Agent Integration
+- **Built-in Step Types** - `LLMStep` for prompt-in/text-out, `AgentStep` for full CLI agents (Claude Code SDK, OpenCode) with workspace and tool constraints
+- **Reusable Pattern Steps** - `ReflectionStep`, `PlanningStep`, `ToolUseStep` in [backend/pipelines/pattern_steps.py](backend/pipelines/pattern_steps.py) — drop into any JSON pipeline
+- **Service-Layer Pattern Demos** - Agentic RAG and Metacognition exposed via the pattern API in [backend/services/pattern_service.py](backend/services/pattern_service.py)
+- **Subprocess Agent Adapter** - Pattern steps shell out to a local CLI agent via `SubprocessAgentAdapter`
 - **Token Tracking** - Real-time usage monitoring per request
 - **Cost Calculation** - Automatic USD cost tracking
-- **Rate Limiting** - Configurable requests/minute and tokens/minute limits
 
 ### ✨ Modern UI/UX
 - **Dark Mode** - System-aware theme with manual toggle

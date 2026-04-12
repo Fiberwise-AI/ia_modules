@@ -53,7 +53,7 @@ export function SelectTrigger({ className = '', onClick, selectedValue, isOpen, 
       onClick={onClick}
       className={`
         flex h-10 w-full items-center justify-between rounded-md border
-        border-gray-300 bg-white px-3 py-2 text-sm
+        border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm
         focus:outline-none focus:ring-2 focus:ring-blue-500
         disabled:cursor-not-allowed disabled:opacity-50
         ${className}
@@ -73,15 +73,15 @@ export function SelectTrigger({ className = '', onClick, selectedValue, isOpen, 
 }
 
 export function SelectValue({ placeholder }) {
-  return <span className="text-gray-700">{placeholder}</span>;
+  return <span className="text-gray-700 dark:text-gray-300">{placeholder}</span>;
 }
 
 export function SelectContent({ className = '', onSelect, selectedValue, children }) {
   return (
     <div
       className={`
-        absolute z-50 mt-1 w-full rounded-md border border-gray-200
-        bg-white shadow-lg max-h-60 overflow-auto
+        absolute z-50 mt-1 w-full rounded-md border border-gray-200 dark:border-gray-800
+        bg-white dark:bg-gray-900 shadow-lg max-h-60 overflow-auto
         ${className}
       `}
     >
@@ -101,7 +101,7 @@ export function SelectItem({ value, onSelect, selectedValue, children }) {
       onClick={() => onSelect(value)}
       className={`
         relative flex cursor-pointer select-none items-center px-3 py-2
-        text-sm hover:bg-gray-100
+        text-sm hover:bg-gray-100 dark:hover:bg-gray-800
         ${isSelected ? 'bg-blue-50 text-blue-900' : ''}
       `}
     >

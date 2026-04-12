@@ -151,7 +151,7 @@ class GraphPipelineRunner:
 
     def _get_central_logger(self):
         """Get the central logging service"""
-        if self.services and hasattr(self.services, 'get'):
+        if self.services:
             return self.services.get('central_logger')
         return None
 
@@ -253,7 +253,7 @@ class GraphPipelineRunner:
                 return result
 
             # Log successful execution end to database
-            self._log_execution_end_to_database(execution_id, success=True)
+            await self._log_execution_end_to_database(execution_id, success=True)
 
             # Write central logs to database
             await self._write_central_logs_to_database()
@@ -265,7 +265,7 @@ class GraphPipelineRunner:
 
         except Exception as e:
             # Log failed execution end to database
-            self._log_execution_end_to_database(execution_id, success=False, error=str(e))
+            await self._log_execution_end_to_database(execution_id, success=False, error=str(e))
 
             # Write central logs to database even on failure
             await self._write_central_logs_to_database()
@@ -278,7 +278,7 @@ class GraphPipelineRunner:
     async def _start_execution_logging(self, config: PipelineConfig, input_data: Dict[str, Any], execution_id: str):
         """Start execution logging with provided execution ID"""
         # Start execution in tracker
-        if self.services and hasattr(self.services, 'get'):
+        if self.services:
             execution_tracker = self.services.get('execution_tracker')
             if execution_tracker and hasattr(execution_tracker, 'start_execution'):
                 try:
@@ -303,20 +303,33 @@ class GraphPipelineRunner:
             "step_count": len(config.steps)
         })
 
-    def _log_execution_end_to_database(self, execution_id: str, success: bool, error: Optional[str] = None):
-        """Log pipeline execution end to execution tracker"""
-        if self.services and hasattr(self.services, 'get'):
-            execution_tracker = self.services.get('execution_tracker')
-            if execution_tracker and hasattr(execution_tracker, 'end_execution'):
-                execution_tracker.end_execution(
-                    execution_id=execution_id,
-                    success=success,
-                    error=error
-                )
+    async def _log_execution_end_to_database(self, execution_id: str, success: bool, error: Optional[str] = None):
+        """Log pipeline execution end to execution tracker and reliability metrics."""
+        if not self.services:
+            return
+
+        execution_tracker = self.services.get('execution_tracker')
+        if execution_tracker:
+            from .execution_tracker import ExecutionStatus
+            await execution_tracker.update_execution_status(
+                execution_id=execution_id,
+                status=ExecutionStatus.COMPLETED if success else ExecutionStatus.FAILED,
+                error_message=error,
+            )
+
+        reliability = self.services.get('reliability_metrics')
+        if reliability and execution_tracker:
+            step_records = await execution_tracker.get_execution_steps(execution_id)
+            await reliability.record_workflow(
+                workflow_id=execution_id,
+                steps=len(step_records),
+                retries=sum(s.retry_count for s in step_records),
+                success=success,
+            )
 
     async def _write_central_logs_to_database(self):
         """Write central logger logs to database via execution tracker"""
-        if self.services and hasattr(self.services, 'get'):
+        if self.services:
             execution_tracker = self.services.get('execution_tracker')
             central_logger = self.services.get('central_logger')
             if execution_tracker and central_logger and hasattr(central_logger, 'write_to_database'):
@@ -331,7 +344,7 @@ class GraphPipelineRunner:
         from .core import ExecutionContext
 
         config_dict = config.model_dump(by_alias=True) if hasattr(config, 'model_dump') else config.dict(by_alias=True)
-        pipeline = create_pipeline_from_json(config_dict, self.services)
+        pipeline = create_pipeline_from_json(config_dict, self.services, input_data=input_data)
 
         self._log_to_central_service("INFO", f"Executing pipeline with {len(config.steps)} steps")
 
@@ -419,7 +432,7 @@ class GraphPipelineRunner:
             self.execution_stats['end_time'] = datetime.now()
 
             # Log successful execution
-            self._log_execution_end_to_database(execution_id, success=True)
+            await self._log_execution_end_to_database(execution_id, success=True)
             await self._write_central_logs_to_database()
             self._log_to_central_service("SUCCESS", "Real agent pipeline execution completed successfully",
                                        data={"execution_stats": self.execution_stats})
@@ -428,7 +441,7 @@ class GraphPipelineRunner:
 
         except Exception as e:
             # Log failed execution
-            self._log_execution_end_to_database(execution_id, success=False, error=str(e))
+            await self._log_execution_end_to_database(execution_id, success=False, error=str(e))
             await self._write_central_logs_to_database()
             self._log_to_central_service("ERROR", f"Real agent pipeline execution failed: {str(e)}")
             raise
@@ -506,6 +519,103 @@ class GraphPipelineRunner:
                                    data={"duration_seconds": duration, "steps_executed": len(steps)})
 
         return result
+
+    async def run_pipeline(
+        self,
+        name: str,
+        steps: List[Step],
+        flow: Dict[str, Any],
+        input_data: Dict[str, Any] = None,
+        execution_context: ExecutionContext = None,
+        loop_config: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Run a pipeline from pre-built Step instances.
+
+        This is the programmatic equivalent of run_pipeline_from_json —
+        same logging, tracking, and stats, but accepts already-instantiated
+        steps instead of JSON config.
+
+        Args:
+            name: Pipeline name.
+            steps: List of Step (or AgentStep) instances.
+            flow: Flow dict with ``start_at`` and ``paths``.
+            input_data: Initial input data for the pipeline.
+            execution_context: Execution context with execution_id etc.
+            loop_config: Optional loop configuration for iterative pipelines.
+
+        Returns:
+            Pipeline execution results.
+        """
+        input_data = input_data or {}
+
+        if execution_context:
+            execution_id = execution_context.execution_id
+        else:
+            execution_id = str(uuid.uuid4())
+            execution_context = ExecutionContext(
+                execution_id=execution_id,
+                pipeline_id=name,
+            )
+
+        # Minimal PipelineConfig for logging (no module/step_class needed)
+        pseudo_steps = [
+            PipelineStep(
+                id=s.name, name=s.name,
+                step_class=type(s).__name__,
+                module=type(s).__module__,
+                config=getattr(s, "config", {}),
+            )
+            for s in steps
+        ]
+        pseudo_config = PipelineConfig(
+            name=name,
+            steps=pseudo_steps,
+            flow=PipelineFlow(
+                start_at=flow["start_at"],
+                paths=[FlowPath(**p) for p in flow.get("paths", [])],
+            ),
+        )
+
+        await self._start_execution_logging(pseudo_config, input_data, execution_id)
+
+        try:
+            self.execution_stats["start_time"] = datetime.now()
+
+            pipeline = Pipeline(
+                name=name,
+                steps=steps,
+                flow=flow,
+                services=self.services,
+                loop_config=loop_config,
+            )
+
+            start_time = datetime.now()
+            result = await pipeline.run(input_data, execution_context)
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+
+            self.execution_stats["end_time"] = end_time
+            self.execution_stats["steps_executed"] = len(steps)
+
+            # HITL pause
+            if isinstance(result, dict) and result.get("status") == "waiting_for_human":
+                await self._write_central_logs_to_database()
+                return result
+
+            await self._log_execution_end_to_database(execution_id, success=True)
+            await self._write_central_logs_to_database()
+            self._log_to_central_service(
+                "SUCCESS",
+                f"Pipeline completed in {duration:.2f} seconds",
+                data={"duration_seconds": duration, "steps_executed": len(steps)},
+            )
+            return result
+
+        except Exception as e:
+            await self._log_execution_end_to_database(execution_id, success=False, error=str(e))
+            await self._write_central_logs_to_database()
+            self._log_to_central_service("ERROR", f"Pipeline execution failed: {str(e)}")
+            raise
 
     async def run_with_different_scenarios(
         self,

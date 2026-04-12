@@ -25,9 +25,9 @@ class ReplayService:
         self.replayer = None
         if reliability_metrics and hasattr(reliability_metrics, 'storage'):
             try:
-                from ia_modules.reliability.replay import EventReplayer, ReplayConfig
-                self.replayer = EventReplayer(reliability_metrics.storage)
-                self.ReplayConfig = ReplayConfig
+                from ia_modules.reliability.replay import Replayer, ReplayResult
+                self.replayer = Replayer(reliability_metrics.storage)
+                self.ReplayResult = ReplayResult
                 logger.info("Event replayer initialized")
             except Exception as e:
                 logger.warning(f"Could not initialize event replayer: {e}")

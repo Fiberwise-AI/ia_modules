@@ -1,54 +1,64 @@
 """
-Low Quality Processor Step Implementation
+Low Quality Processor Step — LLM-backed basic-cleanup processor.
+
+Runs on the low-quality branch of the conditional pipeline. Asks a real CLI
+agent to perform a conservative cleanup (trim whitespace, drop nulls, flag
+suspect records) without doing deeper enrichment.
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
+import json
 
-from ia_modules.pipeline.core import Step
+from ia_modules.pipeline.llm_step import LLMStep
+from services.llm_config import get_agent_config, get_llm_config
 
 
-class LowQualityProcessorStep(Step):
-    """Step to process low quality data with basic processing"""
-    
+_SYSTEM_PROMPT = (
+    "You are a basic-cleanup data processing agent. The input data has been "
+    "judged low quality, so perform a conservative pass only: trim whitespace, "
+    "drop null fields, and flag any record that looks suspect. Do not enrich "
+    "or transform beyond cleanup. Respond with a short summary of what you "
+    "cleaned, then the cleaned records. Keep the full response under 200 words."
+)
+
+
+class LowQualityProcessorStep(LLMStep):
+    """Agent step that does conservative cleanup on low-quality data."""
+
     def __init__(self, name: str, config: Dict[str, Any]):
-        super().__init__(name, config)
-        
+        env_config = get_llm_config()
+        agent_cfg = get_agent_config()
+        merged = {
+            **config,
+            "system_prompt": _SYSTEM_PROMPT,
+            "cwd": agent_cfg["cwd"],
+            "logs_dir": agent_cfg["logs_dir"],
+            "timeout_seconds": agent_cfg["timeout_seconds"],
+            **env_config,
+        }
+        super().__init__(name, merged)
+
     async def run(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process low quality data with basic processing"""
-        raw_data = data.get('ingested_data', [])
-        quality_score = data.get('quality_score', 0)
-        
-        # Basic processing for low quality data
-        processed_data = self._process_basic(raw_data)
-        
+        raw_data = data.get("ingested_data", [])
+        quality_score = data.get("quality_score", 0)
+
+        prompt = (
+            "Perform basic cleanup on the following low-quality records and "
+            "describe what you cleaned.\n\n"
+            f"Quality score: {quality_score}\n"
+            f"Records: {json.dumps(raw_data, default=str)[:4000]}"
+        )
+
+        llm_input: Dict[str, Any] = {"prompt": prompt}
+        if "_execution_id" in data:
+            llm_input["_execution_id"] = data["_execution_id"]
+
+        llm_result = await super().run(llm_input)
+
         return {
-            "processed_data": processed_data,
+            "processed_data": llm_result.get("text", ""),
             "processing_level": "basic",
             "quality_score": quality_score,
-            "processing_info": {
-                "records_processed": len(processed_data) if isinstance(processed_data, list) else 1
-            }
+            "agent_job_id": llm_result.get("agent_job_id"),
+            "event_count": llm_result.get("event_count", 0),
         }
-        
-    def _process_basic(self, data: Any) -> Any:
-        """Perform basic processing on the data"""
-        # This is a simplified example - in practice this would be more complex
-        if isinstance(data, dict):
-            return self._process_record_basic(data)
-        elif isinstance(data, list):
-            return [self._process_record_basic(record) for record in data]
-        else:
-            return data
-            
-    def _process_record_basic(self, record: Dict[str, Any]) -> Dict[str, Any]:
-        """Process a single record with basic processing"""
-        # Basic cleaning - remove None values and strip whitespace
-        processed = {}
-        for key, value in record.items():
-            if value is not None:
-                if isinstance(value, str):
-                    processed[key] = value.strip()
-                else:
-                    processed[key] = value
-                    
-        return processed

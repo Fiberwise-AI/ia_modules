@@ -3,6 +3,7 @@ Core Pipeline Implementation
 """
 
 from typing import Dict, Any, List, Optional
+import asyncio
 import logging
 from dataclasses import dataclass, field
 
@@ -45,8 +46,21 @@ class TemplateParameterResolver:
             elif isinstance(obj, list):
                 return [resolve_value(item) for item in obj]
             elif isinstance(obj, str):
-                # Replace {{ parameters.name }} with actual values
+                # Replace {{ parameters.name }} with actual values.
+                # If the ENTIRE string is a single placeholder, return the raw
+                # typed value so numbers/bools/lists survive round-trip; otherwise
+                # do stringified substitution for embedded placeholders.
                 import re
+                whole_match = re.fullmatch(r'\s*\{\{\s*([^}]+)\s*\}\}\s*', obj)
+                if whole_match:
+                    param_path = whole_match.group(1).strip()
+                    if param_path.startswith('parameters.'):
+                        param_name = param_path[11:]
+                        params = context.get('parameters', {})
+                        if param_name in params:
+                            return params[param_name]
+                    return obj  # Unresolved — leave as-is.
+
                 def replace_param(match):
                     param_path = match.group(1).strip()
                     if param_path.startswith('parameters.'):
@@ -203,6 +217,9 @@ class Step:
             else:
                 return await self.run(data)
 
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            raise
+
         except PipelineError as e:
             # Handle known pipeline errors
             return await self._handle_pipeline_error(e, data)
@@ -312,6 +329,63 @@ class Step:
         if self.services:
             return self.services.get('http')
         return None
+
+    def get_ndjson_logger(self):
+        """Get the pipeline NdjsonLogger from registry (if registered)."""
+        if self.services:
+            return self.services.get('ndjson_logger')
+        return None
+
+    def get_central_logger(self):
+        """Get the CentralLoggingService from registry."""
+        if self.services:
+            return self.services.get('central_logger')
+        return None
+
+    def get_state_manager(self):
+        """Get shared StateManager from registry (if registered).
+
+        Only available when running inside an Orchestrator or when
+        a StateManager has been explicitly registered on the ServiceRegistry.
+        Returns None for regular pipeline steps that don't use shared state.
+        """
+        if self.services:
+            return self.services.get('state_manager')
+        return None
+
+    async def read_state(self, key: str, default: Any = None) -> Any:
+        """Read from shared StateManager (orchestrator context only).
+
+        No-op if no StateManager is registered — safe to call from
+        any Step regardless of runner context.
+        """
+        sm = self.get_state_manager()
+        if sm:
+            return await sm.get(key, default)
+        self.logger.warning("read_state('%s') called but no StateManager — step '%s' may not be registered with orchestrator", key, self.name)
+        return default
+
+    async def write_state(self, key: str, value: Any) -> None:
+        """Write to shared StateManager (orchestrator context only).
+
+        No-op if no StateManager is registered — safe to call from
+        any Step regardless of runner context.
+        """
+        sm = self.get_state_manager()
+        if sm:
+            await sm.set(key, value)
+        else:
+            self.logger.warning("write_state('%s') called but no StateManager — step '%s' may not be registered with orchestrator", key, self.name)
+
+    async def get_state_snapshot(self) -> Dict[str, Any]:
+        """Get immutable snapshot of entire shared state.
+
+        Returns empty dict if no StateManager is registered.
+        """
+        sm = self.get_state_manager()
+        if sm:
+            return await sm.snapshot()
+        return {}
 
 
 class Pipeline:
@@ -537,8 +611,24 @@ class Pipeline:
         thread_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Internal pipeline execution with telemetry context and checkpointing"""
+        import time as _time
+
+        # NDJSON logger (optional — logs step lifecycle if registered)
+        ndjson = self.services.get('ndjson_logger') if self.services else None
+
         # Execute steps in order based on flow
+        pipeline_t0 = _time.monotonic()
         try:
+            if ndjson:
+                await ndjson.log_pipeline_start(
+                    self.name, execution_context.execution_id, input_data,
+                )
+
+            # Inject execution context into data so steps can access it
+            current_data["_execution_id"] = execution_context.execution_id
+            if execution_context.pipeline_id:
+                current_data["_pipeline_id"] = execution_context.pipeline_id
+
             # Get the starting step
             current_step_name = self.flow.get("start_at")
             if not current_step_name:
@@ -585,6 +675,9 @@ class Pipeline:
 
                 # Execute step with telemetry if enabled
                 step_error = None
+                step_t0 = _time.monotonic()
+                if ndjson:
+                    await ndjson.log_step_start(current_step_name, current_data)
                 try:
                     if self.enable_telemetry and self.telemetry:
                         parent_span = pipeline_ctx.span if pipeline_ctx else None
@@ -599,9 +692,22 @@ class Pipeline:
                                     step_ctx.set_attribute('usage', llm_resp['usage'])
                     else:
                         step_result = await step.execute_with_error_handling(current_data)
-                except Exception as e:
+                except BaseException as e:
                     step_error = e
                     step_result = None
+                finally:
+                    step_dur = int((_time.monotonic() - step_t0) * 1000)
+                    if ndjson:
+                        await ndjson.log_step_end(
+                            current_step_name,
+                            duration_ms=step_dur,
+                            output_data=step_result if isinstance(step_result, dict) else None,
+                            error=str(step_error) if step_error else None,
+                        )
+                    # Flush any pending central_logger → NDJSON entries
+                    central_logger = self.services.get('central_logger') if self.services else None
+                    if central_logger and hasattr(central_logger, 'flush_ndjson'):
+                        await central_logger.flush_ndjson()
 
                 # Track step execution completion if tracker available
                 if tracker and step_execution_id:
@@ -611,6 +717,23 @@ class Pipeline:
                         status=StepStatus.FAILED if step_error else StepStatus.COMPLETED,
                         output_data=step_result,
                         error_message=str(step_error) if step_error else None
+                    )
+
+                # Record reliability metrics for this step
+                reliability = self.services.get('reliability_metrics') if self.services else None
+                if reliability:
+                    observed_mode = step.config.get('mode')
+                    mode_enforcer = self.services.get('mode_enforcer') if self.services else None
+                    declared_mode = None
+                    if mode_enforcer is not None:
+                        declared_agent_mode = mode_enforcer.get_mode(current_step_name)
+                        if declared_agent_mode is not None:
+                            declared_mode = declared_agent_mode.value
+                    await reliability.record_step(
+                        agent=current_step_name,
+                        success=step_error is None,
+                        mode=observed_mode,
+                        declared_mode=declared_mode,
                     )
 
                 # Re-raise error if step failed
@@ -669,6 +792,17 @@ class Pipeline:
                         await tracker.update_execution_status(
                             execution_id=execution_context.execution_id,
                             status=ExecutionStatus.WAITING_FOR_HUMAN
+                        )
+
+                    # Flush pending NDJSON before pausing
+                    central_logger = self.services.get('central_logger') if self.services else None
+                    if central_logger and hasattr(central_logger, 'flush_ndjson'):
+                        await central_logger.flush_ndjson()
+                    if ndjson:
+                        dur = int((_time.monotonic() - pipeline_t0) * 1000)
+                        await ndjson.log(
+                            "system", subtype="pipeline_paused",
+                            step_name=current_step_name, duration_ms=dur,
                         )
 
                     # Return partial results with waiting status
@@ -756,11 +890,33 @@ class Pipeline:
             if pipeline_ctx:
                 pipeline_ctx.set_result(results["output"])
 
+            if ndjson:
+                dur = int((_time.monotonic() - pipeline_t0) * 1000)
+                await ndjson.log_pipeline_end(
+                    self.name, execution_context.execution_id, duration_ms=dur,
+                )
+
             self.logger.info("Pipeline execution completed successfully")
             return results
 
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            self.logger.warning("Pipeline interrupted by user")
+            if ndjson:
+                dur = int((_time.monotonic() - pipeline_t0) * 1000)
+                await ndjson.log_pipeline_end(
+                    self.name, execution_context.execution_id,
+                    duration_ms=dur, error="interrupted",
+                )
+            raise
+
         except Exception as e:
             self.logger.error(f"Pipeline execution failed: {e}")
+            if ndjson:
+                dur = int((_time.monotonic() - pipeline_t0) * 1000)
+                await ndjson.log_pipeline_end(
+                    self.name, execution_context.execution_id,
+                    duration_ms=dur, error=str(e),
+                )
             raise
     
     def _get_next_steps(self, current_step: str, current_data: Dict[str, Any]) -> List[str]:
@@ -825,8 +981,12 @@ class Pipeline:
                 return actual_value != expected_value
             elif operator == "greater_than":
                 return actual_value > expected_value
+            elif operator == "greater_than_or_equals":
+                return actual_value >= expected_value
             elif operator == "less_than":
                 return actual_value < expected_value
+            elif operator == "less_than_or_equals":
+                return actual_value <= expected_value
         
         # Unknown condition type - default to False for safety
         self.logger.warning(f"Unknown condition type: {condition_type}")

@@ -202,7 +202,7 @@ def cmd_format(args) -> int:
 
 def cmd_run(args) -> int:
     """Execute run command"""
-    from ia_modules.pipeline.runner import run_pipeline_from_json
+    from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
     from ia_modules.pipeline.services import ServiceRegistry
     from ia_modules.pipeline.core import ExecutionContext
 
@@ -226,8 +226,21 @@ def cmd_run(args) -> int:
             print(f"Error: Invalid JSON in {input_path}: {e}", file=sys.stderr)
             return 1
 
+    # Load pipeline config
+    try:
+        with open(pipeline_path, 'r') as f:
+            pipeline_config = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in {pipeline_path}: {e}", file=sys.stderr)
+        return 1
+
     # Create services registry
     services = ServiceRegistry()
+
+    # Add working directory to sys.path for step imports
+    if args.working_dir:
+        if args.working_dir not in sys.path:
+            sys.path.insert(0, args.working_dir)
 
     # Create execution context
     execution_context = ExecutionContext(
@@ -236,13 +249,12 @@ def cmd_run(args) -> int:
         user_id='cli-user'
     )
 
-    # Run pipeline
+    # Run pipeline via GraphPipelineRunner
     try:
-        result = asyncio.run(run_pipeline_from_json(
-            str(pipeline_path),
+        runner = GraphPipelineRunner(services=services)
+        result = asyncio.run(runner.run_pipeline_from_json(
+            pipeline_config,
             input_data,
-            services=services,
-            working_directory=args.working_dir,
             execution_context=execution_context
         ))
 

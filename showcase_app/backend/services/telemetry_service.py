@@ -10,16 +10,21 @@ logger = logging.getLogger(__name__)
 class TelemetryService:
     """Service for retrieving telemetry data from ia_modules"""
 
-    def __init__(self, telemetry=None, tracer=None):
+    def __init__(self, telemetry=None, tracer=None,
+                 agent_telemetry=None, llm_telemetry=None):
         """
         Initialize telemetry service
         
         Args:
             telemetry: PipelineTelemetry instance from ia_modules
             tracer: SimpleTracer instance from ia_modules
+            agent_telemetry: AgentTelemetry instance from ia_modules
+            llm_telemetry: LLMTelemetry instance from ia_modules
         """
         self.telemetry = telemetry
         self.tracer = tracer
+        self.agent_telemetry = agent_telemetry
+        self.llm_telemetry = llm_telemetry
         logger.info("Telemetry service initialized")
 
     async def get_execution_spans(self, job_id: str) -> List[Dict[str, Any]]:
@@ -207,3 +212,114 @@ class TelemetryService:
                 break
         
         return depth
+
+    async def get_agent_metrics(self) -> Dict[str, Any]:
+        """Get aggregated agent metrics."""
+        if not self.agent_telemetry:
+            return {"agents": [], "summary": {}}
+
+        metrics = self.agent_telemetry.get_metrics()
+
+        # Group by agent name
+        agents = {}
+        for m in metrics:
+            agent_name = m.labels.get("agent_name", "unknown")
+            if agent_name not in agents:
+                agents[agent_name] = {
+                    "name": agent_name,
+                    "role": m.labels.get("agent_role", "unknown"),
+                    "executions": 0,
+                    "errors": 0,
+                    "messages_sent": 0,
+                    "messages_received": 0,
+                    "state_reads": 0,
+                    "state_writes": 0,
+                }
+
+            if "executions_total" in m.name and m.labels.get("status") == "success":
+                agents[agent_name]["executions"] += m.value
+            elif "errors_total" in m.name:
+                agents[agent_name]["errors"] += m.value
+            elif "messages_sent" in m.name and m.labels.get("sender") == agent_name:
+                agents[agent_name]["messages_sent"] += m.value
+            elif "messages_received" in m.name:
+                agents[agent_name]["messages_received"] += m.value
+            elif "state_operations" in m.name:
+                op = m.labels.get("operation", "")
+                if op == "read":
+                    agents[agent_name]["state_reads"] += m.value
+                elif op == "write":
+                    agents[agent_name]["state_writes"] += m.value
+
+        return {
+            "agents": list(agents.values()),
+            "summary": {
+                "total_agents": len(agents),
+                "total_executions": sum(a["executions"] for a in agents.values()),
+                "total_errors": sum(a["errors"] for a in agents.values()),
+                "total_messages": sum(a["messages_sent"] for a in agents.values()),
+            }
+        }
+
+    async def get_llm_metrics(self) -> Dict[str, Any]:
+        """Get aggregated LLM usage metrics."""
+        if not self.llm_telemetry:
+            return {"models": [], "summary": {}}
+
+        metrics = self.llm_telemetry.get_metrics()
+
+        models = {}
+        total_cost = 0.0
+        total_requests = 0
+
+        for m in metrics:
+            model = m.labels.get("gen_ai_response_model", "unknown")
+            system = m.labels.get("gen_ai_system", "unknown")
+            key = f"{system}/{model}"
+
+            if key not in models:
+                models[key] = {
+                    "model": model,
+                    "system": system,
+                    "requests": 0,
+                    "errors": 0,
+                    "total_cost_usd": 0.0,
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                }
+
+            if "requests_total" in m.name:
+                if m.labels.get("status") == "success":
+                    models[key]["requests"] += m.value
+                    total_requests += m.value
+                elif m.labels.get("status") == "error":
+                    models[key]["errors"] += m.value
+            elif "cost_usd" in m.name:
+                models[key]["total_cost_usd"] += m.value
+                total_cost += m.value
+
+        return {
+            "models": list(models.values()),
+            "summary": {
+                "total_requests": total_requests,
+                "total_cost_usd": round(total_cost, 4),
+                "model_count": len(models),
+            }
+        }
+
+    async def get_metrics_timeseries(self, metric_name: str, hours: int = 24) -> List[Dict]:
+        """Get time-series data points for a specific metric."""
+        if not self.telemetry:
+            return []
+
+        metrics = self.telemetry.get_metrics()
+        points = []
+        for m in metrics:
+            if metric_name in m.name:
+                points.append({
+                    "timestamp": getattr(m, "timestamp", 0),
+                    "value": m.value if isinstance(m.value, (int, float)) else 0,
+                    "labels": m.labels
+                })
+
+        return sorted(points, key=lambda p: p["timestamp"])

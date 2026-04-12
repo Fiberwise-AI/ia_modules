@@ -16,6 +16,8 @@
 - [Quick Start](#quick-start)
 - [Documentation](#documentation)
 - [Your First Pipeline](#quickstart-your-first-pipeline)
+- [Built-in Step Types](#built-in-step-types)
+- [Agent Authentication](#agent-authentication)
 - [Core Architecture](#core-architecture-principles)
 - [Pipeline Definition (JSON)](#defining-pipelines-json-format)
 - [Running Pipelines](#running-pipelines)
@@ -69,12 +71,21 @@ IA Modules runs AI workflows as directed graphs. You define steps (call an LLM, 
 
 ### 🤖 **AI & LLM Integration**
 - **LLM Providers**: OpenAI, Anthropic, Google Gemini with unified interface
+- **Built-in Step Types**: `LLMStep`, `FunctionStep`, `AgentStep`, `A2AStep`, `ParallelStep`, `OrchestratorStep` — no subclassing needed for common patterns
+- **CLI Agent Execution**: Run Claude Code SDK or OpenCode as pipeline steps with workspace, mode, and tool constraints
+- **A2A Remote Dispatch**: Send work to remote Agent-to-Agent servers via `A2AStep` with JWT authentication
 - **Multi-Agent Orchestration**: Sequential, parallel, and hierarchical agent workflows
 - **Agent State Sharing**: Share context and state between agents in workflows
 - **Memory System**: Conversation history, session management, vector search, summarization
 - **RAG Support**: Retrieval-Augmented Generation pipelines
 - **Grounding & Validation**: Citation tracking, fact verification, grounding metrics
-- **Agentic Patterns**: Chain-of-Thought, ReAct, Tree-of-Thoughts implemented in showcase app
+- **Agentic Patterns**: Debate, reflection, planning, agentic RAG, Chain-of-Thought, ReAct, Tree-of-Thoughts
+
+### 🔑 **Agent Authentication & Permissions**
+- **Pluggable OIDC**: Built-in mini OIDC provider for local dev, Keycloak/Auth0/Cognito for production
+- **Custom `a2a` JWT Claim**: Scope agent execution to specific working directories, modes, and tools
+- **Zero-Trust Enforcement**: `enforce_agent_claims()` validates JWT claims against the actual CWD/mode/tools before any executor runs
+- **Default Permissions**: Sane defaults for research vs execute modes with tool allow-lists
 
 ### 🎨 **Web UI (Showcase App)**
 - Visual workflow builder with drag-and-drop
@@ -100,12 +111,13 @@ IA Modules runs AI workflows as directed graphs. You define steps (call an LLM, 
 - **Telemetry Exporters**: Prometheus, CloudWatch, Datadog
 
 ### 🔐 **Security & Validation**
-- **Authentication**: Middleware and session management
+- **Web Authentication**: FastAPI middleware and session management for HTTP endpoints
+- **Agent Authentication**: OIDC JWT validation with pluggable IDP adapters (local mini OIDC, Keycloak, etc.)
 - **Schema Validation**: Pydantic-based runtime type checking
 - **Grounding**: Citation tracking and fact verification for AI outputs
 
 ### 📈 **Testing**
-- **226 test files, 2,852 test cases**
+- **2,993+ test cases** across unit, integration, and e2e suites
 - **Coverage**: Unit, integration, e2e, performance, edge cases
 - **Python 3.9-3.13** compatibility
 - **Test markers**: slow, integration, e2e, redis, postgres, mysql, mssql, observability
@@ -411,6 +423,67 @@ Pipeline finished with result:
 {'status': 'Message printed successfully'}
 ```
 
+## Built-in Step Types
+
+For most workflows you don't need to subclass `Step` — use the built-ins:
+
+```python
+from ia_modules.pipeline import LLMStep, FunctionStep, ParallelStep, A2AStep
+
+# LLM step — prompt in, text out
+summarizer = LLMStep(
+    name="summarize",
+    system_prompt="Summarize the following text concisely.",
+    model="claude-sonnet-4-20250514",
+)
+
+# Function step — wrap any async callable
+async def tally_votes(context):
+    votes = context.get_data("votes", [])
+    return {"winner": max(set(votes), key=votes.count)}
+
+tally = FunctionStep(name="tally", fn=tally_votes)
+
+# Parallel step — fan out to multiple workers
+reviewers = ParallelStep(
+    name="all_reviewers",
+    children=[reviewer_1, reviewer_2, reviewer_3],
+)
+
+# A2A step — dispatch to a remote agent server
+remote = A2AStep(
+    name="remote_analysis",
+    server_url="http://a2a-server:3008",
+    mode="research",
+    tools=["Read", "Glob", "Grep"],
+)
+```
+
+## Agent Authentication
+
+For multi-tenant or production deployments, agents authenticate via OIDC JWTs. The auth system is pluggable — use the built-in mini OIDC provider for local dev, or connect to Keycloak/Auth0/Cognito for production.
+
+```python
+from ia_modules.agents.auth import get_adapter
+from ia_modules.agents.permissions import enforce_agent_claims
+
+# Get configured IDP adapter (AGENT_AUTH_MODE=local or oidc)
+adapter = get_adapter(db=my_db)
+
+# Validate a Bearer token and get claims
+claims = await adapter.validate_token(token)
+
+# Enforce permissions against the actual execution context before running
+enforce_agent_claims(
+    claims,
+    cwd="/data/apps/app-123/workspace",
+    mode="research",
+    tools=["Read", "Glob"],
+)
+```
+
+Set `AGENT_AUTH_MODE=oidc` and configure `OIDC_DISCOVERY_URL` for production OIDC. Default is `local` (built-in mini OIDC — no external IDP needed). The custom `a2a` JWT claim scopes each token to specific working directories, modes, and tool allow-lists, and `enforce_agent_claims()` raises `ClaimsViolation` if the requested action doesn't match the token.
+
 ## Core Architecture Principles
 
 1. **Graph-First Design**: All pipelines are defined as **directed acyclic graphs (DAGs)**, ensuring a clear, predictable, and finite execution flow.
@@ -424,8 +497,17 @@ Pipeline finished with result:
 
 ```
 ia_modules/
-├── pipeline/            # Core pipeline execution engine
-├── auth/                # Authentication and session management
+├── pipeline/            # Core pipeline execution engine + built-in step types
+│   ├── llm_step.py      # LLMStep — prompt → text
+│   ├── function_step.py # FunctionStep — wrap any async callable
+│   ├── agent_step.py    # AgentStep — run a CLI agent locally
+│   ├── a2a_step.py      # A2AStep — dispatch to remote A2A server
+│   ├── parallel_step.py # ParallelStep — fan-out
+│   └── orchestrator_step.py  # OrchestratorStep — atomic pattern execution
+├── agents/              # Agent execution, auth, permissions
+│   ├── auth/            # Pluggable OIDC adapters (local, Keycloak)
+│   └── permissions.py   # Token claim enforcement (CWD, modes, tools)
+├── auth/                # Web authentication and session management
 ├── database/            # Database abstraction and management
 ├── web/                 # Web utilities (execution tracking, etc.)
 └── data/                # Shared data models
@@ -441,7 +523,27 @@ ia_modules/
 - **HumanInputStep**: A specialized step that pauses execution to wait for human interaction.
 - **ServiceRegistry**: A dependency injection container for services (DB, HTTP, etc.).
 
-#### Authentication System
+#### Built-in Step Types
+
+Ready-to-use step types so you don't need to subclass `Step` for common patterns:
+
+- **LLMStep**: Send a prompt to a CLI agent, get text back.
+- **FunctionStep**: Wrap any async callable (vote tallying, routing, aggregation).
+- **AgentStep**: Run a CLI agent (Claude Code SDK, OpenCode) with workspace and tools.
+- **A2AStep**: Dispatch work to a remote A2A agent server via JSON-RPC.
+- **ParallelStep**: Fan-out — run child steps concurrently.
+- **OrchestratorStep**: Run a collaboration pattern (debate, reflection, planning, agentic RAG) as one atomic step.
+
+#### Agent Authentication & Permissions
+
+- **IDPAdapter**: Abstract interface for OIDC identity providers.
+- **MiniOIDCAdapter**: Built-in mini OIDC provider for local development (no external IDP needed).
+- **KeycloakAdapter**: Production adapter for Keycloak/Auth0/Cognito/any OIDC-compliant IDP.
+- **`get_adapter()`**: Factory that switches on `AGENT_AUTH_MODE` env var (`local` or `oidc`).
+- **`enforce_agent_claims()`**: Zero-trust gate that validates JWT `a2a` claims against the requested CWD, mode, and tools before execution.
+- **`DEFAULT_A2A_PERMISSIONS`**: Sane defaults for research vs execute modes.
+
+#### Web Authentication System
 
 - **AuthMiddleware**: FastAPI-compatible middleware for protecting endpoints.
 - **SessionManager**: Manages secure user sessions.
@@ -633,35 +735,26 @@ db.disconnect()
 
 ## AI/LLM Integration
 
-Simple LiteLLM wrapper supporting 100+ LLM providers. See [docs/LLM_SERVICE.md](docs/LLM_SERVICE.md) for full documentation.
+LLM calls happen through the built-in step types — use `LLMStep` for prompt-in/text-out and `AgentStep` for full CLI agents (Claude Code SDK, OpenCode) with workspace and tool constraints. See [Built-in Step Types](#built-in-step-types) above.
 
-### Quick Start
+### Provider Configuration
+
+`LLMProviderService` is a lightweight registry that maps `provider_id → api_key / model` so steps can look up credentials without hardcoding them. Register it once in your `ServiceRegistry` and any `LLMStep` / `AgentStep` can resolve its provider by id.
 
 ```python
 from ia_modules.pipeline.llm_provider_service import LLMProviderService
+from ia_modules.pipeline.services import ServiceRegistry
+import os
 
-# Initialize and register providers
-service = LLMProviderService()
-service.register_provider("openai", model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
-service.register_provider("anthropic", model="claude-sonnet-4-5-20250929", api_key=os.getenv("ANTHROPIC_API_KEY"))
+provider_service = LLMProviderService()
+provider_service.register_provider("openai", model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
+provider_service.register_provider("anthropic", model="claude-sonnet-4-5-20250929", api_key=os.getenv("ANTHROPIC_API_KEY"))
 
-# Use it
-response = await service.generate_completion(
-    messages=[{"role": "user", "content": "Hello!"}],
-    provider_name="openai"
-)
-print(response["content"])
-print(f"Cost: ${response['usage']['cost_usd']:.4f}")
+services = ServiceRegistry()
+services.register("llm_provider", provider_service)
 ```
 
-### Supported Providers (100+)
-
-Via [LiteLLM](https://docs.litellm.ai/):
-- **OpenAI**: gpt-4o, gpt-4o-mini, o1-preview
-- **Anthropic**: claude-sonnet-4-5-20250929, claude-3-5-haiku
-- **Google**: gemini/gemini-2.0-flash-exp, gemini/gemini-pro
-- **Local**: ollama/llama3.2, ollama/qwen2.5-coder
-- **AWS Bedrock**, **Cohere**, **Mistral**, **Groq**, and many more
+Steps reference the provider by id in their config — the service layer is *only* for key/model lookup, not for making completion calls. Actual inference happens inside `LLMStep` / `AgentStep` via the configured CLI agent.
 
 ### Environment Variables
 
@@ -670,44 +763,6 @@ OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=...
 ```
-
-### LLM-Powered Pipeline Steps
-
-```python
-from ia_modules.pipeline.core import Step
-
-class AIAnalysisStep(Step):
-    async def execute(self, data: dict) -> dict:
-        llm_service = self.services.get('llm_provider')
-
-        response = await llm_service.generate_completion(
-            messages=[
-                {"role": "system", "content": "You are a data analyst"},
-                {"role": "user", "content": f"Analyze: {data['text']}"}
-            ],
-            temperature=0.7,
-            max_tokens=500
-        )
-
-        return {"analysis": response["content"]}
-```
-
-### Running AI-Enhanced Pipelines
-
-```bash
-# Set API key
-export OPENAI_API_KEY="sk-your-key-here"
-
-# Run AI-powered pipeline
-python tests/pipeline_runner_with_llm.py pipelines/ai_analysis.json --input '{"text": "Your content here"}'
-```
-
-**Try it in the Showcase App:**
-1. Navigate to `/patterns` page
-2. Select any agentic pattern (Reflection, Planning, etc.)
-3. Configure your inputs
-4. Click "Run Pattern" to see real LLM execution
-5. View step-by-step visualization and outputs
 
 ## Human-in-the-Loop (HITL)
 
@@ -823,7 +878,7 @@ await db.initialize(
 ## Production Status
 
 **What works:**
-- Core pipeline execution with 2,852 passing tests
+- Core pipeline execution with 2,993+ passing tests
 - Database integration (PostgreSQL, MySQL, SQLite, MSSQL - fully tested)
 - Reliability metrics collection (7 metrics tracked)
 - Prometheus exporter (tested)

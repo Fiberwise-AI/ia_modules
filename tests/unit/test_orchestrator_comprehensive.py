@@ -94,8 +94,8 @@ class TestOrchestratorAddAgent:
 
         orch.add_agent("planner", agent)
 
-        assert "planner" in orch.agents
-        assert orch.agents["planner"] == agent
+        assert "planner" in orch.steps
+        assert type(orch.steps["planner"]).__name__ == "_LegacyAgentWrapper"
         assert "planner" in orch.graph
         assert orch.graph["planner"] == []
 
@@ -250,7 +250,7 @@ class TestOrchestratorFeedbackLoop:
         state = StateManager(thread_id="test")
         orch = AgentOrchestrator(state)
 
-        orch.add_feedback_loop("coder", "critic", max_iterations=3, next_agent="formatter")
+        orch.add_feedback_loop("coder", "critic", max_iterations=3, next_step="formatter")
 
         # Should create 3 edges
         assert len(orch.graph["critic"]) == 2  # critic → coder (cond), critic → formatter (cond)
@@ -367,7 +367,7 @@ class TestOrchestratorRun:
         state = StateManager(thread_id="test")
         orch = AgentOrchestrator(state)
 
-        with pytest.raises(ValueError, match="Unknown start agent"):
+        with pytest.raises(ValueError, match="Unknown start step"):
             await orch.run("unknown", {})
 
     @pytest.mark.asyncio
@@ -473,10 +473,10 @@ class TestOrchestratorRun:
             await orch.run("planner", {"task": "test"})
 
         error = await state.get("error")
-        failed_agent = await state.get("failed_agent")
+        failed_step = await state.get("failed_step")
 
         assert "Agent failed" in error
-        assert failed_agent == "planner"
+        assert failed_step == "planner"
 
 
 class TestOrchestratorGetNextAgent:
@@ -490,7 +490,7 @@ class TestOrchestratorGetNextAgent:
 
         orch.add_edge("planner", "coder")
 
-        next_agent = await orch._get_next_agent("planner")
+        next_agent = await orch._get_next_step("planner")
 
         assert next_agent == "coder"
 
@@ -500,7 +500,7 @@ class TestOrchestratorGetNextAgent:
         state = StateManager(thread_id="test")
         orch = AgentOrchestrator(state)
 
-        next_agent = await orch._get_next_agent("planner")
+        next_agent = await orch._get_next_step("planner")
 
         assert next_agent is None
 
@@ -515,7 +515,7 @@ class TestOrchestratorGetNextAgent:
 
         orch.add_edge("planner", "coder", condition=cond)
 
-        next_agent = await orch._get_next_agent("planner")
+        next_agent = await orch._get_next_step("planner")
 
         assert next_agent == "coder"
 
@@ -530,7 +530,7 @@ class TestOrchestratorGetNextAgent:
 
         orch.add_edge("planner", "coder", condition=cond)
 
-        next_agent = await orch._get_next_agent("planner")
+        next_agent = await orch._get_next_step("planner")
 
         assert next_agent is None
 
@@ -549,7 +549,7 @@ class TestOrchestratorGetNextAgent:
         orch.add_edge("planner", "coder", condition=cond1)
         orch.add_edge("planner", "reviewer", condition=cond2)
 
-        next_agent = await orch._get_next_agent("planner")
+        next_agent = await orch._get_next_step("planner")
 
         # Should return second one since first condition is False
         assert next_agent == "reviewer"
@@ -570,7 +570,7 @@ class TestOrchestratorGetNextAgent:
         orch.add_edge("planner", "reviewer", condition=working_cond)
 
         # Should skip failing condition and try next
-        next_agent = await orch._get_next_agent("planner")
+        next_agent = await orch._get_next_step("planner")
 
         assert next_agent == "reviewer"
 
@@ -675,7 +675,7 @@ class TestOrchestratorStats:
 
         repr_str = repr(orch)
 
-        assert "agents=1" in repr_str
+        assert "steps=1" in repr_str
         assert "edges=1" in repr_str
 
 

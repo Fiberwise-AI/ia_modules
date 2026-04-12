@@ -1,5 +1,6 @@
 import React from 'react'
 import { CheckCircle, XCircle, Clock, Play, AlertCircle } from 'lucide-react'
+import { parseBackendTimestamp } from '../../lib/utils'
 
 export default function ExecutionStatusCard({ execution }) {
   const getStatusIcon = (status) => {
@@ -11,7 +12,7 @@ export default function ExecutionStatusCard({ execution }) {
       case 'running':
         return <Play size={24} className="text-blue-500 animate-pulse" />
       case 'pending':
-        return <Clock size={24} className="text-yellow-600" />
+        return <Clock size={24} className="text-yellow-600 dark:text-yellow-400" />
       default:
         return <AlertCircle size={24} className="text-gray-500" />
     }
@@ -20,22 +21,25 @@ export default function ExecutionStatusCard({ execution }) {
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed':
-        return 'text-green-600 bg-green-50 border-green-200'
+        return 'text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-950/40 border-green-300 dark:border-green-800'
       case 'failed':
-        return 'text-red-600 bg-red-50 border-red-200'
+        return 'text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-800'
       case 'running':
-        return 'text-blue-600 bg-blue-50 border-blue-200'
+        return 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-800'
       case 'pending':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200'
+        return 'text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-950/40 border-yellow-300 dark:border-yellow-800'
       default:
-        return 'text-gray-600 bg-gray-50 border-gray-200'
+        return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
     }
   }
 
   const getDuration = () => {
-    const start = new Date(execution.started_at)
-    const end = execution.completed_at ? new Date(execution.completed_at) : new Date()
-    const durationMs = end - start
+    // Backend emits naive ISO strings (tzinfo stripped) for UTC timestamps.
+    // new Date(naiveIso) parses as local time in most browsers, so we append
+    // 'Z' when there's no timezone suffix to force UTC interpretation.
+    const start = parseBackendTimestamp(execution.started_at)
+    const end = execution.completed_at ? parseBackendTimestamp(execution.completed_at) : new Date()
+    const durationMs = Math.max(end - start, 0)
     const seconds = Math.floor(durationMs / 1000)
 
     if (seconds < 60) return `${seconds}s`
@@ -69,7 +73,7 @@ export default function ExecutionStatusCard({ execution }) {
       )}
 
       <div className="mt-4">
-        <div className="w-full bg-white bg-opacity-30 rounded-full h-3">
+        <div className="w-full bg-white/30 dark:bg-black/20 rounded-full h-3">
           <div
             className="bg-current h-3 rounded-full transition-all duration-300"
             style={{ width: `${execution.progress * 100}%` }}
@@ -78,10 +82,10 @@ export default function ExecutionStatusCard({ execution }) {
       </div>
 
       <div className="mt-4 flex items-center justify-between text-sm flex-wrap gap-2">
-        <span>Started: {new Date(execution.started_at).toLocaleString()}</span>
+        <span>Started: {parseBackendTimestamp(execution.started_at).toLocaleString()}</span>
         <span>Duration: {getDuration()}</span>
         {execution.completed_at && (
-          <span>Completed: {new Date(execution.completed_at).toLocaleString()}</span>
+          <span>Completed: {parseBackendTimestamp(execution.completed_at).toLocaleString()}</span>
         )}
       </div>
     </div>

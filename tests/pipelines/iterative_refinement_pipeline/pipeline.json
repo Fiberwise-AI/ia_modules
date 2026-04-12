@@ -11,7 +11,15 @@
       "module": "steps.refinement_steps",
       "config": {
         "description": "Generate an initial draft document"
-      }
+      },
+      "inputs": [
+        {"name": "topic", "source": "{parameters.topic}", "required": false}
+      ],
+      "outputs": [
+        {"name": "current_result", "required": true},
+        {"name": "topic", "required": true},
+        {"name": "iteration", "required": true}
+      ]
     },
     {
       "id": "refine_content",
@@ -22,7 +30,23 @@
       "config": {
         "max_iterations": 3,
         "prompt": "Please review and refine the content. You can make multiple rounds of improvements."
-      }
+      },
+      "inputs": [
+        {"name": "current_result", "source": "{steps.generate_draft.output.current_result}", "required": true},
+        {"name": "iteration", "source": "{steps.generate_draft.output.iteration}", "required": false},
+        {"name": "refinement_history", "source": "{steps.process_refinement.output.refinement_history}", "required": false}
+      ],
+      "outputs": [
+        {"name": "status", "required": true},
+        {"name": "ui_schema", "required": true},
+        {"name": "iteration", "required": true},
+        {"name": "current_result", "required": true},
+        {"name": "refinement_history", "required": true},
+        {"name": "max_iterations", "required": true},
+        {"name": "refined_result", "required": false},
+        {"name": "refinement_notes", "required": false},
+        {"name": "continue_refining", "required": false}
+      ]
     },
     {
       "id": "process_refinement",
@@ -32,7 +56,23 @@
       "module": "steps.refinement_steps",
       "config": {
         "description": "Process the human refinement and decide if more iterations needed"
-      }
+      },
+      "inputs": [
+        {"name": "refined_result", "source": "{steps.refine_content.output.refined_result}", "required": false},
+        {"name": "refinement_notes", "source": "{steps.refine_content.output.refinement_notes}", "required": false},
+        {"name": "continue_refining", "source": "{steps.refine_content.output.continue_refining}", "required": false},
+        {"name": "iteration", "source": "{steps.refine_content.output.iteration}", "required": true},
+        {"name": "refinement_history", "source": "{steps.refine_content.output.refinement_history}", "required": true},
+        {"name": "max_iterations", "source": "{steps.refine_content.output.max_iterations}", "required": true}
+      ],
+      "outputs": [
+        {"name": "status", "required": true},
+        {"name": "current_result", "required": false},
+        {"name": "final_result", "required": false},
+        {"name": "iteration", "required": false},
+        {"name": "iterations_completed", "required": false},
+        {"name": "refinement_history", "required": true}
+      ]
     },
     {
       "id": "check_continue",
@@ -45,6 +85,12 @@
           "value": "continue_refinement",
           "type": "value"
         }
+      ],
+      "inputs": [
+        {"name": "status", "source": "{steps.process_refinement.output.status}", "required": true}
+      ],
+      "outputs": [
+        {"name": "status", "required": true}
       ]
     },
     {
@@ -55,7 +101,17 @@
       "module": "steps.refinement_steps",
       "config": {
         "description": "Finalize the refined document with metadata"
-      }
+      },
+      "inputs": [
+        {"name": "final_result", "source": "{steps.process_refinement.output.final_result}", "required": true},
+        {"name": "iterations_completed", "source": "{steps.process_refinement.output.iterations_completed}", "required": false},
+        {"name": "refinement_history", "source": "{steps.process_refinement.output.refinement_history}", "required": false}
+      ],
+      "outputs": [
+        {"name": "document", "required": true},
+        {"name": "metadata", "required": true},
+        {"name": "status", "required": true}
+      ]
     }
   ],
   "flow": {

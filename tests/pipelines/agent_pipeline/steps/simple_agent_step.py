@@ -1,128 +1,96 @@
 """
-Simple Agent Step Implementation with LLM Integration
+Simple Agent Step — real LLM-backed step built on LLMStep.
+
+Subclasses LLMStep so the agent pipeline actually spawns a CLI agent (opencode
+or claude_code) instead of returning hard-coded dicts. Env configuration
+(provider, model, api_key, cwd, logs_dir, timeout) is read from the same
+environment variables used by showcase_app's collaboration patterns.
 """
 
-from typing import Dict, Any
-from datetime import datetime
+from typing import Any, Dict
 
-from ia_modules.pipeline.core import Step
+from ia_modules.pipeline.llm_step import LLMStep
+from services.llm_config import get_agent_config, get_llm_config
 
 
-class SimpleAgentStep(Step):
-    """A simple step that acts as an agent for processing data using LLM"""
+_SYSTEM_PROMPTS = {
+    "ingestion": (
+        "You are a data ingestion agent. Analyse the user's task and content, "
+        "then respond with: (1) a brief summary, (2) key entities or concepts, "
+        "(3) a data quality note, and (4) recommended next processing steps. "
+        "Keep the full response under 200 words."
+    ),
+    "final_processing": (
+        "You are a final-processing agent. Produce the final result for the "
+        "user's task using the supplied content and prior agent output. "
+        "Respond with: (1) the final result, (2) a one-line confidence note, "
+        "and (3) any warnings. Keep the full response under 200 words."
+    ),
+    "general": (
+        "You are an AI processing agent. Analyse the user's task and content "
+        "and return a concise structured response with your analysis, result, "
+        "and confidence. Keep the full response under 200 words."
+    ),
+}
+
+
+class SimpleAgentStep(LLMStep):
+    """Agent step that spawns a real LLM subprocess for ingestion/final processing."""
 
     def __init__(self, name: str, config: Dict[str, Any]):
-        super().__init__(name, config)
+        self._processing_type = config.get("processing_type", "general")
+        system_prompt = _SYSTEM_PROMPTS.get(self._processing_type, _SYSTEM_PROMPTS["general"])
+
+        env_config = get_llm_config()
+        agent_cfg = get_agent_config()
+        merged = {
+            **config,
+            "system_prompt": system_prompt,
+            "cwd": agent_cfg["cwd"],
+            "logs_dir": agent_cfg["logs_dir"],
+            "timeout_seconds": agent_cfg["timeout_seconds"],
+            **env_config,
+        }
+        super().__init__(name, merged)
 
     async def run(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process data using LLM-powered agent logic"""
-        # Get LLM service from service registry
-        llm_service = self.services.get('llm_provider')
+        """Run the LLM and return the agent output."""
+        task = data.get("task", "process data")
+        content = data.get("content", "")
 
-        # Get processing type from config
-        processing_type = self.config.get('processing_type', 'general')
+        parts = [f"Task: {task}"]
+        if content:
+            parts.append(f"Content: {content}")
+        # Final-processing prompts also receive upstream agent outputs so the
+        # step can actually "finalize" rather than re-run on raw input.
+        ingestion_summary = data.get("ingestion_summary")
+        if ingestion_summary:
+            parts.append(f"Ingestion summary: {ingestion_summary}")
+        decision = data.get("decision")
+        if decision:
+            parts.append(f"Decision: {decision}")
+        decision_reasoning = data.get("decision_reasoning")
+        if decision_reasoning:
+            parts.append(f"Decision reasoning: {decision_reasoning}")
+        prompt = "\n\n".join(parts)
 
-        # Extract relevant data for processing
-        task = data.get('task', 'process data')
-        text_content = data.get('text', str(data))
+        # Only forward what LLMStep needs. Splatting **data into super().run()
+        # would bloat AgentConfig.metadata (and the agent NDJSON log) with the
+        # full accumulated upstream payload.
+        llm_input: Dict[str, Any] = {"prompt": prompt}
+        if "_execution_id" in data:
+            llm_input["_execution_id"] = data["_execution_id"]
 
-        if llm_service:
-            try:
-                # Create appropriate prompt based on processing type
-                if processing_type == 'ingestion':
-                    prompt = f"""You are a data ingestion agent. Your task is to analyze and prepare the following data for processing:
+        llm_result = await super().run(llm_input)
 
-Task: {task}
-Content: {text_content}
-
-Please provide:
-1. A summary of the data
-2. Key entities or concepts identified
-3. Data quality assessment
-4. Recommended processing steps
-
-Respond in JSON format with keys: summary, entities, quality_score, recommendations"""
-
-                elif processing_type == 'final_processing':
-                    prompt = f"""You are a final processing agent. Your task is to create a final output based on the processed data:
-
-Task: {task}
-Content: {text_content}
-
-Please provide:
-1. Final processed result
-2. Confidence score (0-1)
-3. Processing summary
-4. Any warnings or notes
-
-Respond in JSON format with keys: result, confidence, summary, notes"""
-
-                else:
-                    prompt = f"""You are an AI agent processing the following data:
-
-Task: {task}
-Content: {text_content}
-
-Please analyze and process this data appropriately. Respond in JSON format with keys: analysis, result, confidence"""
-
-                # Get LLM response
-                response = await llm_service.generate_structured_output(
-                    prompt=prompt,
-                    schema={
-                        "type": "object",
-                        "properties": {
-                            "analysis": {"type": "string"},
-                            "result": {"type": "string"},
-                            "confidence": {"type": "number"}
-                        }
-                    }
-                )
-
-                # Create structured response
-                processed_data = {
-                    "agent_name": self.name,
-                    "processing_type": processing_type,
-                    "processed_at": datetime.now().isoformat(),
-                    "original_task": task,
-                    "original_content": text_content,
-                    "llm_response": response,
-                    "metadata": {
-                        "step_id": self.name,
-                        "processing_type": "llm_agent",
-                        "llm_used": True
-                    }
-                }
-
-            except Exception as e:
-                # Fallback to simple processing if LLM fails
-                processed_data = {
-                    "agent_name": self.name,
-                    "processing_type": processing_type,
-                    "processed_at": datetime.now().isoformat(),
-                    "original_task": task,
-                    "original_content": text_content,
-                    "fallback_result": f"Processed {task} with simple transformation",
-                    "error": str(e),
-                    "metadata": {
-                        "step_id": self.name,
-                        "processing_type": "fallback_agent",
-                        "llm_used": False
-                    }
-                }
-        else:
-            # No LLM service available, use simple processing
-            processed_data = {
-                "agent_name": self.name,
-                "processing_type": processing_type,
-                "processed_at": datetime.now().isoformat(),
-                "original_task": task,
-                "original_content": text_content,
-                "simple_result": f"Processed {task} with basic transformation",
-                "metadata": {
-                    "step_id": self.name,
-                    "processing_type": "simple_agent",
-                    "llm_used": False
-                }
-            }
-
-        return processed_data
+        return {
+            "agent_name": self.name,
+            "processing_type": self._processing_type,
+            "agent_output": llm_result.get("text", ""),
+            "agent_job_id": llm_result.get("agent_job_id"),
+            "event_count": llm_result.get("event_count", 0),
+            "metadata": {
+                "step_id": self.name,
+                "agent_kind": "llm_agent",
+            },
+        }

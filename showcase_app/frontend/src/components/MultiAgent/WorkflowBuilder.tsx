@@ -6,6 +6,8 @@
  */
 
 import React, { useState } from 'react';
+
+const API_BASE = import.meta.env.VITE_API_URL || '';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,7 +109,7 @@ const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({ onWorkflowCreated }) 
 
     try {
       setError(null);
-      const response = await fetch('http://localhost:5555/api/multi-agent/workflows', {
+      const response = await fetch(`${API_BASE}/api/multi-agent/workflows`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Play, History, AlertTriangle, CheckCircle, XCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import ReactDiffViewer from 'react-diff-viewer-continued';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 export default function ReplayComparison({ jobId }) {
   const [useCached, setUseCached] = useState(false);
   const [expandedDiffs, setExpandedDiffs] = useState(new Set());
@@ -12,7 +14,7 @@ export default function ReplayComparison({ jobId }) {
   const { data: history, isLoading: historyLoading } = useQuery({
     queryKey: ['replay-history', jobId],
     queryFn: async () => {
-      const response = await fetch(`http://localhost:5555/api/reliability/replay/${jobId}/history`);
+      const response = await fetch(`${API_BASE}/api/reliability/replay/${jobId}/history`);
       if (!response.ok) throw new Error('Failed to fetch replay history');
       return response.json();
     },
@@ -23,7 +25,7 @@ export default function ReplayComparison({ jobId }) {
   const replayMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(
-        `http://localhost:5555/api/reliability/replay/${jobId}?use_cached=${useCached}`,
+        `${API_BASE}/api/reliability/replay/${jobId}?use_cached=${useCached}`,
         { method: 'POST' }
       );
       if (!response.ok) throw new Error('Replay failed');
@@ -51,18 +53,18 @@ export default function ReplayComparison({ jobId }) {
   };
 
   if (!jobId) {
-    return (
-      <div className="p-8 text-center text-gray-500">
-        <Play className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-        <p>Select an execution to replay</p>
-      </div>
-    );
+    return null;
+  }
+
+  // Don't render empty panel when there's no replay history
+  if (!historyLoading && !history?.history?.length && !replayMutation.data) {
+    return null;
   }
 
   return (
     <div className="flex flex-col h-full">
       {/* Header with Controls */}
-      <div className="border-b bg-gray-50 p-4">
+      <div className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Play className="w-5 h-5" />
           Execution Replay
@@ -77,7 +79,7 @@ export default function ReplayComparison({ jobId }) {
               onChange={(e) => setUseCached(e.target.checked)}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm text-gray-700">Use cached responses</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Use cached responses</span>
           </label>
 
           <button
@@ -107,7 +109,7 @@ export default function ReplayComparison({ jobId }) {
         )}
 
         {/* History Section */}
-        <div className="border-t bg-gray-50 p-4">
+        <div className="border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
           <h3 className="text-md font-semibold mb-3 flex items-center gap-2">
             <History className="w-4 h-4" />
             Replay History
@@ -137,24 +139,24 @@ function ReplaySummary({ result }) {
 
   return (
     <div className="grid grid-cols-4 gap-4">
-      <div className="bg-white p-3 rounded-lg border">
-        <div className="text-sm text-gray-600">Original Status</div>
+      <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
+        <div className="text-sm text-gray-600 dark:text-gray-400">Original Status</div>
         <div className={`text-lg font-bold ${getStatusColor(comparison.original_status)}`}>
           {comparison.original_status}
         </div>
       </div>
-      <div className="bg-white p-3 rounded-lg border">
-        <div className="text-sm text-gray-600">Replay Status</div>
+      <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
+        <div className="text-sm text-gray-600 dark:text-gray-400">Replay Status</div>
         <div className={`text-lg font-bold ${getStatusColor(comparison.replay_status)}`}>
           {comparison.replay_status}
         </div>
       </div>
-      <div className="bg-white p-3 rounded-lg border">
-        <div className="text-sm text-gray-600">Identical Steps</div>
+      <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
+        <div className="text-sm text-gray-600 dark:text-gray-400">Identical Steps</div>
         <div className="text-lg font-bold text-green-600">{identicalCount}</div>
       </div>
-      <div className="bg-white p-3 rounded-lg border">
-        <div className="text-sm text-gray-600">Differences</div>
+      <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
+        <div className="text-sm text-gray-600 dark:text-gray-400">Differences</div>
         <div className="text-lg font-bold text-orange-600">{differenceCount}</div>
       </div>
     </div>
@@ -171,11 +173,11 @@ function ComparisonDetails({ comparison, expandedDiffs, toggleDiff }) {
       <h3 className="text-md font-semibold">Step-by-Step Comparison</h3>
 
       {comparison.differences.map((diff, idx) => (
-        <div key={idx} className="border rounded-lg overflow-hidden">
+        <div key={idx} className="border dark:border-gray-700 rounded-lg overflow-hidden">
           {/* Step Header */}
           <div
             className={`p-3 cursor-pointer flex items-center justify-between ${
-              diff.identical ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'
+              diff.identical ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800'
             }`}
             onClick={() => toggleDiff(idx)}
           >
@@ -190,13 +192,13 @@ function ComparisonDetails({ comparison, expandedDiffs, toggleDiff }) {
               ) : (
                 <AlertTriangle className="w-5 h-5 text-orange-600" />
               )}
-              <span className="font-medium">{diff.step_name}</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{diff.step_name}</span>
             </div>
             <span
               className={`text-sm px-2 py-1 rounded ${
                 diff.identical
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-orange-100 text-orange-700'
+                  ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                  : 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300'
               }`}
             >
               {diff.identical ? 'Identical' : 'Different'}
@@ -205,15 +207,15 @@ function ComparisonDetails({ comparison, expandedDiffs, toggleDiff }) {
 
           {/* Expanded Details */}
           {expandedDiffs.has(idx) && (
-            <div className="p-4 bg-white">
+            <div className="p-4 bg-white dark:bg-gray-900">
               {diff.identical ? (
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
                   <p className="mb-2">✓ Outputs match perfectly</p>
                   <details>
                     <summary className="cursor-pointer text-blue-600 hover:text-blue-700">
                       View output
                     </summary>
-                    <pre className="mt-2 p-3 bg-gray-50 rounded text-xs overflow-x-auto">
+                    <pre className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 dark:text-gray-200 rounded text-xs overflow-x-auto">
                       {JSON.stringify(diff.original_output, null, 2)}
                     </pre>
                   </details>
@@ -249,7 +251,7 @@ function ComparisonDetails({ comparison, expandedDiffs, toggleDiff }) {
 
 function HistoryCard({ item }) {
   return (
-    <div className="bg-white p-3 rounded-lg border">
+    <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {item.identical ? (
@@ -266,7 +268,7 @@ function HistoryCard({ item }) {
             </div>
           </div>
         </div>
-        <div className="text-sm text-gray-600">{item.difference_count} differences</div>
+        <div className="text-sm text-gray-600 dark:text-gray-400">{item.difference_count} differences</div>
       </div>
     </div>
   );

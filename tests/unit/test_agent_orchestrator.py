@@ -63,7 +63,9 @@ class TestAgentOrchestrator:
         orchestrator.add_agent("agent1", agent)
 
         assert "agent1" in orchestrator.agents
-        assert orchestrator.agents["agent1"] == agent
+        # Legacy BaseAgent is wrapped — verify underlying agent
+        wrapper = orchestrator.agents["agent1"]
+        assert wrapper.role.name == agent.role.name
 
     async def test_add_edge(self):
         """Edges can be added between agents."""
@@ -303,7 +305,7 @@ class TestAgentOrchestrator:
         state = StateManager(thread_id="test-thread")
         orchestrator = AgentOrchestrator(state)
 
-        with pytest.raises(ValueError, match="Unknown start agent"):
+        with pytest.raises(ValueError, match="Unknown start step"):
             await orchestrator.run("nonexistent", {})
 
     async def test_orchestrator_repr(self):
@@ -318,4 +320,4 @@ class TestAgentOrchestrator:
 
         repr_str = repr(orchestrator)
         assert "AgentOrchestrator" in repr_str
-        assert "agents=1" in repr_str
+        assert "steps=1" in repr_str

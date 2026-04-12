@@ -48,6 +48,9 @@ logs/
 workflows/
 *.json.bak
 
+# Agent workspace (shared collaborative workspace for CLI agents)
+workspace/
+
 # Node modules (frontend)
 frontend/node_modules/
 frontend/dist/
@@ -58,6 +61,11 @@ frontend/.vite/
 .coverage
 htmlcov/
 .tox/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
 
 # Temporary files
 *.tmp

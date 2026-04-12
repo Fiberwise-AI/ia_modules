@@ -4,8 +4,8 @@ import { Clock, Layers } from 'lucide-react'
 export default function SpanTimeline({ jobId, spans }) {
   if (!spans || spans.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
           <Layers size={20} />
           Execution Trace
         </h3>
@@ -57,20 +57,20 @@ export default function SpanTimeline({ jobId, spans }) {
   const rowHeight = 40
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <Layers size={20} />
           Execution Trace
         </h3>
-        <p className="text-sm text-gray-600 mt-1">
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
           {spans.length} spans over {(totalDuration / 1000).toFixed(2)}s
         </p>
       </div>
 
       <div className="p-6">
         {/* Timeline ruler */}
-        <div className="mb-4 relative h-8 border-b border-gray-300">
+        <div className="mb-4 relative h-8 border-b border-gray-300 dark:border-gray-600">
           <div className="absolute inset-0 flex justify-between text-xs text-gray-500">
             <span>0ms</span>
             <span>{(totalDuration / 4).toFixed(0)}ms</span>
@@ -107,7 +107,7 @@ export default function SpanTimeline({ jobId, spans }) {
                     {span.name}
                   </span>
                 </div>
-                <div className="text-xs text-gray-600 mt-1">
+                <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                   {span.duration_ms?.toFixed(1)}ms
                 </div>
               </div>

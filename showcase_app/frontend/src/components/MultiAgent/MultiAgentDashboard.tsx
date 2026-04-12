@@ -10,6 +10,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
+const API_BASE = import.meta.env.VITE_API_URL || '';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -62,7 +64,7 @@ const MultiAgentDashboard: React.FC = () => {
   const [autoRefresh, setAutoRefresh] = useState(false);
 
   // API base URL
-  const API_BASE = 'http://localhost:5555/api/multi-agent';
+  const MULTI_AGENT_API = `${API_BASE}/api/multi-agent`;
 
   // Load workflows on mount
   useEffect(() => {
@@ -84,7 +86,7 @@ const MultiAgentDashboard: React.FC = () => {
   const loadWorkflows = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE}/workflows`);
+      const response = await fetch(`${MULTI_AGENT_API}/workflows`);
       if (!response.ok) throw new Error('Failed to load workflows');
       const data = await response.json();
       setWorkflows(data.workflows || []);
@@ -99,7 +101,7 @@ const MultiAgentDashboard: React.FC = () => {
   // Load workflow state
   const loadWorkflowState = async (workflowId: string) => {
     try {
-      const response = await fetch(`${API_BASE}/workflows/${workflowId}/state`);
+      const response = await fetch(`${MULTI_AGENT_API}/workflows/${workflowId}/state`);
       if (!response.ok) throw new Error('Failed to load workflow state');
       const data = await response.json();
       setWorkflowState(data);
@@ -111,7 +113,7 @@ const MultiAgentDashboard: React.FC = () => {
   // Load communications
   const loadCommunications = async (workflowId: string) => {
     try {
-      const response = await fetch(`${API_BASE}/workflows/${workflowId}/communications`);
+      const response = await fetch(`${MULTI_AGENT_API}/workflows/${workflowId}/communications`);
       if (!response.ok) throw new Error('Failed to load communications');
       const data = await response.json();
       setCommunications(data.communications || []);
@@ -136,7 +138,7 @@ const MultiAgentDashboard: React.FC = () => {
       setAutoRefresh(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE}/workflows/${selectedWorkflow}/executions`, {
+      const response = await fetch(`${MULTI_AGENT_API}/workflows/${selectedWorkflow}/executions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -167,7 +169,7 @@ const MultiAgentDashboard: React.FC = () => {
       setIsLoading(true);
       const workflowId = `workflow_${Date.now()}`;
       
-      const response = await fetch(`${API_BASE}/workflows`, {
+      const response = await fetch(`${MULTI_AGENT_API}/workflows`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

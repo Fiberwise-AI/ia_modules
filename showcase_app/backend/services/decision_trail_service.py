@@ -1,20 +1,23 @@
 """
 Decision Trail Service
 
-Wraps ia_modules decision trail functionality for the showcase app.
-Provides access to decision logging, execution paths, and evidence tracking.
+Wraps ia_modules DecisionTrailBuilder for the showcase app.
+
+The real library API is a single coroutine: `build_trail(thread_id, checkpoint_id,
+include_evidence) -> DecisionTrail`. Everything here is built by calling that once
+and projecting the resulting dataclass into the shapes each API endpoint returns.
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List, Optional
+
+from ia_modules.reliability.decision_trail import DecisionTrail
 
 
 class DecisionTrailService:
-    """Service for managing decision trails and execution paths"""
+    """Service for managing decision trails and execution paths."""
 
     def __init__(self, decision_trail_builder, reliability_metrics):
         """
-        Initialize decision trail service
-        
         Args:
             decision_trail_builder: ia_modules DecisionTrailBuilder instance
             reliability_metrics: ReliabilityMetrics service for context
@@ -22,269 +25,266 @@ class DecisionTrailService:
         self.decision_trail_builder = decision_trail_builder
         self.reliability_metrics = reliability_metrics
 
+    async def _build(self, job_id: str) -> Optional[DecisionTrail]:
+        """Call the real builder. `job_id` is the checkpointer thread_id."""
+        if not self.decision_trail_builder:
+            return None
+        return await self.decision_trail_builder.build_trail(
+            thread_id=job_id,
+            checkpoint_id=None,
+            include_evidence=True,
+        )
+
     async def get_decision_trail(self, job_id: str) -> Dict[str, Any]:
-        """
-        Get complete decision trail for an execution
-        
-        Args:
-            job_id: Execution job ID
-            
-        Returns:
-            Decision trail with nodes, edges, and metadata
-        """
+        """Complete decision trail projected into nodes/edges for the UI."""
         try:
-            # Get decision trail from builder if available
-            trail = None
-            if self.decision_trail_builder:
-                trail = self.decision_trail_builder.get_trail(job_id)
-            
-            if not trail:
-                return {
-                    "job_id": job_id,
-                    "nodes": [],
-                    "edges": [],
-                    "metadata": {},
-                    "statistics": {
-                        "total_decisions": 0,
-                        "decision_points": 0,
-                        "paths_taken": 0
-                    }
-                }
-            
-            # Format trail data
-            nodes = self._format_decision_nodes(trail.get("nodes", []))
-            edges = self._format_decision_edges(trail.get("edges", []))
-            
+            trail = await self._build(job_id)
+            if trail is None:
+                return _empty_trail(job_id)
+
+            nodes = _nodes_from_trail(trail)
+            edges = _edges_from_trail(trail)
+
             return {
                 "job_id": job_id,
+                "thread_id": trail.thread_id,
+                "checkpoint_id": trail.checkpoint_id,
+                "goal": trail.goal,
+                "success": trail.success,
                 "nodes": nodes,
                 "edges": edges,
-                "metadata": trail.get("metadata", {}),
-                "statistics": self._calculate_trail_statistics(nodes, edges),
-                "created_at": trail.get("created_at"),
-                "updated_at": trail.get("updated_at")
+                "metadata": trail.metadata,
+                "statistics": _statistics(trail, nodes, edges),
+                "timestamp": trail.timestamp,
+                "duration_ms": trail.duration_ms,
             }
-            
         except Exception as e:
             raise RuntimeError(f"Failed to get decision trail: {str(e)}")
 
     async def get_decision_node(self, job_id: str, node_id: str) -> Dict[str, Any]:
-        """
-        Get detailed information about a specific decision node
-        
-        Args:
-            job_id: Execution job ID
-            node_id: Decision node ID
-            
-        Returns:
-            Decision node details with evidence and rationale
-        """
+        """Look up a single node (step or tool call) by id."""
         try:
-            node = self.decision_trail_builder.get_node(job_id, node_id)
-            
-            if not node:
-                raise ValueError(f"Decision node not found: {node_id}")
-            
-            return {
-                "node_id": node_id,
-                "job_id": job_id,
-                "decision_type": node.get("decision_type"),
-                "decision": node.get("decision"),
-                "rationale": node.get("rationale"),
-                "confidence": node.get("confidence"),
-                "evidence": node.get("evidence", []),
-                "alternatives": node.get("alternatives", []),
-                "timestamp": node.get("timestamp"),
-                "metadata": node.get("metadata", {})
-            }
-            
+            trail = await self._build(job_id)
+            if trail is None:
+                raise ValueError(f"Decision trail not found: {job_id}")
+
+            for node in _nodes_from_trail(trail):
+                if node["id"] == node_id:
+                    return {
+                        "node_id": node_id,
+                        "job_id": job_id,
+                        **node,
+                    }
+            raise ValueError(f"Decision node not found: {node_id}")
+        except ValueError:
+            raise
         except Exception as e:
             raise RuntimeError(f"Failed to get decision node: {str(e)}")
 
     async def get_execution_path(self, job_id: str) -> List[Dict[str, Any]]:
-        """
-        Get the execution path taken through decision points
-        
-        Args:
-            job_id: Execution job ID
-            
-        Returns:
-            Ordered list of decisions and their outcomes
-        """
+        """Ordered list of agents that ran, one entry per recorded step."""
         try:
-            path = self.decision_trail_builder.get_execution_path(job_id)
-            
+            trail = await self._build(job_id)
+            if trail is None:
+                return []
+
+            # Prefer steps_taken (has success + error); fall back to execution_path.
+            if trail.steps_taken:
+                return [
+                    {
+                        "step": step.step_index,
+                        "node_id": f"step-{step.step_index}",
+                        "agent": step.agent,
+                        "success": step.success,
+                        "error": step.error,
+                        "duration_ms": step.duration_ms,
+                        "retries": step.retries,
+                        "timestamp": step.timestamp,
+                    }
+                    for step in trail.steps_taken
+                ]
+
             return [
                 {
                     "step": idx + 1,
-                    "node_id": decision["node_id"],
-                    "decision_type": decision.get("decision_type"),
-                    "decision": decision.get("decision"),
-                    "outcome": decision.get("outcome"),
-                    "timestamp": decision.get("timestamp")
+                    "node_id": f"agent-{idx + 1}",
+                    "agent": agent,
                 }
-                for idx, decision in enumerate(path or [])
+                for idx, agent in enumerate(trail.execution_path)
             ]
-            
         except Exception as e:
             raise RuntimeError(f"Failed to get execution path: {str(e)}")
 
-    async def get_decision_evidence(self, job_id: str, node_id: str) -> List[Dict[str, Any]]:
-        """
-        Get evidence collected for a specific decision
-        
-        Args:
-            job_id: Execution job ID
-            node_id: Decision node ID
-            
-        Returns:
-            List of evidence items with sources and weights
-        """
+    async def get_decision_evidence(
+        self, job_id: str, node_id: str
+    ) -> List[Dict[str, Any]]:
+        """Evidence collected during the run, optionally filtered to one node."""
         try:
-            evidence = self.decision_trail_builder.get_evidence(job_id, node_id)
-            
-            return [
-                {
-                    "evidence_id": item.get("id"),
-                    "type": item.get("type"),  # direct, inferred, contextual
-                    "source": item.get("source"),
-                    "content": item.get("content"),
-                    "weight": item.get("weight", 1.0),
-                    "confidence": item.get("confidence", 1.0),
-                    "timestamp": item.get("timestamp")
-                }
-                for item in (evidence or [])
-            ]
-            
+            trail = await self._build(job_id)
+            if trail is None:
+                return []
+
+            items = []
+            for idx, ev in enumerate(trail.evidence):
+                # A tool-call evidence item is tied to the node whose `source`
+                # matches the tool name. If node_id is a step-N id we return all
+                # evidence (per-step evidence isn't tracked by the real builder).
+                if node_id.startswith("tool-") and ev.source != node_id[len("tool-") :]:
+                    continue
+                items.append(
+                    {
+                        "evidence_id": f"ev-{idx}",
+                        "type": ev.type,
+                        "source": ev.source,
+                        "content": ev.content,
+                        "confidence": ev.confidence,
+                        "timestamp": ev.timestamp,
+                        "metadata": ev.metadata,
+                    }
+                )
+            return items
         except Exception as e:
             raise RuntimeError(f"Failed to get decision evidence: {str(e)}")
 
     async def get_alternative_paths(self, job_id: str) -> List[Dict[str, Any]]:
         """
-        Get alternative decision paths that were not taken
-        
-        Args:
-            job_id: Execution job ID
-            
-        Returns:
-            List of alternative paths with their probabilities
+        Alternative paths are not tracked by the real DecisionTrailBuilder — it
+        only reconstructs the path actually taken. Return an empty list so the
+        API stays well-formed instead of 500-ing.
         """
-        try:
-            alternatives = self.decision_trail_builder.get_alternatives(job_id)
-            
-            return [
-                {
-                    "path_id": alt.get("path_id"),
-                    "decision_point": alt.get("decision_point"),
-                    "alternative_decision": alt.get("decision"),
-                    "probability": alt.get("probability", 0.0),
-                    "reason_not_taken": alt.get("reason"),
-                    "potential_outcome": alt.get("outcome")
-                }
-                for alt in (alternatives or [])
-            ]
-            
-        except Exception as e:
-            raise RuntimeError(f"Failed to get alternative paths: {str(e)}")
+        return []
 
-    async def export_trail(self, job_id: str, format: str = "json") -> Dict[str, Any]:
-        """
-        Export decision trail in specified format
-        
-        Args:
-            job_id: Execution job ID
-            format: Export format (json, graphviz, mermaid)
-            
-        Returns:
-            Exported trail data
-        """
+    async def export_trail(self, job_id: str, format: str = "json") -> Any:
+        """Export the trail. `json` returns the projected dict; others render it."""
         try:
-            trail = await self.get_decision_trail(job_id)
-            
+            trail_dict = await self.get_decision_trail(job_id)
             if format == "json":
-                return trail
-            elif format == "graphviz":
-                return self._export_graphviz(trail)
-            elif format == "mermaid":
-                return self._export_mermaid(trail)
-            else:
-                raise ValueError(f"Unsupported export format: {format}")
-                
+                return trail_dict
+            if format == "graphviz":
+                return _export_graphviz(trail_dict)
+            if format == "mermaid":
+                return _export_mermaid(trail_dict)
+            raise ValueError(f"Unsupported export format: {format}")
+        except ValueError:
+            raise
         except Exception as e:
             raise RuntimeError(f"Failed to export trail: {str(e)}")
 
-    def _format_decision_nodes(self, nodes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Format decision nodes for API response"""
-        return [
+
+# -------- helpers (module-level so they aren't pickled with `self`) --------
+
+
+def _empty_trail(job_id: str) -> Dict[str, Any]:
+    return {
+        "job_id": job_id,
+        "thread_id": job_id,
+        "checkpoint_id": "unknown",
+        "goal": "",
+        "success": False,
+        "nodes": [],
+        "edges": [],
+        "metadata": {},
+        "statistics": {
+            "total_nodes": 0,
+            "decision_points": 0,
+            "total_edges": 0,
+            "tool_calls": 0,
+            "evidence_items": 0,
+        },
+        "timestamp": None,
+        "duration_ms": 0,
+    }
+
+
+def _nodes_from_trail(trail: DecisionTrail) -> List[Dict[str, Any]]:
+    """Flatten steps_taken and tool_calls into UI nodes."""
+    nodes: List[Dict[str, Any]] = []
+
+    for step in trail.steps_taken:
+        nodes.append(
             {
-                "id": node["id"],
-                "type": node.get("type", "decision"),
-                "label": node.get("label", node["id"]),
-                "decision": node.get("decision"),
-                "confidence": node.get("confidence", 1.0),
-                "timestamp": node.get("timestamp"),
-                "metadata": node.get("metadata", {})
+                "id": f"step-{step.step_index}",
+                "type": "step",
+                "label": step.agent,
+                "decision": "completed" if step.success else "failed",
+                "confidence": 1.0 if step.success else 0.0,
+                "timestamp": step.timestamp,
+                "metadata": {
+                    "error": step.error,
+                    "duration_ms": step.duration_ms,
+                    "retries": step.retries,
+                },
             }
-            for node in nodes
-        ]
+        )
 
-    def _format_decision_edges(self, edges: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Format decision edges for API response"""
-        return [
+    for tc in trail.tool_calls:
+        nodes.append(
             {
-                "from": edge["from"],
-                "to": edge["to"],
-                "label": edge.get("label", ""),
-                "condition": edge.get("condition"),
-                "weight": edge.get("weight", 1.0)
+                "id": f"tool-{tc.tool_name}",
+                "type": "tool_call",
+                "label": tc.tool_name,
+                "decision": "success" if tc.success else "error",
+                "confidence": 1.0 if tc.success else 0.0,
+                "timestamp": tc.timestamp,
+                "metadata": {
+                    "parameters": tc.parameters,
+                    "duration_ms": tc.duration_ms,
+                    "error": tc.error,
+                },
             }
-            for edge in edges
-        ]
+        )
 
-    def _calculate_trail_statistics(self, nodes: List[Dict[str, Any]], edges: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Calculate statistics for decision trail"""
-        decision_nodes = [n for n in nodes if n.get("type") == "decision"]
-        
-        return {
-            "total_nodes": len(nodes),
-            "decision_points": len(decision_nodes),
-            "total_edges": len(edges),
-            "paths_taken": len([e for e in edges if e.get("weight", 0) > 0]),
-            "average_confidence": sum(n.get("confidence", 0) for n in decision_nodes) / max(len(decision_nodes), 1)
-        }
+    return nodes
 
-    def _export_graphviz(self, trail: Dict[str, Any]) -> str:
-        """Export trail as Graphviz DOT format"""
-        lines = ["digraph DecisionTrail {", "  rankdir=LR;"]
-        
-        # Add nodes
-        for node in trail["nodes"]:
-            label = f"{node['label']}\n{node.get('decision', '')}"
-            lines.append(f'  "{node["id"]}" [label="{label}"];')
-        
-        # Add edges
-        for edge in trail["edges"]:
-            label = edge.get("label", "")
-            lines.append(f'  "{edge["from"]}" -> "{edge["to"]}" [label="{label}"];')
-        
-        lines.append("}")
-        return "\n".join(lines)
 
-    def _export_mermaid(self, trail: Dict[str, Any]) -> str:
-        """Export trail as Mermaid diagram"""
-        lines = ["graph LR"]
-        
-        # Add nodes
-        for node in trail["nodes"]:
-            label = f"{node['label']}: {node.get('decision', '')}"
-            lines.append(f'  {node["id"]}["{label}"]')
-        
-        # Add edges
-        for edge in trail["edges"]:
-            label = edge.get("label", "")
-            if label:
-                lines.append(f'  {edge["from"]} -->|{label}| {edge["to"]}')
-            else:
-                lines.append(f'  {edge["from"]} --> {edge["to"]}')
-        
-        return "\n".join(lines)
+def _edges_from_trail(trail: DecisionTrail) -> List[Dict[str, Any]]:
+    """Chain successive steps together as directed edges."""
+    if len(trail.steps_taken) < 2:
+        return []
+    edges = []
+    for prev, curr in zip(trail.steps_taken, trail.steps_taken[1:]):
+        edges.append(
+            {
+                "from": f"step-{prev.step_index}",
+                "to": f"step-{curr.step_index}",
+                "label": "",
+                "condition": None,
+                "weight": 1.0,
+            }
+        )
+    return edges
+
+
+def _statistics(
+    trail: DecisionTrail,
+    nodes: List[Dict[str, Any]],
+    edges: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    return {
+        "total_nodes": len(nodes),
+        "decision_points": len(trail.steps_taken),
+        "total_edges": len(edges),
+        "tool_calls": len(trail.tool_calls),
+        "evidence_items": len(trail.evidence),
+    }
+
+
+def _export_graphviz(trail: Dict[str, Any]) -> str:
+    lines = ["digraph DecisionTrail {", "  rankdir=LR;"]
+    for node in trail["nodes"]:
+        label = f"{node['label']}\\n{node.get('decision', '')}"
+        lines.append(f'  "{node["id"]}" [label="{label}"];')
+    for edge in trail["edges"]:
+        lines.append(f'  "{edge["from"]}" -> "{edge["to"]}";')
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def _export_mermaid(trail: Dict[str, Any]) -> str:
+    lines = ["graph LR"]
+    for node in trail["nodes"]:
+        label = f"{node['label']}: {node.get('decision', '')}"
+        lines.append(f'  {node["id"]}["{label}"]')
+    for edge in trail["edges"]:
+        lines.append(f'  {edge["from"]} --> {edge["to"]}')
+    return "\n".join(lines)

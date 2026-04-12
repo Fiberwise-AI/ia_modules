@@ -4,33 +4,36 @@ import { Play, BarChart3, CheckCircle, Clock, TrendingUp, Shield } from 'lucide-
 
 export default function HomePage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-6xl">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-500 rounded-lg p-8 text-white">
-        <h1 className="text-4xl font-bold mb-4">Welcome to IA Modules Showcase</h1>
-        <p className="text-xl mb-6">
-          Production-ready AI agent framework with enterprise-grade reliability and observability
-        </p>
-        <div className="flex space-x-4">
-          <Link
-            to="/pipelines"
-            className="bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
-          >
-            Try Example Pipelines
-          </Link>
-          <Link
-            to="/metrics"
-            className="border-2 border-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary-600 transition"
-          >
-            View Metrics Dashboard
-          </Link>
+      <div className="relative overflow-hidden rounded-2xl bg-gray-950 p-8 lg:p-10 text-white">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-600/20 via-transparent to-accent-500/10"></div>
+        <div className="relative">
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight mb-3">Welcome to IA Modules Showcase</h1>
+          <p className="text-base lg:text-lg text-gray-300 mb-8 max-w-2xl">
+            Production-ready AI agent framework with enterprise-grade reliability and observability
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              to="/pipelines"
+              className="bg-white text-gray-900 px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors"
+            >
+              Try Example Pipelines
+            </Link>
+            <Link
+              to="/metrics"
+              className="border border-white/20 bg-white/10 px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-white/20 transition-colors"
+            >
+              View Metrics Dashboard
+            </Link>
+          </div>
         </div>
       </div>
 
       {/* Features Grid */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Key Features</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <h2 className="section-heading mb-5">Key Features</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <FeatureCard
             icon={<Play className="text-primary-500" size={32} />}
             title="Graph-Based Pipelines"
@@ -71,8 +74,8 @@ export default function HomePage() {
 
       {/* Stats */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Framework Capabilities</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <h2 className="section-heading mb-5">Framework Capabilities</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard label="Example Pipelines" value="9" color="blue" />
           <StatCard label="Reliability Metrics" value="12" color="purple" />
           <StatCard label="EARF Pillars" value="3" color="green" />
@@ -81,8 +84,8 @@ export default function HomePage() {
       </div>
 
       {/* Quick Start */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Quick Start</h2>
+      <div className="card p-6 lg:p-8">
+        <h2 className="section-heading mb-5">Quick Start</h2>
         <div className="space-y-4">
           <QuickStartStep
             number="1"
@@ -108,9 +111,9 @@ export default function HomePage() {
       </div>
 
       {/* Documentation Links */}
-      <div className="bg-gray-100 rounded-lg p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Documentation</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="card p-6 lg:p-8 bg-gray-50 dark:bg-gray-900/50">
+        <h2 className="section-heading mb-5">Documentation</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <DocLink
             title="Getting Started"
             description="Quick start guide and installation"
@@ -139,25 +142,28 @@ export default function HomePage() {
 
 function FeatureCard({ icon, title, description }) {
   return (
-    <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition">
-      <div className="mb-4">{icon}</div>
-      <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
-      <p className="text-gray-600 text-sm">{description}</p>
+    <div className="card p-5 hover:shadow-soft-md transition-shadow">
+      <div className="mb-3">{icon}</div>
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1.5">{title}</h3>
+      <p className="text-gray-500 dark:text-gray-400 text-[13px] leading-relaxed">{description}</p>
     </div>
   )
 }
 
 function StatCard({ label, value, color }) {
-  const colors = {
-    green: 'bg-green-100 text-green-800',
-    blue: 'bg-blue-100 text-blue-800',
-    purple: 'bg-purple-100 text-purple-800',
+  const dotColors = {
+    green: 'bg-emerald-500',
+    blue: 'bg-primary-500',
+    purple: 'bg-purple-500',
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="text-sm text-gray-600 mb-2">{label}</div>
-      <div className={`text-3xl font-bold ${colors[color]}`}>{value}</div>
+    <div className="card p-5">
+      <div className="flex items-center space-x-2 mb-3">
+        <div className={`w-2 h-2 rounded-full ${dotColors[color]}`}></div>
+        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</div>
+      </div>
+      <div className="text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
     </div>
   )
 }
@@ -165,12 +171,12 @@ function StatCard({ label, value, color }) {
 function QuickStartStep({ number, title, description }) {
   return (
     <div className="flex items-start space-x-4">
-      <div className="bg-primary-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">
+      <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg w-7 h-7 flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">
         {number}
       </div>
       <div>
-        <h3 className="font-semibold text-gray-800">{title}</h3>
-        <p className="text-gray-600 text-sm">{description}</p>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{title}</h3>
+        <p className="text-gray-500 dark:text-gray-400 text-[13px] mt-0.5">{description}</p>
       </div>
     </div>
   )
@@ -182,10 +188,10 @@ function DocLink({ title, description, href }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="block bg-white rounded-lg p-4 hover:shadow-md transition"
+      className="block bg-white dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200/40 dark:border-gray-700/40 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
     >
-      <h3 className="font-semibold text-gray-800 mb-1">{title}</h3>
-      <p className="text-gray-600 text-sm">{description}</p>
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">{title}</h3>
+      <p className="text-gray-500 dark:text-gray-400 text-[13px]">{description}</p>
     </a>
   )
 }

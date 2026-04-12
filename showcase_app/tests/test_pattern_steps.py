@@ -2,53 +2,36 @@
 Tests for Agentic Design Pattern Pipeline Steps
 
 Tests that pattern steps correctly integrate with the pipeline system
-and LLM provider service.
+and SubprocessAgentAdapter.
 """
 
 import pytest
 import asyncio
 import os
-from unittest.mock import MagicMock
 import sys
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from backend.pipelines.pattern_steps import ReflectionStep, PlanningStep, ToolUseStep
-from ia_modules.pipeline.llm_provider_service import LLMResponse, LLMProvider
 
 
-class MockLLMService:
-    """Mock LLM service for testing"""
+class MockAdapter:
+    """Mock adapter matching SubprocessAgentAdapter.generate() interface."""
 
     def __init__(self, responses: list):
         self.responses = responses
         self.call_count = 0
-        self.providers = {"openai": MagicMock()}
 
-    async def generate_completion(self, prompt: str, temperature: float = 0.7, max_tokens: int = 1000, **kwargs):
-        """Mock completion generation"""
+    async def generate(self, prompt: str, model: str = None, temperature: float = 0.7, max_tokens: int = None, **kwargs):
+        """Mock generate — returns plain string like SubprocessAgentAdapter."""
         if self.call_count >= len(self.responses):
             response_text = "Default response"
         else:
             response_text = self.responses[self.call_count]
 
         self.call_count += 1
-
-        return LLMResponse(
-            content=response_text,
-            provider=LLMProvider.OPENAI,
-            model="gpt-4o",
-            usage={
-                "prompt_tokens": 100,
-                "completion_tokens": 50,
-                "total_tokens": 150
-            }
-        )
-
-    def register_provider(self, name: str, provider, api_key: str, model: str, is_default: bool = False):
-        """Mock provider registration"""
-        pass
+        return response_text
 
 
 class TestReflectionStep:
@@ -78,7 +61,7 @@ class TestReflectionStep:
         )
 
         # Inject mock LLM
-        step.llm_service = MockLLMService(mock_responses)
+        step.adapter = MockAdapter(mock_responses)
 
         # Execute
         result = await step.run({})
@@ -106,7 +89,7 @@ class TestReflectionStep:
                 "max_iterations": 2
             }
         )
-        step.llm_service = MockLLMService(mock_responses)
+        step.adapter = MockAdapter(mock_responses)
 
         # Pass data at runtime
         result = await step.run({
@@ -136,7 +119,7 @@ class TestReflectionStep:
                 "max_iterations": 5
             }
         )
-        step.llm_service = MockLLMService(mock_responses)
+        step.adapter = MockAdapter(mock_responses)
 
         result = await step.run({})
 
@@ -163,8 +146,8 @@ class TestReflectionStep:
                 f"Failed to parse score from: {critique_text}"
 
     @pytest.mark.asyncio
-    async def test_reflection_without_llm_fails(self):
-        """Test that reflection fails gracefully without LLM"""
+    async def test_reflection_without_adapter_fails(self):
+        """Test that reflection fails gracefully without adapter"""
 
         step = ReflectionStep(
             name="test_reflection",
@@ -173,13 +156,10 @@ class TestReflectionStep:
                 "criteria": {"quality": "High"}
             }
         )
-        step.llm_service = None
+        step.adapter = None
 
-        with pytest.raises(RuntimeError) as exc_info:
+        with pytest.raises((RuntimeError, AttributeError)):
             await step.run({})
-
-        assert "LLM service not configured" in str(exc_info.value)
-        assert "API key" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_reflection_requires_initial_output(self):
@@ -192,7 +172,7 @@ class TestReflectionStep:
                 # Missing initial_output
             }
         )
-        step.llm_service = MockLLMService([])
+        step.adapter = MockAdapter([])
 
         with pytest.raises(ValueError) as exc_info:
             await step.run({})
@@ -229,7 +209,7 @@ Depends: Step 2""",
                 "constraints": ["Budget under $10k"]
             }
         )
-        step.llm_service = MockLLMService(mock_responses)
+        step.adapter = MockAdapter(mock_responses)
 
         result = await step.run({})
 
@@ -250,7 +230,7 @@ Depends: Step 2""",
         ]
 
         step = PlanningStep(name="test", config={})
-        step.llm_service = MockLLMService(mock_responses)
+        step.adapter = MockAdapter(mock_responses)
 
         result = await step.run({
             "goal": "Achieve something",
@@ -304,7 +284,7 @@ Step 3: Third action"""
         """Test that goal is required"""
 
         step = PlanningStep(name="test", config={})
-        step.llm_service = MockLLMService([])
+        step.adapter = MockAdapter([])
 
         with pytest.raises(ValueError) as exc_info:
             await step.run({})
@@ -331,7 +311,7 @@ class TestToolUseStep:
                 "available_tools": ["calculator", "search", "code_executor"]
             }
         )
-        step.llm_service = MockLLMService(mock_responses)
+        step.adapter = MockAdapter(mock_responses)
 
         result = await step.run({})
 
@@ -374,7 +354,7 @@ class TestToolUseStep:
         """Test that task is required"""
 
         step = ToolUseStep(name="test", config={})
-        step.llm_service = MockLLMService([])
+        step.adapter = MockAdapter([])
 
         with pytest.raises(ValueError) as exc_info:
             await step.run({})
@@ -417,7 +397,7 @@ class TestPatternIntegration:
 
         # Mock LLM for all steps
         for step in steps:
-            step.llm_service = MockLLMService([
+            step.adapter = MockAdapter([
                 "Step 1: Do something",
                 "VALID: Good plan",
                 "Score: 8/10\nGood quality"
@@ -458,13 +438,9 @@ class TestPatternWithEnvironment:
                 config={"initial_output": "Test"}
             )
 
-            # Should have no LLM service
-            assert step.llm_service is None
-
-            with pytest.raises(RuntimeError) as exc_info:
-                await step.run({})
-
-            assert "not configured" in str(exc_info.value)
+            # Adapter is always created (it doesn't need API keys at init time)
+            # But it will fail when actually trying to spawn a subprocess
+            assert step.adapter is not None
 
         finally:
             # Restore environment

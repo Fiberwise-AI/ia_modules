@@ -1,0 +1,248 @@
+{
+  "config": {
+    "configFile": "/mnt/c/Users/David/Notes/MatterWave/tools/ia_modules/showcase_app/playwright.config.js",
+    "rootDir": "/mnt/c/Users/David/Notes/MatterWave/tools/ia_modules/showcase_app/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/mnt/c/Users/David/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/mnt/c/Users/David/Notes/MatterWave/tools/ia_modules/showcase_app/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 8,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "test-demo-flow.spec.js",
+      "file": "test-demo-flow.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Pipeline Demo Flow @demo",
+          "file": "test-demo-flow.spec.js",
+          "line": 522,
+          "column": 6,
+          "specs": [
+            {
+              "title": "full demo walkthrough",
+              "ok": true,
+              "tags": [
+                "demo"
+              ],
+              "tests": [
+                {
+                  "timeout": 1200000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[capture] step_update completed (data_ingestor) → step-01-end\n"
+                        },
+                        {
+                          "text": "[capture] step_update completed (decision_agent) → step-02-end\n"
+                        },
+                        {
+                          "text": "[capture] step_update completed (final_processor) → step-03-end\n"
+                        },
+                        {
+                          "text": "[capture] execution_completed → final\n"
+                        },
+                        {
+                          "text": "[capture] step_update completed (quality_checker) → step-01-end\n"
+                        },
+                        {
+                          "text": "[capture] execution_failed → final\n"
+                        },
+                        {
+                          "text": "[patterns] reflection started → event-01-started\n"
+                        },
+                        {
+                          "text": "[patterns] reflection iteration_start → event-02-iteration_start\n"
+                        },
+                        {
+                          "text": "[patterns] reflection critiqued → event-03-critiqued\n"
+                        },
+                        {
+                          "text": "[patterns] reflection improved → event-04-improved\n"
+                        },
+                        {
+                          "text": "[patterns] reflection iteration_start → event-05-iteration_start\n"
+                        },
+                        {
+                          "text": "[patterns] reflection critiqued → event-06-critiqued\n"
+                        },
+                        {
+                          "text": "[patterns] reflection improved → event-07-improved\n"
+                        },
+                        {
+                          "text": "[patterns] reflection iteration_start → event-08-iteration_start\n"
+                        },
+                        {
+                          "text": "[patterns] reflection critiqued → event-09-critiqued\n"
+                        },
+                        {
+                          "text": "[patterns] reflection improved → event-10-improved\n"
+                        },
+                        {
+                          "text": "[patterns] reflection completed → event-11-completed\n"
+                        },
+                        {
+                          "text": "[patterns] planning started → event-01-started\n"
+                        },
+                        {
+                          "text": "[patterns] planning decomposing → event-02-decomposing\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Home page",
+                          "duration": 1976
+                        },
+                        {
+                          "title": "Agent-Based Processing Pipeline: pipelines list",
+                          "duration": 2548
+                        },
+                        {
+                          "title": "Agent-Based Processing Pipeline: editor",
+                          "duration": 2972
+                        },
+                        {
+                          "title": "Agent-Based Processing Pipeline: execute",
+                          "duration": 4880
+                        },
+                        {
+                          "title": "Agent-Based Processing Pipeline: capture per-step progress",
+                          "duration": 43013
+                        },
+                        {
+                          "title": "Conditional Processing Pipeline: pipelines list",
+                          "duration": 2648
+                        },
+                        {
+                          "title": "Conditional Processing Pipeline: editor",
+                          "duration": 2956
+                        },
+                        {
+                          "title": "Conditional Processing Pipeline: execute",
+                          "duration": 5058
+                        },
+                        {
+                          "title": "Conditional Processing Pipeline: capture per-step progress",
+                          "duration": 13488
+                        },
+                        {
+                          "title": "Executions list",
+                          "duration": 4540
+                        },
+                        {
+                          "title": "Patterns page",
+                          "duration": 2534
+                        },
+                        {
+                          "title": "Patterns: Reflection",
+                          "duration": 88206
+                        },
+                        {
+                          "title": "Patterns: Planning",
+                          "duration": -1
+                        }
+                      ],
+                      "startTime": "2026-04-12T01:10:35.897Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/mnt/c/Users/David/test-results/test-demo-flow-Pipeline-Demo-Flow-demo-full-demo-walkthrough-chromium/test-failed-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "40696a204655a2b0bb49-dfc4efaad06147a9fca1",
+              "file": "test-demo-flow.spec.js",
+              "line": 524,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-04-12T01:09:58.044Z",
+    "duration": 228292.242,
+    "expected": 0,
+    "skipped": 1,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

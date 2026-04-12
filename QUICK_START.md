@@ -31,6 +31,7 @@ start.bat
 ### What You'll See
 
 - ✅ **Example Pipelines** - Pre-built pipelines ready to execute
+- ✅ **Agent Collaboration Patterns** - Debate, reflection, planning, agentic RAG
 - ✅ **Real-Time Monitoring** - Watch pipelines execute live
 - ✅ **Reliability Dashboard** - SR, CR, HIR, TCL, WCT metrics
 - ✅ **SLO Compliance** - Visual compliance tracking
@@ -108,6 +109,63 @@ asyncio.run(main())
 2. **[Migration Guide](MIGRATION.md)** - Upgrading from older versions
 3. **[Contributing](CONTRIBUTING.md)** - How to contribute
 
+## Built-in Step Types
+
+IA Modules provides ready-to-use step types so you don't need to subclass `PipelineStep` for common patterns:
+
+| Step Type | Module | Use Case |
+|-----------|--------|----------|
+| `LLMStep` | `pipeline.llm_step` | Send a prompt to a CLI agent, get text back |
+| `FunctionStep` | `pipeline.function_step` | Wrap an async callable (vote tallying, routing, aggregation) |
+| `AgentStep` | `pipeline.agent_step` | Run a CLI agent with workspace and tools |
+| `A2AStep` | `pipeline.a2a_step` | Dispatch work to a remote A2A agent server |
+| `ParallelStep` | `pipeline.parallel_step` | Fan-out: run child steps concurrently |
+| `OrchestratorStep` | `pipeline.orchestrator_step` | Run an orchestrator pattern as one atomic step |
+
+```python
+from ia_modules.pipeline import LLMStep, FunctionStep, ParallelStep
+
+# LLM step — just a prompt, no subclassing needed
+summarizer = LLMStep(
+    name="summarize",
+    system_prompt="Summarize the following text concisely.",
+    model="claude-sonnet-4-20250514",
+)
+
+# Function step — wrap any async callable
+async def tally_votes(context):
+    votes = context.get_data("votes", [])
+    return {"winner": max(set(votes), key=votes.count)}
+
+tally = FunctionStep(name="tally", fn=tally_votes)
+
+# Parallel step — fan out to multiple workers
+parallel = ParallelStep(
+    name="all_reviewers",
+    children=[reviewer_1, reviewer_2, reviewer_3],
+)
+```
+
+## Agent Authentication
+
+For multi-tenant or production deployments, agents authenticate via OIDC JWTs. The auth system is pluggable — use the built-in mini OIDC provider for local dev, or connect to Keycloak/Auth0/Cognito for production.
+
+```python
+from ia_modules.agents.auth import get_adapter
+from ia_modules.agents.permissions import enforce_agent_claims
+
+# Get configured IDP adapter (AGENT_AUTH_MODE=local or oidc)
+adapter = get_adapter(db=my_db)
+
+# Validate a Bearer token and get claims
+claims = await adapter.validate_token(token)
+
+# Enforce permissions before execution
+enforce_agent_claims(claims, cwd="/data/workspace", mode="research", tools=["Read", "Glob"])
+```
+
+Set `AGENT_AUTH_MODE=oidc` and configure `OIDC_DISCOVERY_URL` for production Keycloak/OIDC. Default is `local` (built-in mini OIDC, no external IDP needed).
+
 ## 🎯 Common Use Cases
 
 ### Data Processing Pipeline
@@ -116,10 +174,10 @@ asyncio.run(main())
 # Multi-step data transformation
 pipeline_config = {
     "steps": {
-        "load": {"class": "LoadDataStep"},
-        "validate": {"class": "ValidateDataStep"},
-        "transform": {"class": "TransformDataStep"},
-        "export": {"class": "ExportDataStep"}
+        "load": {"type": "function", "fn": "load_data"},
+        "validate": {"type": "function", "fn": "validate_data"},
+        "transform": {"type": "llm", "system_prompt": "Transform this data..."},
+        "export": {"type": "function", "fn": "export_data"}
     }
 }
 ```
@@ -130,12 +188,26 @@ pipeline_config = {
 # LLM-powered content generation
 pipeline_config = {
     "steps": {
-        "research": {"class": "ResearchStep"},
-        "draft": {"class": "DraftStep"},
-        "review": {"class": "ReviewStep"},
-        "publish": {"class": "PublishStep"}
+        "research": {"type": "agent", "mode": "research"},
+        "draft": {"type": "llm", "system_prompt": "Draft content based on research..."},
+        "review": {"type": "llm", "system_prompt": "Review and improve..."},
+        "publish": {"type": "function", "fn": "publish"}
     }
 }
+```
+
+### Remote Agent Dispatch (A2A)
+
+```python
+# Dispatch to a remote A2A server
+from ia_modules.pipeline import A2AStep
+
+remote_agent = A2AStep(
+    name="remote_analysis",
+    server_url="http://a2a-server:3008",
+    mode="research",
+    tools=["Read", "Glob", "Grep"],
+)
 ```
 
 ### Human-in-the-Loop
@@ -144,9 +216,9 @@ pipeline_config = {
 # Interactive approval workflow
 pipeline_config = {
     "steps": {
-        "prepare": {"class": "PrepareStep"},
-        "human_review": {"class": "HumanApprovalStep"},
-        "process": {"class": "ProcessDecisionStep"}
+        "prepare": {"type": "function", "fn": "prepare"},
+        "human_review": {"type": "hitl", "prompt": "Approve this?"},
+        "process": {"type": "function", "fn": "process_decision"}
     }
 }
 ```

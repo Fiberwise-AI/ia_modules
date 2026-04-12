@@ -3,22 +3,29 @@ Multi-Agent Orchestration Service
 
 Demonstrates multi-agent workflows with communication tracking,
 state management, and coordination patterns.
+
+Uses ia_modules LLMStep for real LLM-backed agent execution with
+streaming events visible in the UI.
 """
 
 from typing import Dict, List, Any, Optional, Callable
 from datetime import datetime, UTC
 import asyncio
 import json
+import logging
 from pathlib import Path
 from ia_modules.agents.orchestrator import AgentOrchestrator
-from ia_modules.agents.core import BaseAgent
-from ia_modules.agents.roles import AgentRole
+from ia_modules.agents.core import BaseAgent, AgentRole
 from ia_modules.agents.state import StateManager
+
+from services.llm_config import llm_call as _llm_call
+
+logger = logging.getLogger(__name__)
 
 
 class MultiAgentService:
     """Service for multi-agent workflow orchestration and visualization"""
-    
+
     def __init__(self, storage_dir: str = "./workflows"):
         self.active_workflows: Dict[str, Dict[str, Any]] = {}
         self.execution_history: List[Dict[str, Any]] = []
@@ -297,39 +304,96 @@ class MultiAgentService:
         state: StateManager,
         config: Dict[str, Any]
     ) -> BaseAgent:
-        """Create agent instance based on role"""
-        
-        # Create demo agents for different roles
-        class DemoAgent(BaseAgent):
-            """Demo agent for testing"""
-            
+        """Create LLM-backed agent instance based on role.
+
+        Each agent uses LLMStep to make real LLM calls with a role-specific
+        system prompt.  Falls back to simulation if LLM is unavailable.
+        """
+
+        # Role-specific system prompts for real LLM calls
+        _ROLE_PROMPTS: Dict[str, str] = {
+            "planner": "You are a planning agent. Break the task into clear, actionable steps. Return a numbered plan.",
+            "researcher": "You are a research agent. Gather key facts and findings about the topic. Be concise and cite reasoning.",
+            "coder": "You are a coding agent. Write clean, working code to solve the task. Include brief comments.",
+            "writer": "You are a writing agent. Produce well-structured, clear prose on the topic.",
+            "critic": "You are a critical review agent. Evaluate the work so far, note strengths and weaknesses, and say whether you APPROVE or REQUEST REVISION.",
+            "editor": "You are an editing agent. Improve clarity, fix errors, and tighten the prose.",
+            "analyst": "You are an analysis agent. Analyze the data and provide structured insights.",
+            "synthesizer": "You are a synthesis agent. Combine multiple inputs into a coherent summary.",
+            "moderator": "You are a moderator. Facilitate the discussion and summarize key points.",
+        }
+
+        class LLMAgent(BaseAgent):
+            """Agent backed by real LLM calls via LLMStep."""
+
             async def execute(self, data: Dict[str, Any]) -> Dict[str, Any]:
-                """Execute agent task"""
-                # Simulate agent processing
-                await asyncio.sleep(0.1)  # Simulate work
-                
-                # Add role-specific behavior
+                task = data.get("task", "")
+                # Build context from previous agent outputs in state
+                prev_output = await self.read_state("latest_output")
+                context_parts = [f"Task: {task}"] if task else []
+                if prev_output:
+                    context_parts.append(f"Previous agent output:\n{prev_output}")
+
+                user_message = "\n\n".join(context_parts) or "Please proceed with the workflow."
+
+                # Pick system prompt based on role
+                sys_prompt = _ROLE_PROMPTS.get(
+                    self.role.name.lower(),
+                    f"You are a {self.role.name} agent. {self.role.description}",
+                )
+
+                # Try real LLM call
+                llm_result = await _llm_call(sys_prompt, user_message)
+
+                if llm_result:
+                    output_text = llm_result.text
+                else:
+                    # Simulation fallback
+                    await asyncio.sleep(0.2)
+                    output_text = self._simulate(data)
+
+                # Write output to shared state so next agent can read it
+                await self.write_state("latest_output", output_text)
+                await self.write_state(f"{self.role.name}_output", output_text)
+
                 result = {
                     **data,
                     f"{self.role.name}_processed": True,
                     "processed_by": self.role.name,
-                    "timestamp": datetime.now(UTC).isoformat()
+                    "output": output_text,
+                    "llm_backed": llm_result is not None and llm_result.text is not None,
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
-                
-                # Role-specific modifications
-                if "planner" in self.role.name.lower():
-                    result["plan"] = ["Step 1", "Step 2", "Step 3"]
-                elif "researcher" in self.role.name.lower():
-                    result["research_data"] = ["Finding 1", "Finding 2"]
-                elif "coder" in self.role.name.lower():
-                    result["code"] = "def example(): pass"
-                elif "critic" in self.role.name.lower():
-                    result["feedback"] = "Looks good" if data.get("iteration", 0) > 1 else "Needs improvement"
-                    result["approved"] = data.get("iteration", 0) > 1
-                
+
+                # Critic-specific: set approved flag for feedback loops
+                if "critic" in self.role.name.lower():
+                    approved = "approve" in output_text.lower() if llm_result else (data.get("iteration", 0) > 1)
+                    result["approved"] = approved
+                    await self.write_state("approved", approved)
+
                 return result
-        
-        return DemoAgent(role, state)
+
+            def _simulate(self, data: Dict[str, Any]) -> str:
+                """Simulation fallback when LLM is unavailable."""
+                name = self.role.name.lower()
+                task = data.get("task", "the given task")
+                if "planner" in name:
+                    return f"Plan for '{task}':\n1. Research the topic\n2. Analyze findings\n3. Draft output\n4. Review and refine"
+                elif "researcher" in name:
+                    return f"Research findings on '{task}':\n- Key finding 1: Background context gathered\n- Key finding 2: Relevant data points identified"
+                elif "coder" in name:
+                    return f"# Solution for: {task}\ndef solve():\n    # Implementation here\n    pass"
+                elif "critic" in name:
+                    iteration = data.get("iteration", 0)
+                    if iteration > 1:
+                        return f"Review of '{task}': The work is solid. APPROVE."
+                    return f"Review of '{task}': Needs improvement — add more detail. REQUEST REVISION."
+                elif "writer" in name:
+                    return f"Article: {task}\n\nThis is a well-structured piece covering the key aspects of the topic."
+                else:
+                    return f"[{self.role.name}] Processed: {task}"
+
+        return LLMAgent(role, state)
     
     def _create_condition(self, condition_name: str) -> callable:
         """Create condition function from name"""

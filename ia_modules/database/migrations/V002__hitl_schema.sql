@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS hitl_interactions (
     completed_at TIMESTAMP,
 
     -- Foreign keys
-    FOREIGN KEY (execution_id) REFERENCES pipeline_executions(id) ON DELETE CASCADE
+    FOREIGN KEY (execution_id) REFERENCES pipeline_executions(execution_id) ON DELETE CASCADE
 );
 
 -- Indexes for performance

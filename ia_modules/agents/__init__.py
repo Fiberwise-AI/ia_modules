@@ -1,38 +1,15 @@
 """
-Multi-Agent Orchestration and Collaboration System
+Agent Execution System
 
-Provides specialized agents with role-based design, centralized state management,
-graph-based orchestration, and advanced collaboration patterns for complex AI workflows.
+Provides CLI agent execution via subprocess or A2A server,
+plus graph-based orchestration for multi-agent workflows.
 
 Core Components:
-- BaseAgent & AgentRole: Foundation for agent creation
-- StateManager: Centralized state with versioning
+- AgentExecutor: Protocol for agent execution backends
+- SubprocessExecutor: Spawns CLI agent directly (default)
+- A2AExecutor: Dispatches to A2A server via JSON-RPC
 - AgentOrchestrator: Graph-based workflow execution
-- BaseCollaborativeAgent: Enhanced agent with message passing
-- Communication: MessageBus and AgentMessage for inter-agent communication
-- Task Decomposition: Strategies for breaking down complex tasks
-- Specialist Agents: Ready-to-use agents (Research, Analysis, Synthesis, Critic)
-- Collaboration Patterns: Hierarchical, P2P, Debate, Consensus
-
-Example Usage:
-    >>> # Basic orchestration
-    >>> from ia_modules.agents import AgentOrchestrator, StateManager, AgentRole, BaseAgent
-    >>>
-    >>> # Collaborative agents
-    >>> from ia_modules.agents import (
-    ...     BaseCollaborativeAgent,
-    ...     MessageBus,
-    ...     ResearchAgent,
-    ...     AnalysisAgent
-    ... )
-    >>>
-    >>> # Collaboration patterns
-    >>> from ia_modules.agents.collaboration_patterns import (
-    ...     HierarchicalCollaboration,
-    ...     PeerToPeerCollaboration,
-    ...     DebateCollaboration,
-    ...     ConsensusCollaboration
-    ... )
+- StateManager: Centralized state with versioning
 """
 
 # Core agent infrastructure
@@ -40,40 +17,19 @@ from .core import AgentRole, BaseAgent
 from .state import StateManager
 from .orchestrator import AgentOrchestrator, Edge
 
-# Communication infrastructure
-from .communication import (
-    MessageBus,
-    AgentMessage,
-    MessageType
+# CLI agent execution
+from .executor import (
+    AgentExecutor,
+    AgentConfig,
+    AgentEvent,
+    EventType,
+    CLIType,
+    AgentMode,
+    normalize_event,
 )
-
-# Collaborative agent base
-from .base_agent import BaseCollaborativeAgent
-
-# Task decomposition
-from .task_decomposition import (
-    Task,
-    TaskStatus,
-    TaskDecomposer,
-    DependencyGraph,
-    DecompositionStrategy
-)
-
-# Specialist agents
-from .specialist_agents import (
-    ResearchAgent,
-    AnalysisAgent,
-    SynthesisAgent,
-    CriticAgent
-)
-
-# Legacy role-based agents (from roles.py)
-from .roles import (
-    PlannerAgent,
-    ResearcherAgent,
-    CoderAgent,
-    FormatterAgent
-)
+from .subprocess_executor import SubprocessExecutor
+from .a2a_executor import A2AExecutor
+from .permissions import enforce_agent_claims, ClaimsViolation
 
 
 __all__ = [
@@ -84,30 +40,16 @@ __all__ = [
     "AgentOrchestrator",
     "Edge",
 
-    # Communication
-    "MessageBus",
-    "AgentMessage",
-    "MessageType",
-
-    # Collaborative agents
-    "BaseCollaborativeAgent",
-
-    # Task decomposition
-    "Task",
-    "TaskStatus",
-    "TaskDecomposer",
-    "DependencyGraph",
-    "DecompositionStrategy",
-
-    # Specialist collaborative agents
-    "ResearchAgent",
-    "AnalysisAgent",
-    "SynthesisAgent",
-    "CriticAgent",
-
-    # Legacy role-based agents
-    "PlannerAgent",
-    "ResearcherAgent",
-    "CoderAgent",
-    "FormatterAgent",
+    # CLI agent execution
+    "AgentExecutor",
+    "AgentConfig",
+    "AgentEvent",
+    "EventType",
+    "CLIType",
+    "AgentMode",
+    "normalize_event",
+    "SubprocessExecutor",
+    "A2AExecutor",
+    "enforce_agent_claims",
+    "ClaimsViolation",
 ]
