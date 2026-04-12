@@ -94,8 +94,8 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 0,
+                      "status": "passed",
+                      "duration": 824070,
                       "errors": [],
                       "stdout": [
                         {
@@ -114,7 +114,13 @@
                           "text": "[capture] step_update completed (quality_checker) → step-01-end\n"
                         },
                         {
-                          "text": "[capture] execution_failed → final\n"
+                          "text": "[capture] step_update completed (low_quality_processor) → step-02-end\n"
+                        },
+                        {
+                          "text": "[capture] step_update completed (results_aggregator) → step-03-end\n"
+                        },
+                        {
+                          "text": "[capture] execution_completed → final\n"
                         },
                         {
                           "text": "[patterns] reflection started → event-01-started\n"
@@ -154,6 +160,201 @@
                         },
                         {
                           "text": "[patterns] planning decomposing → event-02-decomposing\n"
+                        },
+                        {
+                          "text": "[patterns] planning decomposed → event-03-decomposed\n"
+                        },
+                        {
+                          "text": "[patterns] planning step → event-04-step\n"
+                        },
+                        {
+                          "text": "[patterns] planning step → event-05-step\n"
+                        },
+                        {
+                          "text": "[patterns] planning step → event-06-step\n"
+                        },
+                        {
+                          "text": "[patterns] planning step → event-07-step\n"
+                        },
+                        {
+                          "text": "[patterns] planning completed → event-08-completed\n"
+                        },
+                        {
+                          "text": "[patterns] tool-use started → event-01-started\n"
+                        },
+                        {
+                          "text": "[patterns] tool-use analyzing → event-02-analyzing\n"
+                        },
+                        {
+                          "text": "[patterns] tool-use selected → event-03-selected\n"
+                        },
+                        {
+                          "text": "[patterns] tool-use completed → event-04-completed\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag started → event-01-started\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag iteration_start → event-02-iteration_start\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag retrieved → event-03-retrieved\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag evaluated → event-04-evaluated\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag refined → event-05-refined\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag iteration_start → event-06-iteration_start\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag retrieved → event-07-retrieved\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag evaluated → event-08-evaluated\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag refined → event-09-refined\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag iteration_start → event-10-iteration_start\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag retrieved → event-11-retrieved\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag evaluated → event-12-evaluated\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag refined → event-13-refined\n"
+                        },
+                        {
+                          "text": "[patterns] agentic-rag completed → event-14-completed\n"
+                        },
+                        {
+                          "text": "[patterns] metacognition started → event-01-started\n"
+                        },
+                        {
+                          "text": "[patterns] metacognition analyzing → event-02-analyzing\n"
+                        },
+                        {
+                          "text": "[patterns] metacognition analyzed → event-03-analyzed\n"
+                        },
+                        {
+                          "text": "[patterns] metacognition completed → event-04-completed\n"
+                        },
+                        {
+                          "text": "[collab] consensus setup → step-01\n"
+                        },
+                        {
+                          "text": "[collab] consensus voting_round_1 → step-02\n"
+                        },
+                        {
+                          "text": "[collab] consensus step_complete → step-03\n"
+                        },
+                        {
+                          "text": "[collab] consensus step_complete → step-04\n"
+                        },
+                        {
+                          "text": "[collab] consensus step_complete → step-05\n"
+                        },
+                        {
+                          "text": "[collab] consensus voting_round_2 → step-06\n"
+                        },
+                        {
+                          "text": "[collab] consensus step_complete → step-07\n"
+                        },
+                        {
+                          "text": "[collab] consensus step_complete → step-08\n"
+                        },
+                        {
+                          "text": "[collab] consensus step_complete → step-09\n"
+                        },
+                        {
+                          "text": "[collab] consensus voting_round_3 → step-10\n"
+                        },
+                        {
+                          "text": "[collab] consensus step_complete → step-11\n"
+                        },
+                        {
+                          "text": "[collab] consensus step_complete → step-12\n"
+                        },
+                        {
+                          "text": "[collab] consensus step_complete → step-13\n"
+                        },
+                        {
+                          "text": "[collab] debate setup → step-01\n"
+                        },
+                        {
+                          "text": "[collab] debate round_1_opening → step-02\n"
+                        },
+                        {
+                          "text": "[collab] debate step_complete → step-03\n"
+                        },
+                        {
+                          "text": "[collab] debate step_complete → step-04\n"
+                        },
+                        {
+                          "text": "[collab] debate step_complete → step-05\n"
+                        },
+                        {
+                          "text": "[collab] debate round_2_opening → step-06\n"
+                        },
+                        {
+                          "text": "[collab] debate step_complete → step-07\n"
+                        },
+                        {
+                          "text": "[collab] debate step_complete → step-08\n"
+                        },
+                        {
+                          "text": "[collab] debate step_complete → step-09\n"
+                        },
+                        {
+                          "text": "[collab] hierarchical setup → step-01\n"
+                        },
+                        {
+                          "text": "[collab] hierarchical step_complete → step-02\n"
+                        },
+                        {
+                          "text": "[collab] hierarchical task_delegation → step-03\n"
+                        },
+                        {
+                          "text": "[collab] hierarchical task_assignment → step-04\n"
+                        },
+                        {
+                          "text": "[collab] hierarchical task_assignment → step-05\n"
+                        },
+                        {
+                          "text": "[collab] hierarchical task_assignment → step-06\n"
+                        },
+                        {
+                          "text": "[collab] hierarchical step_complete → step-07\n"
+                        },
+                        {
+                          "text": "[collab] hierarchical step_complete → step-08\n"
+                        },
+                        {
+                          "text": "[collab] peer-to-peer setup → step-01\n"
+                        },
+                        {
+                          "text": "[collab] peer-to-peer round_1_start → step-02\n"
+                        },
+                        {
+                          "text": "[collab] peer-to-peer step_complete → step-03\n"
+                        },
+                        {
+                          "text": "[collab] peer-to-peer step_complete → step-04\n"
+                        },
+                        {
+                          "text": "[collab] peer-to-peer round_2_start → step-05\n"
+                        },
+                        {
+                          "text": "[collab] peer-to-peer step_complete → step-06\n"
+                        },
+                        {
+                          "text": "[collab] peer-to-peer step_complete → step-07\n"
                         }
                       ],
                       "stderr": [],
@@ -161,69 +362,109 @@
                       "steps": [
                         {
                           "title": "Home page",
-                          "duration": 1976
+                          "duration": 1906
                         },
                         {
                           "title": "Agent-Based Processing Pipeline: pipelines list",
-                          "duration": 2548
+                          "duration": 2507
                         },
                         {
                           "title": "Agent-Based Processing Pipeline: editor",
-                          "duration": 2972
+                          "duration": 2968
                         },
                         {
                           "title": "Agent-Based Processing Pipeline: execute",
-                          "duration": 4880
+                          "duration": 4733
                         },
                         {
                           "title": "Agent-Based Processing Pipeline: capture per-step progress",
-                          "duration": 43013
+                          "duration": 45072
                         },
                         {
                           "title": "Conditional Processing Pipeline: pipelines list",
-                          "duration": 2648
+                          "duration": 2625
                         },
                         {
                           "title": "Conditional Processing Pipeline: editor",
-                          "duration": 2956
+                          "duration": 2986
                         },
                         {
                           "title": "Conditional Processing Pipeline: execute",
-                          "duration": 5058
+                          "duration": 4708
                         },
                         {
                           "title": "Conditional Processing Pipeline: capture per-step progress",
-                          "duration": 13488
+                          "duration": 41885
                         },
                         {
                           "title": "Executions list",
-                          "duration": 4540
+                          "duration": 4556
                         },
                         {
                           "title": "Patterns page",
-                          "duration": 2534
+                          "duration": 2513
                         },
                         {
                           "title": "Patterns: Reflection",
-                          "duration": 88206
+                          "duration": 106685
                         },
                         {
                           "title": "Patterns: Planning",
-                          "duration": -1
+                          "duration": 42434
+                        },
+                        {
+                          "title": "Patterns: Tool Use",
+                          "duration": 37832
+                        },
+                        {
+                          "title": "Patterns: Agentic RAG",
+                          "duration": 115981
+                        },
+                        {
+                          "title": "Patterns: Metacognition",
+                          "duration": 31213
+                        },
+                        {
+                          "title": "Collaboration page",
+                          "duration": 2539
+                        },
+                        {
+                          "title": "Collaboration: Consensus",
+                          "duration": 102480
+                        },
+                        {
+                          "title": "Collaboration: Debate",
+                          "duration": 98099
+                        },
+                        {
+                          "title": "Collaboration: Hierarchical",
+                          "duration": 48109
+                        },
+                        {
+                          "title": "Collaboration: Peer-to-Peer",
+                          "duration": 73552
+                        },
+                        {
+                          "title": "Metrics",
+                          "duration": 1837
+                        },
+                        {
+                          "title": "Agents",
+                          "duration": 1455
                         }
                       ],
-                      "startTime": "2026-04-12T01:10:35.897Z",
+                      "startTime": "2026-04-12T01:16:03.707Z",
                       "annotations": [],
                       "attachments": [
                         {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/mnt/c/Users/David/test-results/test-demo-flow-Pipeline-Demo-Flow-demo-full-demo-walkthrough-chromium/test-failed-1.png"
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/mnt/c/Users/David/test-results/test-demo-flow-Pipeline-Demo-Flow-demo-full-demo-walkthrough-chromium/trace.zip"
                         }
                       ]
                     }
                   ],
-                  "status": "skipped"
+                  "status": "expected"
                 }
               ],
               "id": "40696a204655a2b0bb49-dfc4efaad06147a9fca1",
@@ -238,10 +479,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-12T01:09:58.044Z",
-    "duration": 228292.242,
-    "expected": 0,
-    "skipped": 1,
+    "startTime": "2026-04-12T01:15:28.598Z",
+    "duration": 891491.115,
+    "expected": 1,
+    "skipped": 0,
     "unexpected": 0,
     "flaky": 0
   }
