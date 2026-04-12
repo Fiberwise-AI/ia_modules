@@ -10,7 +10,11 @@ from .calculator import CalculatorTool, create_calculator_tool
 from .code_executor import CodeExecutorTool, create_code_executor_tool
 from .file_ops import FileOperationsTool, create_file_ops_tool
 from .api_caller import APICallerTool, create_api_caller_tool
-from .web_scraper import WebScraperTool, create_web_scraper_tool, create_web_scraper_batch_tool
+try:
+    from .web_scraper import WebScraperTool, create_web_scraper_tool, create_web_scraper_batch_tool
+    _HAS_WEB_SCRAPER = True
+except ImportError:  # aiohttp not installed
+    _HAS_WEB_SCRAPER = False
 
 
 __all__ = [
@@ -24,10 +28,14 @@ __all__ = [
     "create_file_ops_tool",
     "APICallerTool",
     "create_api_caller_tool",
-    "WebScraperTool",
-    "create_web_scraper_tool",
-    "create_web_scraper_batch_tool",
 ]
+
+if _HAS_WEB_SCRAPER:
+    __all__ += [
+        "WebScraperTool",
+        "create_web_scraper_tool",
+        "create_web_scraper_batch_tool",
+    ]
 
 
 def register_all_builtin_tools(registry):
@@ -84,18 +92,19 @@ def register_all_builtin_tools(registry):
         set_as_default=True
     )
 
-    # Web scraper
-    registry.register_versioned(
-        create_web_scraper_tool(),
-        version="1.0.0",
-        capabilities=["web_scraping", "content_extraction"],
-        set_as_default=True
-    )
+    # Web scraper (requires aiohttp)
+    if _HAS_WEB_SCRAPER:
+        registry.register_versioned(
+            create_web_scraper_tool(),
+            version="1.0.0",
+            capabilities=["web_scraping", "content_extraction"],
+            set_as_default=True
+        )
 
-    # Web scraper batch
-    registry.register_versioned(
-        create_web_scraper_batch_tool(),
-        version="1.0.0",
-        capabilities=["web_scraping", "batch_processing", "content_extraction"],
-        set_as_default=True
-    )
+        # Web scraper batch
+        registry.register_versioned(
+            create_web_scraper_batch_tool(),
+            version="1.0.0",
+            capabilities=["web_scraping", "batch_processing", "content_extraction"],
+            set_as_default=True
+        )
