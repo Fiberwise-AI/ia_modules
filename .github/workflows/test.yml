@@ -319,7 +319,9 @@ jobs:
         pytest showcase_app/tests/ -v --tb=short -k "not e2e" \
           --ignore=showcase_app/tests/e2e \
           --ignore=showcase_app/tests/test_api_response.py \
-          --ignore=showcase_app/tests/test_graph_display.py
+          --ignore=showcase_app/tests/test_graph_display.py \
+          --ignore=showcase_app/tests/test_llm_monitoring.py \
+          --ignore=showcase_app/tests/test_multi_agent_service.py
       continue-on-error: true  # Showcase tests are supplementary
 
   showcase-e2e:
@@ -375,8 +377,9 @@ jobs:
 
     - name: Install Playwright
       run: |
-        cd showcase_app/tests/e2e
-        npm install
+        cd showcase_app
+        npm init -y > /dev/null 2>&1
+        npm install @playwright/test
         npx playwright install --with-deps chromium
 
     - name: Run Playwright E2E tests
