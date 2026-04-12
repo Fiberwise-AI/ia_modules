@@ -375,7 +375,7 @@ jobs:
 
     - name: Install Playwright
       run: |
-        cd showcase_app
+        cd showcase_app/tests/e2e
         npm install
         npx playwright install --with-deps chromium
 
@@ -387,7 +387,7 @@ jobs:
         CI: true
       run: |
         cd showcase_app
-        npx playwright test --project=chromium
+        npx playwright test --config=playwright.config.js --project=chromium
       continue-on-error: true  # E2E tests are supplementary
 
     - name: Upload Playwright report

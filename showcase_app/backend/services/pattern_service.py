@@ -384,7 +384,7 @@ class PatternService:
             user_message=(
                 f"Break down this goal into a step-by-step plan:\n\n"
                 f"GOAL: {goal}\n\n"
-                f"{f'CONSTRAINTS:\n{constraints_text}\n\n' if constraints_text else ''}"
+                f"CONSTRAINTS:\n{constraints_text}\n\n" if constraints_text else ""
                 f"Create a plan with 3-5 steps. For each step, provide:\n"
                 f"1. description: What needs to be done\n"
                 f"2. reasoning: Why this step is important\n"

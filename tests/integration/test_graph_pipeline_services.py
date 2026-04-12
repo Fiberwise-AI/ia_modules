@@ -59,7 +59,9 @@ class MockExecutionTracker:
         final_error = error_message if error_message is not None else error
         self.ended.append(execution_id)
         if execution_id in self.executions:
-            self.executions[execution_id]["status"] = str(status) if status else "unknown"
+            status_str = status.value if hasattr(status, 'value') else str(status)
+            self.executions[execution_id]["status"] = status_str
+            self.executions[execution_id]["success"] = status_str == "completed"
             if final_error:
                 self.executions[execution_id]["error"] = final_error
 
