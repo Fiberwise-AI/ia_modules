@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.11"]
+        python-version: ["3.14"]
 
         # os: [ubuntu-latest, windows-latest, macos-latest]
         # python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
@@ -62,7 +62,7 @@ jobs:
           --cov-config=pyproject.toml
 
     - name: Upload coverage to Codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
@@ -78,7 +78,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.14"
 
     - name: Install dependencies
       run: |
@@ -212,7 +212,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.14"
 
     - name: Install ODBC Driver for SQL Server (for MSSQL)
       run: |
@@ -302,7 +302,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.14"
 
     - name: Install dependencies
       run: |
@@ -322,7 +322,6 @@ jobs:
           --ignore=showcase_app/tests/test_graph_display.py \
           --ignore=showcase_app/tests/test_llm_monitoring.py \
           --ignore=showcase_app/tests/test_multi_agent_service.py
-      continue-on-error: true  # Showcase tests are supplementary
 
   showcase-e2e:
     runs-on: ubuntu-latest
@@ -357,7 +356,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.14"
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -391,7 +390,6 @@ jobs:
       run: |
         cd showcase_app
         npx playwright test --config=playwright.config.js --project=chromium
-      continue-on-error: true  # E2E tests are supplementary
 
     - name: Upload Playwright report
       if: always()
@@ -410,7 +408,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.14"
 
     - name: Install build dependencies
       run: |
