@@ -137,20 +137,23 @@ class InMemoryExecutionTracker:
         self,
         execution_id: str,
         status: str,
-        error: Optional[str] = None
+        error: Optional[str] = None,
+        error_message: Optional[str] = None
     ):
         """
         Update the status of a pipeline execution
-        
+
         Args:
             execution_id: ID of the execution to update
             status: New status (running, completed, failed, etc.)
             error: Optional error message if execution failed
+            error_message: Alias for error (for compatibility)
         """
         if execution_id in self.executions:
+            final_error = error_message if error_message is not None else error
             self.executions[execution_id]['status'] = status
-            if error:
-                self.executions[execution_id]['error'] = error
+            if final_error:
+                self.executions[execution_id]['error'] = final_error
             if status in ['completed', 'failed']:
                 self.executions[execution_id]['end_time'] = datetime.now()
     

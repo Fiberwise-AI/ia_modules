@@ -511,7 +511,7 @@ class TestSQLCheckpointer:
         db.table_exists = MagicMock(return_value=table_exists)
         db.execute = AsyncMock()
         db.fetch_one = AsyncMock()
-        db.fetch_all = MagicMock(return_value=[])
+        db.fetch_all = AsyncMock(return_value=[])
         return db
 
     def _make_checkpointer(self, db=None):
@@ -694,7 +694,7 @@ class TestSQLCheckpointer:
     async def test_list_checkpoints_with_pipeline_filter(self):
         """Test listing checkpoints with pipeline_id filter"""
         db = self._make_db_mock()
-        db.fetch_all = MagicMock(return_value=[])
+        db.fetch_all = AsyncMock(return_value=[])
         cp = self._make_checkpointer(db)
 
         result = await cp.list_checkpoints("t1", pipeline_id="p1")
