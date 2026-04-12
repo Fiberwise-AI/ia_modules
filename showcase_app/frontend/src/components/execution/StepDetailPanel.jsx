@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { CheckCircle, XCircle, Play, Clock, Activity, Code, GitCompare, FileText } from 'lucide-react'
 import ReactJson from '@microlink/react-json-view'
 import ReactDiffViewer from 'react-diff-viewer-continued'
+import { parseBackendTimestamp } from '../../lib/utils'
 
 export default function StepDetailPanel({ step, onClose }) {
   const [activeTab, setActiveTab] = useState('overview')
@@ -176,7 +177,7 @@ function OverviewTab({ step }) {
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">Started:</span>
               <span className="font-mono text-gray-900 dark:text-gray-100">
-                {new Date(step.started_at).toLocaleString()}
+                {parseBackendTimestamp(step.started_at).toLocaleString()}
               </span>
             </div>
           )}
@@ -184,7 +185,7 @@ function OverviewTab({ step }) {
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">Completed:</span>
               <span className="font-mono text-gray-900 dark:text-gray-100">
-                {new Date(step.completed_at).toLocaleString()}
+                {parseBackendTimestamp(step.completed_at).toLocaleString()}
               </span>
             </div>
           )}

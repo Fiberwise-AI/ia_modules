@@ -10,7 +10,6 @@ test.describe('Metrics Dashboard', () => {
 
   test('should load metrics page', async ({ page }) => {
     await expect(page.locator('body')).toBeVisible();
-    await page.screenshot({ path: 'test-results/metrics-page-loaded.png', fullPage: true });
   });
 
   test('should update metrics after pipeline execution', async ({ page }) => {

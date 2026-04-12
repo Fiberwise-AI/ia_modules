@@ -17,9 +17,10 @@ def get_replay_service(request: Request):
     return request.app.state.services.replay_service
 
 
-def get_decision_trail_service(request: Request):
-    """Dependency to get decision trail service"""
-    return request.app.state.services.decision_trail_service
+# DEPRECATED: decision trail feature disabled in showcase.
+# def get_decision_trail_service(request: Request):
+#     """Dependency to get decision trail service"""
+#     return request.app.state.services.decision_trail_service
 
 
 @router.get("/metrics")
@@ -172,127 +173,64 @@ async def get_replay_history(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Decision Trail Endpoints
-
-@router.get("/decision-trail/{job_id}")
-async def get_decision_trail(
-    job_id: str,
-    service=Depends(get_decision_trail_service)
-):
-    """
-    Get complete decision trail for an execution
-    
-    Returns decision nodes, edges, and statistics
-    """
-    try:
-        trail = await service.get_decision_trail(job_id)
-        return trail
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/decision-trail/{job_id}/node/{node_id}")
-async def get_decision_node(
-    job_id: str,
-    node_id: str,
-    service=Depends(get_decision_trail_service)
-):
-    """
-    Get detailed information about a specific decision node
-    
-    Returns node details with evidence and rationale
-    """
-    try:
-        node = await service.get_decision_node(job_id, node_id)
-        return node
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/decision-trail/{job_id}/path")
-async def get_execution_path(
-    job_id: str,
-    service=Depends(get_decision_trail_service)
-):
-    """
-    Get the execution path taken through decision points
-    
-    Returns ordered list of decisions and outcomes
-    """
-    try:
-        path = await service.get_execution_path(job_id)
-        return {
-            "job_id": job_id,
-            "path": path,
-            "step_count": len(path)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/decision-trail/{job_id}/evidence/{node_id}")
-async def get_decision_evidence(
-    job_id: str,
-    node_id: str,
-    service=Depends(get_decision_trail_service)
-):
-    """
-    Get evidence collected for a specific decision
-    
-    Returns list of evidence items with sources and weights
-    """
-    try:
-        evidence = await service.get_decision_evidence(job_id, node_id)
-        return {
-            "job_id": job_id,
-            "node_id": node_id,
-            "evidence": evidence,
-            "count": len(evidence)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/decision-trail/{job_id}/alternatives")
-async def get_alternative_paths(
-    job_id: str,
-    service=Depends(get_decision_trail_service)
-):
-    """
-    Get alternative decision paths that were not taken
-    
-    Returns list of alternative paths with probabilities
-    """
-    try:
-        alternatives = await service.get_alternative_paths(job_id)
-        return {
-            "job_id": job_id,
-            "alternatives": alternatives,
-            "count": len(alternatives)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/decision-trail/{job_id}/export")
-async def export_decision_trail(
-    job_id: str,
-    format: str = "json",
-    service=Depends(get_decision_trail_service)
-):
-    """
-    Export decision trail in specified format
-    
-    Formats: json, graphviz, mermaid
-    """
-    try:
-        exported = await service.export_trail(job_id, format)
-        return exported
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# DEPRECATED: Decision Trail endpoints disabled in showcase.
+# The ia_modules DecisionTrailBuilder reads from live per-run StateManager /
+# ToolRegistry instances that the showcase's execution flows don't retain
+# after a run finishes. Re-enable only with a per-run registry that stores
+# those instances keyed by job_id.
+#
+# @router.get("/decision-trail/{job_id}")
+# async def get_decision_trail(
+#     job_id: str,
+#     service=Depends(get_decision_trail_service)
+# ):
+#     trail = await service.get_decision_trail(job_id)
+#     return trail
+#
+#
+# @router.get("/decision-trail/{job_id}/node/{node_id}")
+# async def get_decision_node(
+#     job_id: str,
+#     node_id: str,
+#     service=Depends(get_decision_trail_service)
+# ):
+#     node = await service.get_decision_node(job_id, node_id)
+#     return node
+#
+#
+# @router.get("/decision-trail/{job_id}/path")
+# async def get_execution_path(
+#     job_id: str,
+#     service=Depends(get_decision_trail_service)
+# ):
+#     path = await service.get_execution_path(job_id)
+#     return {"job_id": job_id, "path": path, "step_count": len(path)}
+#
+#
+# @router.get("/decision-trail/{job_id}/evidence/{node_id}")
+# async def get_decision_evidence(
+#     job_id: str,
+#     node_id: str,
+#     service=Depends(get_decision_trail_service)
+# ):
+#     evidence = await service.get_decision_evidence(job_id, node_id)
+#     return {"job_id": job_id, "node_id": node_id, "evidence": evidence, "count": len(evidence)}
+#
+#
+# @router.get("/decision-trail/{job_id}/alternatives")
+# async def get_alternative_paths(
+#     job_id: str,
+#     service=Depends(get_decision_trail_service)
+# ):
+#     alternatives = await service.get_alternative_paths(job_id)
+#     return {"job_id": job_id, "alternatives": alternatives, "count": len(alternatives)}
+#
+#
+# @router.get("/decision-trail/{job_id}/export")
+# async def export_decision_trail(
+#     job_id: str,
+#     format: str = "json",
+#     service=Depends(get_decision_trail_service)
+# ):
+#     exported = await service.export_trail(job_id, format)
+#     return exported

@@ -14,7 +14,7 @@ Patterns:
 4. Peer-to-peer – peers contribute ideas in rounds, building on each other
 """
 
-from typing import Any, Callable, Coroutine, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List
 from datetime import datetime, UTC
 import asyncio
 import json
@@ -32,8 +32,7 @@ from services.llm_config import get_llm_config, get_agent_config
 
 logger = logging.getLogger(__name__)
 
-# Type for the optional WebSocket broadcast callback
-WSCallback = Optional[Callable[[Dict[str, Any]], Coroutine]]
+WSCallback = Callable[[Dict[str, Any]], Awaitable[None]]
 
 
 # ---------------------------------------------------------------------------
@@ -314,23 +313,45 @@ class CollaborationService:
     6. Drives execution via orchestrator.run() or manual fan-out+gather
     """
 
-    def __init__(self, exec_svc=None, ws_callback: WSCallback = None):
+    def __init__(self, container):
+        """Resolve all deps from the ServiceContainer — no caller boilerplate.
+
+        container must already have agent_executor, reliability_service,
+        ws_manager, and agent_execution_service set (done in main.py lifespan).
+        """
         self.execution_history: List[Dict[str, Any]] = []
-        self.exec_svc = exec_svc          # AgentExecutionService for DB tracking
-        self.ws_callback = ws_callback     # async fn(msg) to broadcast via WebSocket
+        self.exec_svc = container.agent_execution_service
+        self.agent_executor = container.agent_executor
+        self.reliability_metrics = container.reliability_service.metrics
+        self.ws_callback: WSCallback = container.ws_manager.broadcast_collaboration
+
+    def _new_services(self) -> ServiceRegistry:
+        """Build a per-run ServiceRegistry carrying the shared agent executor."""
+        services = ServiceRegistry()
+        services.register('agent_executor', self.agent_executor)
+        services.register('reliability_metrics', self.reliability_metrics)
+        return services
+
+    async def _fail_run(self, run_id: str, pattern: str, error: Exception) -> None:
+        """Flip a collab run to 'failed' in the DB and broadcast collab_complete.
+
+        Called from each run_X method's except block so a crash before the
+        normal _record_complete still unsticks the frontend and marks the
+        agent_executions row.
+        """
+        await self._record_complete(run_id, [], error_text=str(error))
+        await self._broadcast({"type": "collab_complete", "run_id": run_id,
+                               "pattern": pattern, "error": str(error)})
 
     async def _broadcast(self, msg: Dict[str, Any]):
-        """Send a step update via WS if callback is set."""
-        if self.ws_callback:
-            try:
-                await self.ws_callback(msg)
-            except Exception as e:
-                logger.debug("WS broadcast failed: %s", e)
+        """Send a step update via WS."""
+        try:
+            await self.ws_callback(msg)
+        except Exception as e:
+            logger.debug("WS broadcast failed: %s", e)
 
     async def _record_start(self, run_id: str, pattern: str, task: str, agents: List[str]):
         """Record a collaboration run starting in DB."""
-        if not self.exec_svc:
-            return
         try:
             await self.exec_svc.record_start(
                 job_id=run_id,
@@ -347,8 +368,6 @@ class CollaborationService:
                                 error_text: str = None, duration: float = None,
                                 full_output: Dict[str, Any] = None):
         """Record a collaboration run completing in DB."""
-        if not self.exec_svc:
-            return
         try:
             result_text = None
             if full_output:
@@ -400,12 +419,19 @@ class CollaborationService:
     async def run_consensus(self, topic: str, agents: List[str],
                             strategy: str = "majority", max_iterations: int = 3) -> Dict[str, Any]:
         run_id = str(uuid.uuid4())
+        try:
+            return await self._run_consensus_impl(run_id, topic, agents, strategy, max_iterations)
+        except Exception as e:
+            await self._fail_run(run_id, "consensus", e)
+            raise
+
+    async def _run_consensus_impl(self, run_id: str, topic: str, agents: List[str],
+                            strategy: str = "majority", max_iterations: int = 3) -> Dict[str, Any]:
         t0 = datetime.now(UTC)
         child_job_ids: List[str] = []
         history: List[Dict[str, Any]] = []
         state = StateManager(thread_id=f"consensus-{run_id}")
-        services = ServiceRegistry()
-        orch = AgentOrchestrator(state, services)
+        orch = AgentOrchestrator(state, self._new_services())
 
         await self._record_start(run_id, "consensus", topic, agents)
 
@@ -524,12 +550,19 @@ class CollaborationService:
     async def run_debate(self, topic: str, proponents: List[str], opponents: List[str],
                          moderator: str = "Moderator", rounds: int = 2) -> Dict[str, Any]:
         run_id = str(uuid.uuid4())
+        try:
+            return await self._run_debate_impl(run_id, topic, proponents, opponents, moderator, rounds)
+        except Exception as e:
+            await self._fail_run(run_id, "debate", e)
+            raise
+
+    async def _run_debate_impl(self, run_id: str, topic: str, proponents: List[str], opponents: List[str],
+                         moderator: str = "Moderator", rounds: int = 2) -> Dict[str, Any]:
         t0 = datetime.now(UTC)
         child_job_ids: List[str] = []
         history: List[Dict[str, Any]] = []
         state = StateManager(thread_id=f"debate-{run_id}")
-        services = ServiceRegistry()
-        orch = AgentOrchestrator(state, services)
+        orch = AgentOrchestrator(state, self._new_services())
 
         all_agents = proponents + opponents + [moderator]
         await self._record_start(run_id, "debate", topic, all_agents)
@@ -673,12 +706,18 @@ class CollaborationService:
 
     async def run_hierarchical(self, task: str, leader: str, workers: List[str]) -> Dict[str, Any]:
         run_id = str(uuid.uuid4())
+        try:
+            return await self._run_hierarchical_impl(run_id, task, leader, workers)
+        except Exception as e:
+            await self._fail_run(run_id, "hierarchical", e)
+            raise
+
+    async def _run_hierarchical_impl(self, run_id: str, task: str, leader: str, workers: List[str]) -> Dict[str, Any]:
         t0 = datetime.now(UTC)
         child_job_ids: List[str] = []
         history: List[Dict[str, Any]] = []
         state = StateManager(thread_id=f"hierarchical-{run_id}")
-        services = ServiceRegistry()
-        orch = AgentOrchestrator(state, services)
+        orch = AgentOrchestrator(state, self._new_services())
 
         all_agents = [leader] + workers
         await self._record_start(run_id, "hierarchical", task, all_agents)
@@ -756,7 +795,7 @@ class CollaborationService:
         worker_tasks = []
         for step in worker_steps:
             my_task = subtasks.get(step.name, "general work")
-            step.services = services
+            step.services = orch.services
             worker_tasks.append(step.run({"prompt": f"Subtask: {my_task}"}))
 
         worker_results_list = await asyncio.gather(*worker_tasks, return_exceptions=True)
@@ -802,12 +841,18 @@ class CollaborationService:
 
     async def run_peer_to_peer(self, task: str, peers: List[str], rounds: int = 2) -> Dict[str, Any]:
         run_id = str(uuid.uuid4())
+        try:
+            return await self._run_peer_to_peer_impl(run_id, task, peers, rounds)
+        except Exception as e:
+            await self._fail_run(run_id, "peer_to_peer", e)
+            raise
+
+    async def _run_peer_to_peer_impl(self, run_id: str, task: str, peers: List[str], rounds: int = 2) -> Dict[str, Any]:
         t0 = datetime.now(UTC)
         child_job_ids: List[str] = []
         history: List[Dict[str, Any]] = []
         state = StateManager(thread_id=f"p2p-{run_id}")
-        services = ServiceRegistry()
-        orch = AgentOrchestrator(state, services)
+        orch = AgentOrchestrator(state, self._new_services())
 
         await self._record_start(run_id, "peer_to_peer", task, peers)
 

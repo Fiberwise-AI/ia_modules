@@ -23,12 +23,28 @@ from datetime import datetime, timezone
 logger = logging.getLogger(__name__)
 
 
+def _compute_progress(record) -> float:
+    """Compute execution progress (0..1) from an ExecutionRecord.
+
+    Prefers completed_steps / total_steps so running executions reflect actual
+    progress. Falls back to 1.0 for terminal states when step counts are zero.
+    """
+    if record.status == ExecutionStatus.COMPLETED:
+        return 1.0
+    total = record.total_steps or 0
+    if total <= 0:
+        return 0.0
+    done = (record.completed_steps or 0) + (record.failed_steps or 0)
+    return min(max(done / total, 0.0), 1.0)
+
+
 class PipelineService:
     """Service for managing pipelines and execution using ia_modules library"""
 
-    def __init__(self, metrics_service, db_manager):
+    def __init__(self, metrics_service, db_manager, agent_executor=None):
         self.metrics_service = metrics_service
         self.db_manager = db_manager
+        self.agent_executor = agent_executor
         self.pipelines: Dict[str, Dict[str, Any]] = {}
         self.executions: Dict[str, Dict[str, Any]] = {}
 
@@ -45,6 +61,11 @@ class PipelineService:
         self.services = ServiceRegistry()
         if db_manager:
             self.services.register('database', db_manager)
+
+        # Shared SubprocessExecutor — every AgentStep/LLMStep in every
+        # pipeline run goes through this single instance's semaphore.
+        if agent_executor is not None:
+            self.services.register('agent_executor', agent_executor)
 
         # Register execution tracker in services
         self.services.register('execution_tracker', self.tracker)
@@ -89,6 +110,20 @@ class PipelineService:
             return
 
         try:
+            # Read pre-counted step counts from the tracker's ExecutionRecord in a
+            # single call. ExecutionTracker maintains total_steps/completed_steps/
+            # failed_steps on the record (see execution_tracker._update_execution_step_counts),
+            # so there's no need to load and JSON-decode every step row.
+            tracker_record = await self.tracker.get_execution(execution["job_id"])
+            if tracker_record:
+                total_steps = tracker_record.total_steps
+                completed_steps = tracker_record.completed_steps
+                failed_steps = tracker_record.failed_steps
+            else:
+                total_steps = 0
+                completed_steps = 0
+                failed_steps = 0
+
             # Prepare common parameters
             params = {
                 "execution_id": execution["job_id"],
@@ -100,18 +135,17 @@ class PipelineService:
                 "input_data": json.dumps(execution["input_data"]) if execution.get("input_data") else None,
                 "output_data": json.dumps(execution["output_data"]) if execution.get("output_data") else None,
                 "error_message": execution.get("error"),
-                "total_steps": await self._count_total_steps(execution["job_id"]),
-                "completed_steps": await self._count_completed_steps(execution["job_id"]),
-                "failed_steps": await self._count_failed_steps(execution["job_id"]),
+                "total_steps": total_steps,
+                "completed_steps": completed_steps,
+                "failed_steps": failed_steps,
                 "execution_time_ms": self._calculate_duration_ms(execution),
                 "metadata_json": json.dumps({"progress": execution.get("progress", 0.0)})
             }
 
             # Check if record exists
             check_query = "SELECT COUNT(*) as count FROM pipeline_executions WHERE execution_id = :execution_id"
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, self.db_manager.fetch_one, check_query, {"execution_id": execution["job_id"]})
-            
+            result = self.db_manager.fetch_one(check_query, {"execution_id": execution["job_id"]})
+
             exists = result and result.get("count", 0) > 0
 
             if exists:
@@ -148,6 +182,39 @@ class PipelineService:
             # DatabaseManager doesn't have rollback - connection auto-rolls back on error
             raise
 
+    def _build_final_message(
+        self,
+        job_id: str,
+        execution: Dict[str, Any],
+        result: Optional[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """Build the terminal-state WS broadcast message for an execution."""
+        base = {
+            "job_id": job_id,
+            "pipeline_id": execution["pipeline_id"],
+            "status": execution["status"],
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        status = execution["status"]
+        if status == "waiting_for_human":
+            return {
+                **base,
+                "type": "execution_paused",
+                "waiting_step": result.get("waiting_step") if result else None,
+                "interaction_id": result.get("interaction_id") if result else None,
+            }
+        if status == "completed":
+            return {
+                **base,
+                "type": "execution_completed",
+                "output_data": execution.get("output_data"),
+            }
+        return {
+            **base,
+            "type": "execution_failed",
+            "error": execution.get("error"),
+        }
+
     def _calculate_duration_ms(self, execution: Dict[str, Any]) -> Optional[int]:
         """Calculate execution duration in milliseconds"""
         if not execution.get("started_at") or not execution.get("completed_at"):
@@ -158,41 +225,6 @@ class PipelineService:
             return int((end - start).total_seconds() * 1000)
         except Exception:
             return None
-
-    async def _count_total_steps(self, execution_id: str) -> int:
-        """Count total steps from ExecutionTracker"""
-        if not self.tracker:
-            return 0
-        try:
-            steps = await self.tracker.get_execution_steps(execution_id)
-            return len(steps)
-        except Exception as e:
-            logger.error(f"Error counting total steps: {e}")
-            return 0
-
-    async def _count_completed_steps(self, execution_id: str) -> int:
-        """Count completed steps from ExecutionTracker"""
-        if not self.tracker:
-            return 0
-        try:
-            steps = await self.tracker.get_execution_steps(execution_id)
-            # StepExecutionRecord.status is a StepStatus enum, need to check the value
-            return len([s for s in steps if s.status.value == "completed"])
-        except Exception as e:
-            logger.error(f"Error counting completed steps: {e}")
-            return 0
-
-    async def _count_failed_steps(self, execution_id: str) -> int:
-        """Count failed steps from ExecutionTracker"""
-        if not self.tracker:
-            return 0
-        try:
-            steps = await self.tracker.get_execution_steps(execution_id)
-            # StepExecutionRecord.status is a StepStatus enum, need to check the value
-            return len([s for s in steps if s.status.value == "failed"])
-        except Exception as e:
-            logger.error(f"Error counting failed steps: {e}")
-            return 0
 
     async def _load_executions_from_db(self) -> List[Dict[str, Any]]:
         """Load recent executions from PostgreSQL with error handling"""
@@ -209,9 +241,7 @@ class PipelineService:
                 LIMIT 100
             """
 
-            # fetch_all is sync, so run in thread pool
-            loop = asyncio.get_event_loop()
-            rows = await loop.run_in_executor(None, self.db_manager.fetch_all, query)
+            rows = self.db_manager.fetch_all(query)
 
             executions = []
             for row in rows:
@@ -228,8 +258,8 @@ class PipelineService:
                     "progress": json.loads(row["metadata_json"]).get("progress", 0.0) if row.get("metadata_json") else 0.0,
                     "steps": [],
                     "current_step": None
-            }
-            executions.append(exec_dict)
+                }
+                executions.append(exec_dict)
 
             return executions
         except Exception as e:
@@ -499,7 +529,6 @@ class PipelineService:
     ):
         """Execute pipeline using create_pipeline_from_json from ia_modules library"""
         execution = self.executions[job_id]
-        datetime.now(timezone.utc)
 
         # Get WebSocket manager for real-time updates
         from api.websocket import get_ws_manager
@@ -529,40 +558,6 @@ class PipelineService:
 
             logger.info(f"Running pipeline {pipeline_name} with input_data: {input_data}")
 
-            # Create step execution callback for WebSocket notifications
-            async def step_callback(step_name: str, event: str, data: dict = None):
-                """Callback to notify WebSocket of step events"""
-                step_data = {
-                    "type": f"step_{event}",
-                    "job_id": job_id,
-                    "step_name": step_name,
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
-                if data:
-                    step_data.update(data)
-                
-                await ws_manager.broadcast_execution(job_id, step_data)
-                
-                # Update execution steps list
-                if event == "started":
-                    execution["steps"].append({
-                        "step_name": step_name,
-                        "status": "running",
-                        "started_at": step_data["timestamp"],
-                        "input_data": data.get("input") if data else None
-                    })
-                elif event in ("completed", "failed"):
-                    # Find and update the step
-                    for step in execution["steps"]:
-                        if step["step_name"] == step_name:
-                            step["status"] = "completed" if event == "completed" else "failed"
-                            step["completed_at"] = step_data["timestamp"]
-                            if data:
-                                step["output_data"] = data.get("output")
-                                step["error"] = data.get("error")
-                                step["duration_ms"] = data.get("duration_ms")
-                            break
-
             # Create execution context with the job_id
             from ia_modules.pipeline.core import ExecutionContext
             execution_context = ExecutionContext(
@@ -586,34 +581,12 @@ class PipelineService:
             if result.get("status") == "waiting_for_human":
                 execution["status"] = "waiting_for_human"
                 execution["progress"] = len(result.get("steps", [])) / max(len(pipeline_config.get("steps", [])), 1)
-
-                # Notify WebSocket: Execution paused for human input
-                pause_message = {
-                    "type": "execution_paused",
-                    "job_id": job_id,
-                    "pipeline_id": execution["pipeline_id"],
-                    "status": "waiting_for_human",
-                    "waiting_step": result.get("waiting_step"),
-                    "interaction_id": result.get("interaction_id"),
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
-                await ws_manager.broadcast_execution(job_id, pause_message)
-                await ws_manager.broadcast_pipeline(execution["pipeline_id"], pause_message)
+                # Final execution_paused WS broadcast happens in the finally
+                # block below, after the tracker DB update, so consumers see
+                # consistent state.
             else:
                 execution["status"] = "completed"
                 execution["progress"] = 1.0
-
-                # Notify WebSocket: Execution completed
-                complete_message = {
-                    "type": "execution_completed",
-                    "job_id": job_id,
-                    "pipeline_id": execution["pipeline_id"],
-                    "status": "completed",
-                    "output_data": execution["output_data"],
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
-                await ws_manager.broadcast_execution(job_id, complete_message)
-                await ws_manager.broadcast_pipeline(execution["pipeline_id"], complete_message)
 
             # Extract token usage from result or telemetry
             total_tokens = result.get("total_tokens") if isinstance(result, dict) else None
@@ -626,19 +599,7 @@ class PipelineService:
             logger.error(f"Pipeline execution failed: {e}", exc_info=True)
             execution["status"] = "failed"
             execution["error"] = str(e)
-            
-            # Notify WebSocket: Execution failed
-            failed_message = {
-                "type": "execution_failed",
-                "job_id": job_id,
-                "pipeline_id": execution["pipeline_id"],
-                "status": "failed",
-                "error": str(e),
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-            await ws_manager.broadcast_execution(job_id, failed_message)
-            await ws_manager.broadcast_pipeline(execution["pipeline_id"], failed_message)
-            
+
             total_tokens = None
             estimated_cost = None
 
@@ -654,10 +615,12 @@ class PipelineService:
                     completed_steps = len([s for s in result_steps if s.get("status") == "completed"])
                     failed_steps = len([s for s in result_steps if s.get("status") == "failed"])
                 else:
-                    # Count actual step executions from database
-                    step_records = await self.tracker.get_execution_steps(job_id)
-                    completed_steps = len([s for s in step_records if s.status.value == 'completed'])
-                    failed_steps = len([s for s in step_records if s.status.value == 'failed'])
+                    # Read pre-counted step counts from the tracker's ExecutionRecord
+                    # (maintained by _update_execution_step_counts) instead of
+                    # re-fetching and scanning every step row.
+                    tracker_record = await self.tracker.get_execution(job_id)
+                    completed_steps = tracker_record.completed_steps if tracker_record else 0
+                    failed_steps = tracker_record.failed_steps if tracker_record else 0
 
                 # Determine final status
                 if execution["status"] == "waiting_for_human":
@@ -675,6 +638,16 @@ class PipelineService:
                     output_data=execution.get("output_data"),
                     error_message=execution.get("error")
                 )
+
+            # Broadcast final WS event AFTER the DB is updated so GET requests
+            # triggered by the event see consistent state (status + counts +
+            # progress). Broadcasting before the write left a race where the
+            # frontend saw status=completed but completed_steps=N-1.
+            final_message = self._build_final_message(job_id, execution, result)
+            await asyncio.gather(
+                ws_manager.broadcast_execution(job_id, final_message),
+                ws_manager.broadcast_pipeline(execution["pipeline_id"], final_message),
+            )
 
             # Record metrics using ia_modules ReliabilityMetrics
             if self.reliability_metrics:
@@ -787,6 +760,7 @@ class PipelineService:
                         "metadata": step_record.metadata
                     })
                 
+                is_running = record.status == ExecutionStatus.RUNNING
                 return {
                     "job_id": record.execution_id,
                     "pipeline_id": record.pipeline_id,
@@ -802,9 +776,9 @@ class PipelineService:
                     "output_data": record.output_data,
                     "error_message": record.error_message,
                     "error": record.error_message,  # Keep for backwards compatibility
-                    "progress": 1.0 if record.status == ExecutionStatus.COMPLETED else 0.5,
+                    "progress": _compute_progress(record),
                     "steps": steps,
-                    "current_step": steps[-1]["step_name"] if steps else None
+                    "current_step": steps[-1]["step_name"] if (is_running and steps) else None
                 }
         
         return None
@@ -826,7 +800,7 @@ class PipelineService:
                     "input_data": record.input_data,
                     "output_data": record.output_data,
                     "error": record.error_message,
-                    "progress": 1.0 if record.status == ExecutionStatus.COMPLETED else 0.5,
+                    "progress": _compute_progress(record),
                     "steps": [],
                     "current_step": None
                 })
@@ -1031,7 +1005,8 @@ class PipelineService:
             )
 
             # Broadcast completion via WebSocket
-            from ia_modules.showcase_app.backend.api.websockets import ws_manager
+            from api.websocket import get_ws_manager
+            ws_manager = get_ws_manager()
             complete_message = {
                 "type": "execution_completed",
                 "job_id": execution_id,
@@ -1062,7 +1037,8 @@ class PipelineService:
             if result.get('status') == 'waiting_for_human':
                 logger.info(f"Execution paused again at step {result.get('waiting_step')}")
                 # Broadcast pause via WebSocket
-                from ia_modules.showcase_app.backend.api.websockets import ws_manager
+                from api.websocket import get_ws_manager
+                ws_manager = get_ws_manager()
                 pause_message = {
                     "type": "execution_paused",
                     "job_id": execution_id,
@@ -1084,7 +1060,8 @@ class PipelineService:
                 )
 
                 # Broadcast completion via WebSocket
-                from ia_modules.showcase_app.backend.api.websockets import ws_manager
+                from api.websocket import get_ws_manager
+                ws_manager = get_ws_manager()
                 complete_message = {
                     "type": "execution_completed" if final_status == ExecutionStatus.COMPLETED else "execution_failed",
                     "job_id": execution_id,
@@ -1108,7 +1085,8 @@ class PipelineService:
             )
 
             # Broadcast failure via WebSocket
-            from ia_modules.showcase_app.backend.api.websockets import ws_manager
+            from api.websocket import get_ws_manager
+            ws_manager = get_ws_manager()
             failed_message = {
                 "type": "execution_failed",
                 "job_id": execution_id,

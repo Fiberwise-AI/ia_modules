@@ -11,7 +11,6 @@ test.describe('Pipeline Editor', () => {
   test('should load pipeline editor', async ({ page }) => {
     // Page should load successfully - check for any heading or content
     await expect(page.locator('body')).toBeVisible();
-    await page.screenshot({ path: 'test-results/editor-page-loaded.png', fullPage: true });
   });
 
   test('should display view mode tabs', async ({ page }) => {
@@ -27,7 +26,6 @@ test.describe('Pipeline Editor', () => {
 
     // Page should still be visible
     await expect(page.locator('body')).toBeVisible();
-    await page.screenshot({ path: 'test-results/editor-split-view.png', fullPage: true });
   });
 
   test('should display editor toolbar', async ({ page }) => {

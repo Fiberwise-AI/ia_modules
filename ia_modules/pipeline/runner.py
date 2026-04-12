@@ -123,7 +123,12 @@ def create_pipeline_from_json(pipeline_config: Dict[str, Any], services: Optiona
 
     # Create pipeline
     pipeline_name = pipeline_config.get('name', 'Unknown')
-    flow = pipeline_config.get('flow', {})
+    # Pre-resolve {{ parameters.* }} templates in flow conditions so the runner's
+    # _evaluate_condition sees real values (e.g. 0.8) instead of literal strings.
+    # Step configs are already resolved above via create_step_from_json(context).
+    flow = TemplateParameterResolver.resolve_parameters(
+        pipeline_config.get('flow', {}), context
+    )
     loop_config = pipeline_config.get('loop_config', None)
 
     # Require explicit ServiceRegistry - no silent fallback

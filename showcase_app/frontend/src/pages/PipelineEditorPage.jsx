@@ -51,6 +51,11 @@ const VIEW_MODES = {
   SPLIT: 'split',
 };
 
+const INPUT_MODES = {
+  FORM: 'form',
+  JSON: 'json',
+};
+
 export default function PipelineEditorPage() {
   const navigate = useNavigate();
   const { pipelineId } = useParams();
@@ -65,6 +70,10 @@ export default function PipelineEditorPage() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [showExecutionDialog, setShowExecutionDialog] = useState(false);
   const [inputData, setInputData] = useState('');
+  const [executionParamSchema, setExecutionParamSchema] = useState([]);
+  const [inputMode, setInputMode] = useState(INPUT_MODES.FORM);
+  const [formValues, setFormValues] = useState({});
+  const [jsonError, setJsonError] = useState('');
   const [showExecutionsTable, setShowExecutionsTable] = useState(true);
   const [selectedExecution, setSelectedExecution] = useState(null);
   const [selectedHITLInteraction, setSelectedHITLInteraction] = useState(null);
@@ -231,20 +240,75 @@ export default function PipelineEditorPage() {
   };
 
   const handleRun = () => {
-    const config = JSON.parse(codeValue);
-    const pipelineName = config.name || existingPipeline?.name;
+    // pipelineConfig state is always in sync with codeValue via the effect at the top
+    const config = pipelineConfig;
+    const pipelineName = config.name || existingPipeline?.name || 'Pipeline';
     const defaultInput = DEFAULT_INPUTS[pipelineName] || {};
+    const paramSchema = Array.isArray(config.parameters) ? config.parameters : [];
+
+    // Seed form values from the declared parameters, falling back to DEFAULT_INPUTS
+    const seededForm = {};
+    paramSchema.forEach((p) => {
+      seededForm[p.name] = defaultInput[p.name] ?? '';
+    });
+    // Also include any DEFAULT_INPUTS keys that aren't in the schema (backwards compat)
+    Object.keys(defaultInput).forEach((k) => {
+      if (!(k in seededForm)) seededForm[k] = defaultInput[k];
+    });
+
+    setExecutionParamSchema(paramSchema);
+    setFormValues(seededForm);
     setInputData(JSON.stringify(defaultInput, null, 2));
+    setInputMode(paramSchema.length > 0 ? INPUT_MODES.FORM : INPUT_MODES.JSON);
+    setJsonError('');
     setShowExecutionDialog(true);
+  };
+
+  const handleInputDataChange = (value) => {
+    setInputData(value);
+    if (!value.trim()) {
+      setJsonError('');
+      return;
+    }
+    try {
+      JSON.parse(value);
+      setJsonError('');
+    } catch (e) {
+      setJsonError(e.message);
+    }
+  };
+
+  const buildExecutionPayload = (mode = inputMode) => {
+    if (mode === INPUT_MODES.FORM) {
+      // Coerce form values by declared schema type
+      const payload = {};
+      executionParamSchema.forEach((p) => {
+        const raw = formValues[p.name];
+        if (raw === '' || raw === undefined || raw === null) return;
+        const type = p.schema?.type;
+        if (type === 'number' || type === 'integer') {
+          const n = Number(raw);
+          if (!Number.isNaN(n)) payload[p.name] = n;
+        } else if (type === 'boolean') {
+          payload[p.name] = raw === true || raw === 'true';
+        } else if (type === 'object' || type === 'array') {
+          payload[p.name] = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        } else {
+          payload[p.name] = raw;
+        }
+      });
+      return payload;
+    }
+    return JSON.parse(inputData);
   };
 
   const handleConfirmExecution = async () => {
     try {
+      const parsedInput = buildExecutionPayload();
       setIsExecuting(true);
       setExecutionResult(null);
       setShowExecutionDialog(false);
 
-      const parsedInput = JSON.parse(inputData);
       const response = await executionAPI.start(pipelineId, parsedInput);
       setExecutionResult(response.data);
 
@@ -347,21 +411,19 @@ export default function PipelineEditorPage() {
             <Save className="w-4 h-4" />
             Save
           </button>
-          <button
-            onClick={handleRun}
-            disabled={isExecuting}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
-          >
-            <Play className="w-4 h-4" />
-            Run
-          </button>
         </div>
       </div>
 
       {/* Editor Content */}
       <div className="flex-1 overflow-hidden">
         {viewMode === VIEW_MODES.VISUAL && (
-          <VisualCanvas pipelineConfig={pipelineConfig} pipelineId={pipelineId} onConfigChange={handleVisualChange} />
+          <VisualCanvas
+            pipelineConfig={pipelineConfig}
+            pipelineId={pipelineId}
+            onConfigChange={handleVisualChange}
+            onRun={handleRun}
+            isExecuting={isExecuting}
+          />
         )}
 
         {viewMode === VIEW_MODES.CODE && (
@@ -373,7 +435,13 @@ export default function PipelineEditorPage() {
         {viewMode === VIEW_MODES.SPLIT && (
           <div className="h-full flex">
             <div className="w-1/2 border-r border-gray-200 dark:border-gray-800">
-              <VisualCanvas pipelineConfig={pipelineConfig} pipelineId={pipelineId} onConfigChange={handleVisualChange} />
+              <VisualCanvas
+                pipelineConfig={pipelineConfig}
+                pipelineId={pipelineId}
+                onConfigChange={handleVisualChange}
+                onRun={handleRun}
+                isExecuting={isExecuting}
+              />
             </div>
             <div className="w-1/2 p-4">
               <CodeEditor value={codeValue} onChange={handleCodeChange} language="json" />
@@ -475,7 +543,12 @@ export default function PipelineEditorPage() {
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full my-8 flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Execute Pipeline</h2>
+              <div className="min-w-0">
+                <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Run</div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate">
+                  {pipelineConfig?.name || existingPipeline?.name || 'Pipeline'}
+                </h2>
+              </div>
               <button
                 onClick={() => setShowExecutionDialog(false)}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
@@ -484,19 +557,138 @@ export default function PipelineEditorPage() {
               </button>
             </div>
 
+            {/* Mode toggle */}
+            {executionParamSchema.length > 0 && (
+              <div className="px-6 pt-4">
+                <div className="inline-flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 text-sm">
+                  <button
+                    onClick={() => {
+                      // Sync JSON edits back into form values to avoid losing them
+                      try {
+                        const parsed = JSON.parse(inputData);
+                        if (parsed && typeof parsed === 'object') {
+                          setFormValues((prev) => ({ ...prev, ...parsed }));
+                        }
+                      } catch {
+                        // invalid JSON — keep existing form values
+                      }
+                      setInputMode(INPUT_MODES.FORM);
+                    }}
+                    className={`px-3 py-1 rounded ${
+                      inputMode === INPUT_MODES.FORM
+                        ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600 dark:text-primary-400'
+                        : 'text-gray-600 dark:text-gray-400'
+                    }`}
+                  >
+                    Form
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Sync current form values into the JSON view when switching
+                      setInputData(
+                        JSON.stringify(buildExecutionPayload(INPUT_MODES.FORM), null, 2)
+                      );
+                      setJsonError('');
+                      setInputMode(INPUT_MODES.JSON);
+                    }}
+                    className={`px-3 py-1 rounded ${
+                      inputMode === INPUT_MODES.JSON
+                        ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600 dark:text-primary-400'
+                        : 'text-gray-600 dark:text-gray-400'
+                    }`}
+                  >
+                    Raw JSON
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="p-6 overflow-y-auto flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Input Data (JSON)
-              </label>
-              <textarea
-                value={inputData}
-                onChange={(e) => setInputData(e.target.value)}
-                className="w-full h-64 p-3 border border-gray-300 dark:border-gray-700 rounded-lg font-mono text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                placeholder="{}"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Edit the JSON input data for this pipeline execution
-              </p>
+              {inputMode === INPUT_MODES.FORM && executionParamSchema.length > 0 ? (
+                <div className="space-y-4">
+                  {executionParamSchema.map((param) => {
+                    const type = param.schema?.type || 'string';
+                    const value = formValues[param.name] ?? '';
+                    const isLong = type === 'string' && String(value).length > 80;
+                    return (
+                      <div key={param.name}>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {param.name}
+                          {param.required && <span className="text-red-500 ml-1">*</span>}
+                          <span className="ml-2 text-xs font-normal text-gray-400">{type}</span>
+                        </label>
+                        {param.description && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                            {param.description}
+                          </p>
+                        )}
+                        {type === 'boolean' ? (
+                          <select
+                            value={String(value)}
+                            onChange={(e) =>
+                              setFormValues({ ...formValues, [param.name]: e.target.value === 'true' })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                          >
+                            <option value="false">false</option>
+                            <option value="true">true</option>
+                          </select>
+                        ) : type === 'object' || type === 'array' ? (
+                          <textarea
+                            value={typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
+                            onChange={(e) =>
+                              setFormValues({ ...formValues, [param.name]: e.target.value })
+                            }
+                            rows={6}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-xs"
+                          />
+                        ) : isLong ? (
+                          <textarea
+                            value={value}
+                            onChange={(e) =>
+                              setFormValues({ ...formValues, [param.name]: e.target.value })
+                            }
+                            rows={4}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
+                          />
+                        ) : (
+                          <input
+                            type={type === 'number' || type === 'integer' ? 'number' : 'text'}
+                            value={value}
+                            onChange={(e) =>
+                              setFormValues({ ...formValues, [param.name]: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Input Data (JSON)
+                  </label>
+                  <textarea
+                    value={inputData}
+                    onChange={(e) => handleInputDataChange(e.target.value)}
+                    className={`w-full h-64 p-3 border rounded-lg font-mono text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${
+                      jsonError
+                        ? 'border-red-400 dark:border-red-500 focus:ring-red-500'
+                        : 'border-gray-300 dark:border-gray-700'
+                    }`}
+                    placeholder="{}"
+                  />
+                  {jsonError ? (
+                    <p className="text-xs text-red-500 mt-2">Invalid JSON: {jsonError}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      Edit the JSON input data for this pipeline execution
+                    </p>
+                  )}
+                </>
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
@@ -508,11 +700,11 @@ export default function PipelineEditorPage() {
               </button>
               <button
                 onClick={handleConfirmExecution}
-                disabled={isExecuting}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2 transition"
+                disabled={isExecuting || (inputMode === INPUT_MODES.JSON && !!jsonError)}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition"
               >
                 <Play size={16} />
-                Execute Pipeline
+                Run
               </button>
             </div>
           </div>

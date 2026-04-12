@@ -60,7 +60,7 @@ test.describe('Execution Detail Page', () => {
     // Should not show "not found"
     await expect(page.getByText(/execution not found/i)).not.toBeVisible();
 
-    await page.screenshot({ path: 'test-results/execution-detail-loaded.png', fullPage: true });
+
   });
 
   test('should display execution status card', async ({ page }) => {
@@ -189,7 +189,7 @@ test.describe('Execution Detail — Pipeline Graph', () => {
     const nodeCount = await page.locator('.react-flow__node').count();
     expect(nodeCount).toBeGreaterThan(0);
 
-    await page.screenshot({ path: 'test-results/execution-detail-graph.png', fullPage: true });
+
   });
 
   test('should render edges in the execution graph', async ({ page }) => {
@@ -352,7 +352,7 @@ test.describe('Execute Pipeline — End to End', () => {
     const progress = page.getByText(/%/);
     await expect(progress.first()).toBeVisible();
 
-    await page.screenshot({ path: 'test-results/execute-and-view-detail.png', fullPage: true });
+
   });
 
   test('should show pipeline graph on execution detail after executing', async ({ page, request }) => {

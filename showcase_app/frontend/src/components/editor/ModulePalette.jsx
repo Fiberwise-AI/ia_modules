@@ -1,26 +1,28 @@
-import { Box, Circle, GitBranch, Play, Database, MessageSquare, Code } from 'lucide-react';
+import { Box, Code, MessageSquare, Bot, Network, Users, UserCheck } from 'lucide-react';
 
+// Each entry maps 1:1 to a real Step class in ia_modules/pipeline/.
+// Keep this in sync with the step modules under ia_modules/pipeline/.
 const moduleCategories = [
   {
-    name: 'Basic Steps',
+    name: 'Built-in Steps',
     modules: [
-      { type: 'task', label: 'Task Step', icon: Play, description: 'Generic task execution' },
-      { type: 'transform', label: 'Transform', icon: Code, description: 'Data transformation' },
-      { type: 'validation', label: 'Validation', icon: Circle, description: 'Data validation' },
+      { type: 'LLMStep', label: 'LLM', icon: MessageSquare, description: 'Prompt in, text out' },
+      { type: 'FunctionStep', label: 'Function', icon: Code, description: 'Wrap an async callable' },
+      { type: 'AgentStep', label: 'Agent', icon: Bot, description: 'Run a CLI agent locally' },
+      { type: 'A2AStep', label: 'A2A', icon: Network, description: 'Dispatch to a remote A2A server' },
     ],
   },
   {
-    name: 'Data Operations',
+    name: 'Orchestration',
     modules: [
-      { type: 'database', label: 'Database', icon: Database, description: 'Database operations' },
-      { type: 'api', label: 'API Call', icon: MessageSquare, description: 'External API calls' },
+      { type: 'ParallelStep', label: 'Parallel', icon: Box, description: 'Fan-out to concurrent children' },
+      { type: 'OrchestratorStep', label: 'Orchestrator', icon: Users, description: 'Run a collaboration pattern' },
     ],
   },
   {
-    name: 'Control Flow',
+    name: 'Human-in-the-Loop',
     modules: [
-      { type: 'decision', label: 'Decision', icon: GitBranch, description: 'Conditional branching' },
-      { type: 'parallel', label: 'Parallel', icon: Box, description: 'Parallel execution' },
+      { type: 'HumanInputStep', label: 'Human Input', icon: UserCheck, description: 'Pause for human input' },
     ],
   },
 ];

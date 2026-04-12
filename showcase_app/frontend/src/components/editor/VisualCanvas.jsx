@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -12,7 +12,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
-import { Plus, Save, Code, Eye, Columns, FileCode } from 'lucide-react';
+import { Plus, Save, Code, Eye, Columns, FileCode, Play } from 'lucide-react';
 import StepNode from './StepNode';
 import ParallelNode from './ParallelNode';
 import DecisionNode from './DecisionNode';
@@ -89,12 +89,31 @@ const edgeTypes = {
   sourceLabel: SourceLabelEdge,
 };
 
-export default function VisualCanvas({ pipelineConfig, pipelineId, onConfigChange }) {
+// Run-button anchor geometry (decorative wire from Run button → first node).
+// All coordinates are in container-relative pixel space.
+const RUN_BUTTON_BOTTOM_Y = 52;   // just below the Run button panel
+const ANCHOR_CX = 40;             // circle x, aligned with Run button center
+const ANCHOR_CY = 76;             // circle y, sits below the button
+const ANCHOR_R = 5;
+const ANCHOR_LABEL_Y = ANCHOR_CY + 20;
+// Fallback target if we can't yet project the real first node
+const FALLBACK_TARGET_X = 260;
+const FALLBACK_TARGET_Y = 200;
+
+export default function VisualCanvas({ pipelineConfig, pipelineId, onConfigChange, onRun, isExecuting }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState(null);
   const [showCodeEditor, setShowCodeEditor] = useState(false);
   const [selectedStepForCode, setSelectedStepForCode] = useState(null);
+  const rfInstanceRef = useRef(null);
+  const canvasRef = useRef(null);
+  // One endpoint per pipeline parameter — each points to the matching input
+  // port on whichever step reads {parameters.<name>}. Falls back to a single
+  // endpoint aimed at the first node before layout resolves.
+  const [anchorTargets, setAnchorTargets] = useState([
+    { x: FALLBACK_TARGET_X, y: FALLBACK_TARGET_Y, name: '' },
+  ]);
 
   // Initialize from pipeline config
   useEffect(() => {
@@ -104,6 +123,92 @@ export default function VisualCanvas({ pipelineConfig, pipelineId, onConfigChang
       setEdges(initialEdges);
     }
   }, [pipelineConfig]);
+
+  // Re-aim the decorative wires — one per pipeline parameter — at the matching
+  // input port on the step that consumes {parameters.<name>}. Falls back to the
+  // first node's left-middle when no parameter/port mapping can be resolved.
+  const recomputeAnchorTarget = useCallback(() => {
+    const rf = rfInstanceRef.current;
+    const container = canvasRef.current;
+    if (!onRun || !rf || !container || nodes.length === 0) return;
+
+    const rect = container.getBoundingClientRect();
+
+    // Map each declared parameter to (stepId, inputName) by scanning step inputs
+    // for {parameters.<name>} source references. A parameter can feed multiple
+    // steps, but we only draw from the anchor to the first hit per parameter
+    // (so the "inputs" anchor shows one wire per parameter).
+    const paramPattern = /^\{parameters\.([^}]+)\}$/;
+    const params = Array.isArray(pipelineConfig?.parameters) ? pipelineConfig.parameters : [];
+    const paramTargets = [];
+    for (const p of params) {
+      const paramName = p?.name;
+      if (!paramName) continue;
+      let hit = null;
+      for (const step of pipelineConfig?.steps || []) {
+        const inputs = Array.isArray(step.inputs) ? step.inputs : [];
+        for (const inp of inputs) {
+          const m = paramPattern.exec(inp?.source || '');
+          if (m && m[1] === paramName) {
+            hit = { stepId: step.id, inputName: inp.name };
+            break;
+          }
+        }
+        if (hit) break;
+      }
+      if (hit) paramTargets.push({ ...hit, paramName });
+    }
+
+    const projectNodePoint = (node) => {
+      const flowX = node.position.x;
+      const flowY = node.position.y + (node.height || 80) / 2;
+      const screen = rf.flowToScreenPosition({ x: flowX, y: flowY });
+      return { x: Math.round(screen.x - rect.left), y: Math.round(screen.y - rect.top) };
+    };
+
+    let next = [];
+    if (paramTargets.length > 0) {
+      for (const t of paramTargets) {
+        // ReactFlow renders handles with data-nodeid and data-handleid attributes.
+        const sel = `[data-nodeid="${t.stepId}"][data-handleid="in-${t.inputName}"]`;
+        const handleEl = container.querySelector(sel);
+        if (handleEl) {
+          const h = handleEl.getBoundingClientRect();
+          next.push({
+            x: Math.round(h.left + h.width / 2 - rect.left),
+            y: Math.round(h.top + h.height / 2 - rect.top),
+            name: t.paramName,
+          });
+        }
+      }
+    }
+
+    // Fallback: aim at the first node's left-middle if we couldn't resolve any ports
+    if (next.length === 0) {
+      const startId = pipelineConfig?.flow?.start_at || nodes[0]?.id;
+      const firstNode = nodes.find((n) => n.id === startId) || nodes[0];
+      if (!firstNode) return;
+      const p = projectNodePoint(firstNode);
+      next = [{ x: p.x, y: p.y, name: '' }];
+    }
+
+    // Bail out on same-value updates so pan/zoom idle frames don't re-render
+    setAnchorTargets((prev) => {
+      if (prev.length === next.length
+          && prev.every((p, i) => p.x === next[i].x && p.y === next[i].y && p.name === next[i].name)) {
+        return prev;
+      }
+      return next;
+    });
+  }, [nodes, pipelineConfig, onRun]);
+
+  // Runs after layout settles and whenever nodes change.
+  useEffect(() => {
+    if (!onRun || nodes.length === 0) return;
+    // fitView runs after our effect, so defer one frame
+    const raf = requestAnimationFrame(recomputeAnchorTarget);
+    return () => cancelAnimationFrame(raf);
+  }, [recomputeAnchorTarget, nodes.length, onRun]);
 
   const onConnect = useCallback(
     (params) => {
@@ -205,7 +310,7 @@ export default function VisualCanvas({ pipelineConfig, pipelineId, onConfigChang
       <ModulePalette onAddStep={addStepNode} />
 
       {/* ReactFlow Canvas */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative" ref={canvasRef}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -215,6 +320,8 @@ export default function VisualCanvas({ pipelineConfig, pipelineId, onConfigChang
           onNodeClick={onNodeClick}
           onNodesDelete={onNodesDelete}
           onEdgesDelete={onEdgesDelete}
+          onInit={(instance) => { rfInstanceRef.current = instance; }}
+          onMove={recomputeAnchorTarget}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           defaultEdgeOptions={{
@@ -253,7 +360,101 @@ export default function VisualCanvas({ pipelineConfig, pipelineId, onConfigChang
               </button>
             </div>
           </Panel>
+
+          {/* Run Panel (top-left) */}
+          {onRun && (
+            <Panel position="top-left">
+              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-2 flex gap-2">
+                <button
+                  className="px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  onClick={onRun}
+                  disabled={isExecuting}
+                >
+                  <Play className="w-4 h-4" />
+                  Run
+                </button>
+              </div>
+            </Panel>
+          )}
         </ReactFlow>
+
+        {/* Decorative anchor + wire from Run button toward the first node's input side.
+            The endpoint re-aims when nodes layout or the canvas pans/zooms. */}
+        {onRun && (
+          <svg
+            className="absolute inset-0 pointer-events-none"
+            width="100%"
+            height="100%"
+            style={{ overflow: 'visible' }}
+          >
+            <defs>
+              <marker
+                id="run-wire-arrow"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981" />
+              </marker>
+            </defs>
+            {/* Vertical connector from Run button down to the anchor circle */}
+            <line
+              x1={ANCHOR_CX}
+              y1={RUN_BUTTON_BOTTOM_Y}
+              x2={ANCHOR_CX}
+              y2={ANCHOR_CY - ANCHOR_R}
+              stroke="#10b981"
+              strokeWidth="2"
+            />
+            {/* Anchor circle just below the Run button */}
+            <circle
+              cx={ANCHOR_CX}
+              cy={ANCHOR_CY}
+              r={ANCHOR_R}
+              fill="#10b981"
+              stroke="#ffffff"
+              strokeWidth="2"
+            />
+            {/* "inputs" label under the circle */}
+            <text
+              x={ANCHOR_CX}
+              y={ANCHOR_LABEL_Y}
+              textAnchor="middle"
+              fontSize="10"
+              fontWeight="500"
+              fill="#10b981"
+            >
+              inputs
+            </text>
+            {/* One curved dashed wire per pipeline parameter, each aimed at
+                the input port that consumes {parameters.<name>}. */}
+            {anchorTargets.map((t, i) => {
+              const startX = ANCHOR_CX;
+              const startY = ANCHOR_CY + ANCHOR_R;
+              const endX = t.x;
+              const endY = t.y;
+              const midY = (startY + endY) / 2;
+              const c1x = startX;
+              const c1y = midY;
+              const c2x = endX - 60;
+              const c2y = endY;
+              return (
+                <path
+                  key={`anchor-wire-${i}`}
+                  d={`M ${startX} ${startY} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${endX} ${endY}`}
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth="2"
+                  strokeDasharray="4 4"
+                  markerEnd="url(#run-wire-arrow)"
+                />
+              );
+            })}
+          </svg>
+        )}
       </div>
 
       {/* Property Panel */}
@@ -433,6 +634,10 @@ function convertConfigToGraph(config) {
   // Build a lookup: for each step, index its inputs by source step ID
   // This lets us find which specific ports an edge should connect to
   const stepInputsBySource = {}; // targetStepId -> { sourceStepId -> [{ inputName, outputField }] }
+  // Track which input/output names are actually wired via {steps.X.output.Y} references,
+  // so we can hide orphan ports that nothing reads from / writes to.
+  const wiredInputs = {};  // targetStepId -> Set of input names
+  const wiredOutputs = {}; // sourceStepId -> Set of output field names
 
   const sourcePattern = /^\{steps\.([^.]+)\.output\.([^}]+)\}$/;
   config.steps.forEach(step => {
@@ -448,6 +653,10 @@ function convertConfigToGraph(config) {
         if (!stepInputsBySource[step.id]) stepInputsBySource[step.id] = {};
         if (!stepInputsBySource[step.id][srcStepId]) stepInputsBySource[step.id][srcStepId] = [];
         stepInputsBySource[step.id][srcStepId].push({ inputName: inp.name, outputField });
+        if (!wiredInputs[step.id]) wiredInputs[step.id] = new Set();
+        wiredInputs[step.id].add(inp.name);
+        if (!wiredOutputs[srcStepId]) wiredOutputs[srcStepId] = new Set();
+        wiredOutputs[srcStepId].add(outputField);
       }
     });
   });
@@ -466,18 +675,32 @@ function convertConfigToGraph(config) {
     const fromHasExplicitOutputs = fromStep && normalizePortNames(fromStep.outputs).length > 0;
     const toHasExplicitInputs = toStep && normalizePortNames(toStep.inputs).length > 0;
 
-    let sourceHandle = undefined;
-    let targetHandle = undefined;
-
     // Check if there are explicit source references linking specific ports
     const portLinks = stepInputsBySource[path.to_step]?.[path.from_step];
+    const edgeLabel = label || (path.condition?.type === 'always' ? undefined : path.condition?.type);
 
     if (portLinks && portLinks.length > 0) {
-      // Use the first matching port link for this edge
-      // (multiple links between same steps share one flow edge)
-      sourceHandle = `out-${portLinks[0].outputField}`;
-      targetHandle = `in-${portLinks[0].inputName}`;
-    } else if (!fromHasExplicitOutputs && !toHasExplicitInputs) {
+      // Emit one edge per port link so every data dependency is visible
+      portLinks.forEach((link, linkIdx) => {
+        edges.push({
+          id: `edge-${index}-${linkIdx}`,
+          source: path.from_step,
+          target: path.to_step,
+          sourceHandle: `out-${link.outputField}`,
+          targetHandle: `in-${link.inputName}`,
+          type: 'sourceLabel',
+          animated: !isBackEdge,
+          // Only label the first edge in a bundle to avoid overlapping labels
+          label: linkIdx === 0 ? edgeLabel : undefined,
+          style,
+        });
+      });
+      return;
+    }
+
+    let sourceHandle;
+    let targetHandle;
+    if (!fromHasExplicitOutputs && !toHasExplicitInputs) {
       // Inferred ports: handle IDs are based on connected step names
       const fromName = stepNameMap[path.from_step] || path.from_step;
       const toName = stepNameMap[path.to_step] || path.to_step;
@@ -509,8 +732,36 @@ function convertConfigToGraph(config) {
       targetHandle,
       type: 'sourceLabel',
       animated: !isBackEdge,
-      label: label || (path.condition?.type === 'always' ? undefined : path.condition?.type),
+      label: edgeLabel,
       style,
+    });
+  });
+
+  // Third pass: emit data edges for {steps.X.output.Y} references whose
+  // (source, target) pair isn't already covered by a flow path. This surfaces
+  // data dependencies that skip over the flow (e.g. last step reading from first).
+  const flowPairs = new Set(
+    normalizedPaths.map(p => `${p.from_step}->${p.to_step}`)
+  );
+  let dataEdgeCounter = 0;
+  Object.entries(stepInputsBySource).forEach(([targetId, sourcesMap]) => {
+    Object.entries(sourcesMap).forEach(([sourceId, links]) => {
+      if (flowPairs.has(`${sourceId}->${targetId}`)) return;
+      const sourceLevel = levels[sourceId] ?? 0;
+      const targetLevel = levels[targetId] ?? 0;
+      const isBackEdge = targetLevel <= sourceLevel && sourceId !== targetId;
+      links.forEach((link) => {
+        edges.push({
+          id: `data-edge-${dataEdgeCounter++}`,
+          source: sourceId,
+          target: targetId,
+          sourceHandle: `out-${link.outputField}`,
+          targetHandle: `in-${link.inputName}`,
+          type: 'sourceLabel',
+          animated: !isBackEdge,
+          style: { stroke: '#94a3b8', strokeDasharray: '4 4', strokeWidth: 1.5 },
+        });
+      });
     });
   });
 
@@ -527,19 +778,40 @@ function convertConfigToGraph(config) {
     inferredInputs[toId].add(stepNameMap[fromId] || fromId);
   });
 
-  // Resolve final port lists per step (needed for accurate node sizing)
+  // Resolve final port lists per step (needed for accurate node sizing).
+  // Explicit ports are filtered down to only the ones actually wired via
+  // {steps.X.output.Y} references — but only when at least one is wired.
+  // If none of a step's declared ports are wired (e.g. first step reads
+  // from {parameters.*}, or last step's outputs have no downstream consumer),
+  // keep all declared ports so boundary nodes don't render as empty.
   const resolvedPorts = {};
   config.steps.forEach(step => {
     const explicitInputs = normalizePortNames(step.inputs);
     const explicitOutputs = normalizePortNames(step.outputs);
-    resolvedPorts[step.id] = {
-      inputs: explicitInputs.length > 0
-        ? explicitInputs
-        : [...(inferredInputs[step.id] || [])],
-      outputs: explicitOutputs.length > 0
-        ? explicitOutputs
-        : [...(inferredOutputs[step.id] || [])],
-    };
+    const inputsWired = wiredInputs[step.id];
+    const outputsWired = wiredOutputs[step.id];
+
+    let inputs;
+    if (explicitInputs.length > 0) {
+      const filtered = inputsWired
+        ? explicitInputs.filter(name => inputsWired.has(name))
+        : [];
+      inputs = filtered.length > 0 ? filtered : explicitInputs;
+    } else {
+      inputs = [...(inferredInputs[step.id] || [])];
+    }
+
+    let outputs;
+    if (explicitOutputs.length > 0) {
+      const filtered = outputsWired
+        ? explicitOutputs.filter(name => outputsWired.has(name))
+        : [];
+      outputs = filtered.length > 0 ? filtered : explicitOutputs;
+    } else {
+      outputs = [...(inferredOutputs[step.id] || [])];
+    }
+
+    resolvedPorts[step.id] = { inputs, outputs };
   });
 
   // Dagre layout — hierarchical with edge-crossing minimization

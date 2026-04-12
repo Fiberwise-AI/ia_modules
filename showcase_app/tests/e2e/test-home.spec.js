@@ -12,9 +12,6 @@ test.describe('Home Page', () => {
 
   test('should load home page successfully @smoke', async ({ page }) => {
     await homePage.expectLoaded();
-
-    // Take screenshot for visual verification
-    await homePage.screenshot('home-page-loaded');
   });
 
   test('should display navigation menu', async ({ page }) => {

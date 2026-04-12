@@ -56,7 +56,6 @@ test.describe('Pipelines Page', () => {
 
   test('should load pipelines page', async () => {
     await pipelinesPage.expectLoaded();
-    await pipelinesPage.screenshot('pipelines-page-loaded');
   });
 
   test('should display imported pipeline cards', async ({ page }) => {

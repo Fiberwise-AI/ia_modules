@@ -1,5 +1,6 @@
 import React from 'react'
 import { CheckCircle, XCircle, Play, Clock, AlertCircle } from 'lucide-react'
+import { parseBackendTimestamp } from '../../lib/utils'
 
 export default function StepDetailCard({ step }) {
   const getStepIcon = (status) => {
@@ -46,9 +47,9 @@ export default function StepDetailCard({ step }) {
   // Safe date formatting function
   const formatDate = (dateValue) => {
     if (!dateValue) return 'N/A'
-    
+
     try {
-      const date = new Date(dateValue)
+      const date = parseBackendTimestamp(dateValue)
       // Check if date is valid
       if (isNaN(date.getTime())) {
         console.warn('Invalid date:', dateValue)
@@ -63,9 +64,9 @@ export default function StepDetailCard({ step }) {
 
   const formatTime = (dateValue) => {
     if (!dateValue) return 'N/A'
-    
+
     try {
-      const date = new Date(dateValue)
+      const date = parseBackendTimestamp(dateValue)
       if (isNaN(date.getTime())) return 'Invalid Time'
       return date.toLocaleTimeString()
     } catch (error) {
@@ -126,7 +127,7 @@ export default function StepDetailCard({ step }) {
                 {formatTime(step.started_at)}
               </div>
               <div className="text-xs text-gray-500 mt-0.5">
-                {step.started_at ? new Date(step.started_at).toLocaleDateString() : 'N/A'}
+                {step.started_at ? parseBackendTimestamp(step.started_at).toLocaleDateString() : 'N/A'}
               </div>
             </div>
 
@@ -137,7 +138,7 @@ export default function StepDetailCard({ step }) {
                   {formatTime(step.completed_at)}
                 </div>
                 <div className="text-xs text-gray-500 mt-0.5">
-                  {new Date(step.completed_at).toLocaleDateString()}
+                  {parseBackendTimestamp(step.completed_at).toLocaleDateString()}
                 </div>
               </div>
             )}

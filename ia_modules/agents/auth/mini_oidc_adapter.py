@@ -16,7 +16,17 @@ from .adapter import IDPAdapter, ClientCredentials
 
 logger = logging.getLogger(__name__)
 
-_AUDIENCE = os.getenv("A2A_AUDIENCE", "a2a-server")
+
+def _audience() -> str:
+    """Read A2A_AUDIENCE at call time with a local-default fallback.
+
+    Unlike ``KeycloakAdapter`` we DO allow a default here — the mini
+    adapter runs in-process and the platform operator is the same
+    entity that issues and validates tokens, so there's no
+    cross-realm substitution risk to guard against. The default
+    matches what the mini provider mints.
+    """
+    return os.getenv("A2A_AUDIENCE", "a2a-server")
 
 
 class MiniOIDCAdapter(IDPAdapter):
@@ -102,7 +112,7 @@ class MiniOIDCAdapter(IDPAdapter):
         audience: str = "",
     ) -> str:
         """Validate client credentials and issue a signed JWT."""
-        audience = audience or _AUDIENCE
+        audience = audience or _audience()
 
         # Validate client_secret against stored hash
         secret_hash = hashlib.sha256(client_secret.encode()).hexdigest()
@@ -167,7 +177,7 @@ class MiniOIDCAdapter(IDPAdapter):
         Used by the platform when it needs a token for an agent it owns.
         The secret validation is skipped because the platform IS the IDP.
         """
-        audience = audience or _AUDIENCE
+        audience = audience or _audience()
 
         row = None
         if self.db:
@@ -227,7 +237,7 @@ class MiniOIDCAdapter(IDPAdapter):
         """
         from jose import jwt as jose_jwt, JWTError
 
-        audience = audience or _AUDIENCE
+        audience = audience or _audience()
         provider = self._get_provider()
 
         # Get public key PEM for verification

@@ -1,18 +1,106 @@
-import React, { useState } from 'react';
-import { Brain, Target, Wrench, Search, Activity, Play, Sparkles, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Brain, Target, Wrench, Search, Activity, Play, Sparkles, Plus, Trash2, ArrowLeft, ChevronDown, ChevronRight, Radio } from 'lucide-react';
 import ReflectionViz from '../components/patterns/ReflectionViz';
 import PlanningViz from '../components/patterns/PlanningViz';
 import AgenticRAGViz from '../components/patterns/AgenticRAGViz';
+
+// Map frontend URL slug -> backend pattern name emitted in ws events.
+const PATTERN_EVENT_NAMES = {
+  'reflection': 'reflection',
+  'planning': 'planning',
+  'tool-use': 'tool_use',
+  'agentic-rag': 'agentic_rag',
+  'metacognition': 'metacognition',
+};
+
+const PATTERNS = [
+  {
+    id: 'reflection',
+    name: 'Reflection',
+    icon: Brain,
+    color: 'purple',
+    description: 'Self-critique and iterative improvement',
+  },
+  {
+    id: 'planning',
+    name: 'Planning',
+    icon: Target,
+    color: 'blue',
+    description: 'Multi-step goal decomposition',
+  },
+  {
+    id: 'tool-use',
+    name: 'Tool Use',
+    icon: Wrench,
+    color: 'orange',
+    description: 'Dynamic tool selection',
+  },
+  {
+    id: 'agentic-rag',
+    name: 'Agentic RAG',
+    icon: Search,
+    color: 'green',
+    description: 'Query refinement and retrieval',
+  },
+  {
+    id: 'metacognition',
+    name: 'Metacognition',
+    icon: Activity,
+    color: 'pink',
+    description: 'Self-monitoring and adaptation',
+  },
+];
+
+const COLOR_CLASSES = {
+  purple: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
+  blue: 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
+  orange: 'from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700',
+  green: 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700',
+  pink: 'from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700',
+};
 
 /**
  * Agentic Patterns Page
  * Demonstrates advanced agentic design patterns with editable configuration
  */
 export default function PatternsPage() {
-  const [selectedPattern, setSelectedPattern] = useState('reflection');
+  const { patternId } = useParams();
+  const navigate = useNavigate();
+  const selectedPattern = patternId || null;
   const [patternData, setPatternData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [formCollapsed, setFormCollapsed] = useState(false);
+  const [eventsCollapsed, setEventsCollapsed] = useState(false);
+  const wsRef = useRef(null);
+  const eventsEndRef = useRef(null);
+
+  // Reset state when navigating between patterns
+  useEffect(() => {
+    setPatternData(null);
+    setError(null);
+    setEvents([]);
+    setFormCollapsed(false);
+  }, [patternId]);
+
+  // Tear down any live WebSocket on unmount / pattern change
+  useEffect(() => {
+    return () => {
+      if (wsRef.current) {
+        try { wsRef.current.close(); } catch { /* ignore */ }
+        wsRef.current = null;
+      }
+    };
+  }, [patternId]);
+
+  // Auto-scroll the live event log as new events arrive
+  useEffect(() => {
+    if (eventsEndRef.current) {
+      eventsEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [events]);
 
   // Per-pattern editable form state
   const [reflectionConfig, setReflectionConfig] = useState({
@@ -56,44 +144,6 @@ export default function PatternsPage() {
     }
   });
 
-  const patterns = [
-    {
-      id: 'reflection',
-      name: 'Reflection',
-      icon: Brain,
-      color: 'purple',
-      description: 'Self-critique and iterative improvement',
-    },
-    {
-      id: 'planning',
-      name: 'Planning',
-      icon: Target,
-      color: 'blue',
-      description: 'Multi-step goal decomposition',
-    },
-    {
-      id: 'tool-use',
-      name: 'Tool Use',
-      icon: Wrench,
-      color: 'orange',
-      description: 'Dynamic tool selection',
-    },
-    {
-      id: 'agentic-rag',
-      name: 'Agentic RAG',
-      icon: Search,
-      color: 'green',
-      description: 'Query refinement and retrieval',
-    },
-    {
-      id: 'metacognition',
-      name: 'Metacognition',
-      icon: Activity,
-      color: 'pink',
-      description: 'Self-monitoring and adaptation',
-    }
-  ];
-
   const getConfigForPattern = () => {
     switch (selectedPattern) {
       case 'reflection': return reflectionConfig;
@@ -108,6 +158,26 @@ export default function PatternsPage() {
   const runPattern = async () => {
     setIsLoading(true);
     setError(null);
+    setPatternData(null);
+    setEvents([]);
+    setFormCollapsed(true);
+
+    // Open a WebSocket for live event streaming. Only accept events for
+    // the currently-selected pattern (the channel is shared across runs).
+    const backendPattern = PATTERN_EVENT_NAMES[selectedPattern];
+    const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.host}`;
+    const ws = new WebSocket(`${wsUrl}/ws/patterns`);
+    wsRef.current = ws;
+    ws.onmessage = (msg) => {
+      try {
+        const evt = JSON.parse(msg.data);
+        if (evt.type === 'pattern_event' && evt.pattern === backendPattern) {
+          setEvents((prev) => [...prev, evt]);
+        }
+      } catch { /* ignore malformed frames */ }
+    };
+    ws.onerror = () => { /* non-fatal — HTTP result is still authoritative */ };
+
     try {
       const endpoint = `/api/patterns/${selectedPattern}`;
       const apiUrl = import.meta.env.VITE_API_URL || '';
@@ -129,65 +199,47 @@ export default function PatternsPage() {
       setError(err.message);
     } finally {
       setIsLoading(false);
+      if (wsRef.current) {
+        try { wsRef.current.close(); } catch { /* ignore */ }
+        wsRef.current = null;
+      }
     }
   };
 
-  const colorClasses = {
-    purple: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
-    blue: 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
-    orange: 'from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700',
-    green: 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700',
-    pink: 'from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700'
-  };
-
-  return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
-          <Sparkles className="text-white" size={32} />
+  // -- Grid view (no pattern selected) --
+  if (!selectedPattern) {
+    return (
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Page Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+            <Sparkles className="text-white" size={32} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Agentic Design Patterns</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              Configure and run real agent patterns — each spawns a live LLM agent and returns structured results
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Agentic Design Patterns</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Configure and run real agent patterns — each spawns a live LLM agent and returns structured results
-          </p>
-        </div>
-      </div>
 
-      {/* Pattern Selection */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {patterns.map((pattern) => {
+        {/* Pattern Selection Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {PATTERNS.map((pattern) => {
             const Icon = pattern.icon;
-            const isSelected = selectedPattern === pattern.id;
-
             return (
               <button
                 key={pattern.id}
-                onClick={() => {
-                  setSelectedPattern(pattern.id);
-                  setPatternData(null);
-                  setError(null);
-                }}
-                className={`
-                  p-4 rounded-lg border-2 transition-all duration-200
-                  ${isSelected
-                    ? 'border-gray-800 dark:border-gray-200 shadow-lg scale-105'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
-                  }
-                `}
+                onClick={() => navigate(`/patterns/${pattern.id}`)}
+                className="p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-900 hover:shadow-lg transition-all text-left"
               >
-                <div className={`
-                  w-12 h-12 mx-auto mb-3 rounded-lg flex items-center justify-center
-                  bg-gradient-to-br ${colorClasses[pattern.color]} shadow-md
-                `}>
-                  <Icon className="text-white" size={24} />
+                <div className={`w-14 h-14 mb-4 rounded-xl flex items-center justify-center bg-gradient-to-br ${COLOR_CLASSES[pattern.color]} shadow-md`}>
+                  <Icon className="text-white" size={28} />
                 </div>
-                <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm mb-1">
+                <div className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-1">
                   {pattern.name}
                 </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
                   {pattern.description}
                 </div>
               </button>
@@ -195,11 +247,59 @@ export default function PatternsPage() {
           })}
         </div>
       </div>
+    );
+  }
+
+  // -- Detail view (pattern selected) --
+  const currentPattern = PATTERNS.find(p => p.id === selectedPattern);
+  if (!currentPattern) {
+    // Unknown pattern id — redirect back to grid
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        <button
+          onClick={() => navigate('/patterns')}
+          className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mb-4"
+        >
+          <ArrowLeft size={16} /> Back to patterns
+        </button>
+        <p className="text-gray-600 dark:text-gray-400">Unknown pattern: {selectedPattern}</p>
+      </div>
+    );
+  }
+
+  const PatternIcon = currentPattern.icon;
+
+  return (
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/patterns')}
+        className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+      >
+        <ArrowLeft size={16} /> Back to patterns
+      </button>
+
+      {/* Pattern Header */}
+      <div className="flex items-center gap-4 mb-2">
+        <div className={`w-16 h-16 bg-gradient-to-br ${COLOR_CLASSES[currentPattern.color]} rounded-2xl flex items-center justify-center shadow-lg`}>
+          <PatternIcon className="text-white" size={32} />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{currentPattern.name}</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">{currentPattern.description}</p>
+        </div>
+      </div>
 
       {/* Pattern Configuration Form */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Configuration</h2>
+      <div id="pattern-section-config" className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+        <div className={`flex items-center justify-between ${formCollapsed ? '' : 'mb-6'}`}>
+          <button
+            onClick={() => setFormCollapsed(!formCollapsed)}
+            className="flex items-center gap-2 text-lg font-semibold text-gray-800 dark:text-gray-100 hover:text-gray-600 dark:hover:text-gray-300 transition"
+          >
+            {formCollapsed ? <ChevronRight size={20} /> : <ChevronDown size={20} />}
+            Configuration
+          </button>
           <button
             onClick={runPattern}
             disabled={isLoading}
@@ -225,27 +325,71 @@ export default function PatternsPage() {
           </button>
         </div>
 
-        {/* Per-pattern form fields */}
-        {selectedPattern === 'reflection' && (
-          <ReflectionForm config={reflectionConfig} onChange={setReflectionConfig} />
-        )}
-        {selectedPattern === 'planning' && (
-          <PlanningForm config={planningConfig} onChange={setPlanningConfig} />
-        )}
-        {selectedPattern === 'tool-use' && (
-          <ToolUseForm config={toolUseConfig} onChange={setToolUseConfig} />
-        )}
-        {selectedPattern === 'agentic-rag' && (
-          <RAGForm config={ragConfig} onChange={setRagConfig} />
-        )}
-        {selectedPattern === 'metacognition' && (
-          <MetacognitionForm config={metacognitionConfig} onChange={setMetacognitionConfig} />
+        {/* Per-pattern form fields (hidden when collapsed) */}
+        {!formCollapsed && (
+          <>
+            {selectedPattern === 'reflection' && (
+              <ReflectionForm config={reflectionConfig} onChange={setReflectionConfig} />
+            )}
+            {selectedPattern === 'planning' && (
+              <PlanningForm config={planningConfig} onChange={setPlanningConfig} />
+            )}
+            {selectedPattern === 'tool-use' && (
+              <ToolUseForm config={toolUseConfig} onChange={setToolUseConfig} />
+            )}
+            {selectedPattern === 'agentic-rag' && (
+              <RAGForm config={ragConfig} onChange={setRagConfig} />
+            )}
+            {selectedPattern === 'metacognition' && (
+              <MetacognitionForm config={metacognitionConfig} onChange={setMetacognitionConfig} />
+            )}
+          </>
         )}
       </div>
 
+      {/* Live Event Stream */}
+      {(isLoading || events.length > 0) && (
+        <div id="pattern-section-events" className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+          <button
+            onClick={() => setEventsCollapsed((c) => !c)}
+            className={`w-full flex items-center gap-2 ${eventsCollapsed ? '' : 'mb-4'} hover:opacity-80 transition`}
+          >
+            {eventsCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+            <Radio
+              size={18}
+              className={isLoading ? 'text-green-500 animate-pulse' : 'text-gray-400'}
+            />
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+              Live Events
+            </h2>
+            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+              {events.length} {events.length === 1 ? 'event' : 'events'}
+            </span>
+            {eventsCollapsed && events.length > 0 && (
+              <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 font-mono truncate">
+                {summarizeEvents(events)}
+              </span>
+            )}
+          </button>
+          {!eventsCollapsed && (
+            <div className="max-h-96 overflow-y-auto space-y-2 font-mono text-xs">
+              {events.map((evt, idx) => (
+                <EventRow key={idx} event={evt} />
+              ))}
+              {isLoading && events.length === 0 && (
+                <div className="text-gray-500 dark:text-gray-400 italic">
+                  Waiting for agent events...
+                </div>
+              )}
+              <div ref={eventsEndRef} />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+        <div id="pattern-section-error" className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
           <div className="text-sm font-medium text-red-800 dark:text-red-300">Error running pattern</div>
           <div className="text-sm text-red-700 dark:text-red-400 mt-1">{error}</div>
         </div>
@@ -253,7 +397,7 @@ export default function PatternsPage() {
 
       {/* Pattern Visualization */}
       {patternData && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+        <div id="pattern-section-results" className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-6">Execution Results</h2>
 
           {selectedPattern === 'reflection' && <ReflectionViz data={patternData} />}
@@ -347,6 +491,40 @@ export default function PatternsPage() {
             </div>
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+
+// ==================== EVENT ROW ====================
+
+/** Build a compact "eventName x3 · otherEvent x1" summary for the collapsed live feed */
+function summarizeEvents(events) {
+  const counts = {};
+  for (const e of events) {
+    const name = e.event || 'unknown';
+    counts[name] = (counts[name] || 0) + 1;
+  }
+  return Object.entries(counts)
+    .map(([name, n]) => `${name}${n > 1 ? ` x${n}` : ''}`)
+    .join(' · ');
+}
+
+function EventRow({ event }) {
+  const { event: name, timestamp, type, pattern, ...data } = event;
+  const time = timestamp ? new Date(timestamp).toLocaleTimeString() : '';
+  const hasData = Object.keys(data).length > 0;
+  return (
+    <div className="flex items-start gap-3 p-2 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800">
+      <span className="text-gray-400 dark:text-gray-500 flex-shrink-0">{time}</span>
+      <span className="font-semibold text-blue-600 dark:text-blue-400 flex-shrink-0 min-w-[120px]">
+        {name}
+      </span>
+      {hasData && (
+        <span className="text-gray-600 dark:text-gray-400 break-all flex-1">
+          {JSON.stringify(data)}
+        </span>
       )}
     </div>
   );

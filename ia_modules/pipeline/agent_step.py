@@ -82,10 +82,23 @@ class AgentStep(Step):
         self._executor: Optional[SubprocessExecutor] = None
 
     def _get_executor(self) -> SubprocessExecutor:
-        """Get or create the SubprocessExecutor."""
+        """Resolve the shared SubprocessExecutor from services.
+
+        The host app is required to register a single process-wide
+        ``SubprocessExecutor`` under ``agent_executor`` on the
+        pipeline's ``ServiceRegistry``. This is the one gate that
+        enforces the concurrency semaphore across every pipeline run;
+        constructing a fresh per-step executor would silently defeat
+        it, so a missing registration is a wiring bug and raises.
+        """
         if self._executor is None:
-            bridge_dir = self.config.get("bridge_dir")
-            self._executor = SubprocessExecutor(bridge_dir=bridge_dir)
+            shared = self.services.get("agent_executor") if self.services else None
+            if shared is None:
+                raise RuntimeError(
+                    f"AgentStep '{self.name}' requires services['agent_executor'] "
+                    "— register a shared SubprocessExecutor in the host app."
+                )
+            self._executor = shared
         return self._executor
 
     def _build_agent_config(self, data: Dict[str, Any]) -> AgentConfig:

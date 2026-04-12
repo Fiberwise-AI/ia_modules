@@ -1,6 +1,6 @@
 # IA Modules Feature Matrix
 
-Feature overview for v0.0.3. Features marked "Production" are tested and working.
+Feature overview for v0.2.0. Features marked "Production" are tested and working.
 
 ## Core Pipeline Features
 
@@ -13,6 +13,30 @@ Feature overview for v0.0.3. Features marked "Production" are tested and working
 | **JSON Pipeline Definition** | ✅ Production | Define pipelines declaratively in JSON format | [Getting Started](GETTING_STARTED.md) |
 | **Dynamic Step Loading** | ✅ Production | Load step implementations dynamically from modules | [Developer Guide](DEVELOPER_GUIDE.md) |
 | **Context Management** | ✅ Production | Thread-safe context for data sharing between steps | [Execution Architecture](EXECUTION_ARCHITECTURE.md) |
+
+## Built-in Step Types (New in v0.2.0)
+
+No more subclassing `Step` for common patterns — use these out of the box:
+
+| Step Type | Status | Description | Documentation |
+|-----------|--------|-------------|---------------|
+| **LLMStep** | ✅ Production | Prompt-in, text-out via a CLI agent | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **FunctionStep** | ✅ Production | Wrap any async callable as a pipeline step | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **AgentStep** | ✅ Production | Run a CLI agent (Claude Code SDK, OpenCode) locally with workspace and tool constraints | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **A2AStep** | ✅ Production | Dispatch work to a remote A2A server via JSON-RPC | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **ParallelStep** | ✅ Production | Fan-out — run child steps concurrently | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **OrchestratorStep** | ✅ Production | Run a collaboration pattern (debate, reflection, planning, agentic RAG) atomically | [Developer Guide](DEVELOPER_GUIDE.md) |
+
+## Agent Execution & Authentication (New in v0.2.0)
+
+| Feature | Status | Description | Documentation |
+|---------|--------|-------------|---------------|
+| **Agent Execution Framework** | ✅ Production | Pluggable executor interface for CLI agents with workspace/mode/tool constraints | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **SubprocessExecutor** | ✅ Production | Run Claude Code SDK / OpenCode as subprocess with scoped CWD | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **A2AExecutor** | ✅ Production | Dispatch to remote A2A-protocol servers with JWT bearer auth | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **OIDC Authentication** | ✅ Production | Pluggable IDP adapter — `MiniOIDCAdapter` (dev) / `KeycloakAdapter` (prod, Auth0/Cognito compatible) | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Zero-Trust Claim Enforcement** | ✅ Production | `enforce_agent_claims()` validates JWT `a2a` claim against cwd/mode/tools before execution | [Developer Guide](DEVELOPER_GUIDE.md) |
+| **Collaboration Patterns** | ✅ Production | Debate, reflection, planning, agentic RAG as reusable orchestrators | [Developer Guide](DEVELOPER_GUIDE.md) |
 
 ## Reliability & Observability (EARF-Compliant)
 
@@ -103,13 +127,13 @@ Feature overview for v0.0.3. Features marked "Production" are tested and working
 ### CLI Commands
 
 ```bash
-ia-modules validate <pipeline.json>    # Validate pipeline definition
 ia-modules run <pipeline.json>         # Execute pipeline
+ia-modules validate <pipeline.json>    # Validate pipeline definition
+ia-modules format <pipeline.json>      # Format a pipeline JSON file
 ia-modules visualize <pipeline.json>   # Generate graph visualization
-ia-modules list                        # List all pipelines
-ia-modules info <pipeline_name>        # Show pipeline details
-ia-modules benchmark <config.json>     # Run benchmarks
 ```
+
+See [CLI_TOOL_DOCUMENTATION.md](CLI_TOOL_DOCUMENTATION.md) for full flag reference.
 
 ## Benchmarking & Testing
 
@@ -154,7 +178,7 @@ Via nexusql package:
 
 ## EARF Compliance Matrix
 
-IA Modules v0.0.3 is fully compliant with the Enterprise Agent Reliability Framework (EARF).
+IA Modules v0.2.0 is fully compliant with the Enterprise Agent Reliability Framework (EARF).
 
 | EARF Pillar | Requirement | Implementation | Status |
 |-------------|-------------|----------------|--------|
@@ -175,7 +199,7 @@ IA Modules v0.0.3 is fully compliant with the Enterprise Agent Reliability Frame
 
 | Module | Tests | Notes |
 |--------|-------|-------|
-| **Total** | **2,852 tests** | 13 collection errors in security/performance modules |
+| **Total** | **2,993+ tests** | Includes new agent-auth and built-in step-type suites |
 
 
 

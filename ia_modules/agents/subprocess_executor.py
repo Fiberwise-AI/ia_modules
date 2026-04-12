@@ -31,35 +31,35 @@ def _find_executable(name: str) -> Optional[str]:
     return shutil.which(name)
 
 
-def _write_opencode_json(cwd: str, provider: str, api_key: str, model: Optional[str] = None):
-    """Write temporary opencode.json to CWD for provider auth.
+def _write_opencode_json(
+    config_dir: str,
+    provider: str,
+    api_key: str,
+    model: Optional[str] = None,
+):
+    """Write opencode.json into an isolated per-agent config dir.
 
-    Matches the a0c bridge (run_agent_opencode.mjs) — writes provider name,
-    apiKey, and model so opencode can authenticate with the correct provider.
-    Returns a cleanup function that restores/removes the file.
+    ``config_dir`` is an ``XDG_CONFIG_HOME``-shaped path — the caller
+    creates a per-job directory (under ``logs/<job_id>/config``) and
+    passes it in. We write ``opencode/opencode.json`` inside it and
+    point ``XDG_CONFIG_HOME`` at ``config_dir`` when spawning opencode
+    so the CLI picks up the provider/api-key without us ever writing
+    into the user's target working directory.
+
+    Historical note: earlier versions wrote ``opencode.json`` directly
+    into the user's ``cwd``, which would leak an ``OPENCODE_API_KEY``
+    into whatever repo the demo was run against if the user forgot to
+    clean up (or accidentally committed the file). That is the bug
+    this refactor closes — the config file now lives in a per-run
+    directory the caller controls and tears down after the agent exits.
     """
-    # Ensure CWD exists — create each level individually (WSL/NTFS compat)
-    if not os.path.isdir(cwd):
-        to_create = []
-        current = cwd
-        while current and not os.path.isdir(current):
-            to_create.append(current)
-            parent = os.path.dirname(current)
-            if parent == current:
-                break
-            current = parent
-        for p in reversed(to_create):
-            try:
-                os.mkdir(p)
-            except FileExistsError:
-                pass
-        if not os.path.isdir(cwd):
-            raise OSError(f"Failed to create CWD: {cwd}")
-
-    oc_path = Path(cwd) / "opencode.json"
-    original = None
-    if oc_path.exists():
-        original = oc_path.read_text()
+    cfg_root = Path(config_dir) / "opencode"
+    # mode=0o700 so the per-agent opencode dir is owner-only on POSIX.
+    # Windows ignores the mode bits. The API key file inside is 0o600,
+    # but an ancestor world-listable dir still lets other local users
+    # enumerate job ids and pipeline metadata. ([26])
+    cfg_root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    oc_path = cfg_root / "opencode.json"
 
     oc_config = {
         "$schema": "https://opencode.ai/config.json",
@@ -76,15 +76,27 @@ def _write_opencode_json(cwd: str, provider: str, api_key: str, model: Optional[
         oc_config["provider"][provider]["models"] = {model: {"name": model}}
         oc_config["model"] = m
 
-    oc_path.write_text(json.dumps(oc_config, indent=2))
-    logger.info("Wrote temporary opencode.json for provider=%s in %s", provider, cwd)
+    # Write with mode 0o600 where the platform honours it — on POSIX
+    # this keeps the api key out of any other user's view. We write
+    # via os.open(O_CREAT|O_TRUNC|O_WRONLY, 0o600) so the mode bits
+    # are applied at create time, not after a race.
+    fd = os.open(
+        str(oc_path),
+        os.O_CREAT | os.O_TRUNC | os.O_WRONLY,
+        0o600,
+    )
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump(oc_config, f, indent=2)
+
+    logger.info(
+        "Wrote opencode.json for provider=%s at %s (isolated from cwd)",
+        provider,
+        oc_path,
+    )
 
     def cleanup():
         try:
-            if original is not None:
-                oc_path.write_text(original)
-            else:
-                oc_path.unlink(missing_ok=True)
+            oc_path.unlink(missing_ok=True)
         except OSError:
             pass
 
@@ -102,19 +114,31 @@ class SubprocessExecutor:
         node_path: Path to node executable. Auto-detected if None.
         max_concurrent: Maximum concurrent agent subprocesses.
         line_buffer_size: Subprocess stdout buffer size in bytes.
+        auth: Optional ``LocalJwtAuth`` (or any object exposing
+              ``mint(cwd, mode, tools)`` and ``verify_and_enforce(token,
+              cwd, mode, tools)``). When supplied, every ``execute()``
+              call mints a token bound to the ``AgentConfig`` and calls
+              ``verify_and_enforce`` before the subprocess is spawned.
+              A ``ClaimsViolation`` (subclass of ``ValueError``) raised
+              by the verifier propagates out of ``execute()`` and the
+              subprocess never starts — this is the parent → child
+              zero-trust gate. When ``auth`` is ``None`` the executor
+              behaves exactly as before (no enforcement).
     """
 
     def __init__(
         self,
         bridge_dir: Optional[str] = None,
         node_path: Optional[str] = None,
-        max_concurrent: int = 4,
+        max_concurrent: int = 3,
         line_buffer_size: int = 4 * 1024 * 1024,
+        auth: Optional[object] = None,
     ):
         self.bridge_dir = Path(bridge_dir) if bridge_dir else None
         self.node = node_path or _find_executable("node")
         self.max_concurrent = max_concurrent
         self.line_buffer_size = line_buffer_size
+        self._auth = auth
         self._semaphore = asyncio.Semaphore(max_concurrent)
         self._running: dict[str, asyncio.subprocess.Process] = {}
 
@@ -123,9 +147,35 @@ class SubprocessExecutor:
                         self.bridge_dir, self.node)
         else:
             logger.info("SubprocessExecutor: direct CLI mode (no bridge dir)")
+        if self._auth is not None:
+            logger.info("SubprocessExecutor: zero-trust auth gate enabled")
 
     async def execute(self, config: AgentConfig) -> AsyncIterator[AgentEvent]:
-        """Spawn a CLI agent subprocess and yield normalized events."""
+        """Spawn a CLI agent subprocess and yield normalized events.
+
+        If an ``auth`` was supplied at construction time, this method
+        mints a claim token bound to ``(config.cwd, config.mode,
+        config.tools)`` and immediately verifies it against the same
+        triple. The verification call is what invokes
+        ``enforce_agent_claims`` — any drift between the mint and the
+        verify (which would only be possible if another task mutated
+        ``config`` concurrently) raises and prevents the subprocess
+        from being spawned.
+        """
+        if self._auth is not None:
+            token = self._auth.mint(
+                cwd=config.cwd,
+                mode=config.mode.value,
+                tools=list(config.tools),
+            )
+            # Raises ClaimsViolation on mismatch — do NOT catch here.
+            self._auth.verify_and_enforce(
+                token,
+                cwd=config.cwd,
+                mode=config.mode.value,
+                tools=list(config.tools),
+            )
+
         job_id = config.job_id
         t_start = time.monotonic()
         seq = 0
@@ -229,6 +279,7 @@ class SubprocessExecutor:
         """Run CLI agent directly without bridge scripts."""
         prompt = self._build_prompt(config)
         _cleanup = None
+        extra_env: dict[str, str] = {}
 
         if config.cli_type == CLIType.OPENCODE:
             cli = _find_executable("opencode")
@@ -244,11 +295,29 @@ class SubprocessExecutor:
                 cmd.extend(["-m", m])
             cmd.append(prompt)
 
-            # Write opencode.json to CWD for provider auth (matches a0c bridge)
+            # Write opencode.json into a per-job config dir OUTSIDE the
+            # target cwd. Previously this file landed in ``config.cwd``
+            # and could be accidentally committed from the user's repo
+            # (every demo run would drop the api key into whatever
+            # directory the user pointed the showcase at). We now write
+            # under ``logs/<job_id>/config`` and export ``XDG_CONFIG_HOME``
+            # pointing there, which opencode honours for config lookup.
             if config.provider and config.api_key:
-                _cleanup = _write_opencode_json(
-                    config.cwd, config.provider, config.api_key, config.model
+                logs_dir = (
+                    config.metadata.get("logs_dir", "./logs")
+                    if config.metadata
+                    else "./logs"
                 )
+                cfg_dir = Path(logs_dir) / config.job_id / "config"
+                # Per-job config dir — owner-only on POSIX. ([26])
+                cfg_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+                _cleanup = _write_opencode_json(
+                    str(cfg_dir),
+                    config.provider,
+                    config.api_key,
+                    config.model,
+                )
+                extra_env["XDG_CONFIG_HOME"] = str(cfg_dir)
         else:
             cli = _find_executable("claude")
             if not cli:
@@ -263,7 +332,7 @@ class SubprocessExecutor:
                 cmd.extend(["--allowedTools", tools_str])
 
         try:
-            async for event in self._run_subprocess(cmd, None, config):
+            async for event in self._run_subprocess(cmd, None, config, extra_env=extra_env):
                 yield event
         finally:
             if _cleanup:
@@ -274,6 +343,7 @@ class SubprocessExecutor:
         cmd: list,
         stdin_config: Optional[dict],
         config: AgentConfig,
+        extra_env: Optional[dict[str, str]] = None,
     ) -> AsyncIterator[AgentEvent]:
         """Run a subprocess, optionally pipe JSON to stdin, yield AgentEvents."""
         label = f"exec-{config.job_id[:8]}"
@@ -291,9 +361,17 @@ class SubprocessExecutor:
         if config.cli_type == CLIType.OPENCODE:
             logs_dir = config.metadata.get("logs_dir", "./logs") if config.metadata else "./logs"
             agent_data_dir = Path(logs_dir) / config.job_id / "data"
-            agent_data_dir.mkdir(parents=True, exist_ok=True)
+            # Per-agent data dir (opencode SQLite WAL lives here) —
+            # owner-only on POSIX so other users can't enumerate. ([26])
+            agent_data_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
             child_env["XDG_DATA_HOME"] = str(agent_data_dir)
             logger.info("[%s] OPENCODE data dir: %s", label, agent_data_dir)
+
+        # Caller-supplied env overrides — used by _run_direct to export
+        # XDG_CONFIG_HOME at a per-job config dir so the opencode.json
+        # we just wrote is the one opencode reads.
+        if extra_env:
+            child_env.update(extra_env)
 
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -409,3 +487,37 @@ class SubprocessExecutor:
             proc.kill()
             return True
         return False
+
+
+# ---------------------------------------------------------------------------
+# Process-wide shared executor
+# ---------------------------------------------------------------------------
+# A single SubprocessExecutor instance per process, registered by the host
+# application at startup and fetched by standalone helpers (e.g. llm_call())
+# that don't have access to a pipeline ServiceRegistry. Mirrors the
+# execution_tracker / hitl._state_manager pattern.
+#
+# Every AgentStep/LLMStep inside a pipeline reaches its executor through the
+# ServiceRegistry; only helpers outside that wiring use these functions.
+#
+# Host app contract: call set_shared_executor(...) exactly once from its
+# lifespan startup. Failing to register and then calling get_shared_executor()
+# raises — no silent fallback, no per-call constructor, because a fresh
+# executor would silently defeat the concurrency semaphore.
+_shared_executor: Optional["SubprocessExecutor"] = None
+
+
+def set_shared_executor(executor: "SubprocessExecutor") -> None:
+    """Register the process-wide SubprocessExecutor. Called once at startup."""
+    global _shared_executor
+    _shared_executor = executor
+
+
+def get_shared_executor() -> "SubprocessExecutor":
+    """Return the process-wide SubprocessExecutor, raising if unset."""
+    if _shared_executor is None:
+        raise RuntimeError(
+            "SubprocessExecutor singleton is not registered — "
+            "the host app must call set_shared_executor() at startup."
+        )
+    return _shared_executor

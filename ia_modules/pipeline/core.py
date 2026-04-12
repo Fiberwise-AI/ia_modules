@@ -46,8 +46,21 @@ class TemplateParameterResolver:
             elif isinstance(obj, list):
                 return [resolve_value(item) for item in obj]
             elif isinstance(obj, str):
-                # Replace {{ parameters.name }} with actual values
+                # Replace {{ parameters.name }} with actual values.
+                # If the ENTIRE string is a single placeholder, return the raw
+                # typed value so numbers/bools/lists survive round-trip; otherwise
+                # do stringified substitution for embedded placeholders.
                 import re
+                whole_match = re.fullmatch(r'\s*\{\{\s*([^}]+)\s*\}\}\s*', obj)
+                if whole_match:
+                    param_path = whole_match.group(1).strip()
+                    if param_path.startswith('parameters.'):
+                        param_name = param_path[11:]
+                        params = context.get('parameters', {})
+                        if param_name in params:
+                            return params[param_name]
+                    return obj  # Unresolved — leave as-is.
+
                 def replace_param(match):
                     param_path = match.group(1).strip()
                     if param_path.startswith('parameters.'):
@@ -706,6 +719,23 @@ class Pipeline:
                         error_message=str(step_error) if step_error else None
                     )
 
+                # Record reliability metrics for this step
+                reliability = self.services.get('reliability_metrics') if self.services else None
+                if reliability:
+                    observed_mode = step.config.get('mode')
+                    mode_enforcer = self.services.get('mode_enforcer') if self.services else None
+                    declared_mode = None
+                    if mode_enforcer is not None:
+                        declared_agent_mode = mode_enforcer.get_mode(current_step_name)
+                        if declared_agent_mode is not None:
+                            declared_mode = declared_agent_mode.value
+                    await reliability.record_step(
+                        agent=current_step_name,
+                        success=step_error is None,
+                        mode=observed_mode,
+                        declared_mode=declared_mode,
+                    )
+
                 # Re-raise error if step failed
                 if step_error:
                     raise step_error
@@ -951,8 +981,12 @@ class Pipeline:
                 return actual_value != expected_value
             elif operator == "greater_than":
                 return actual_value > expected_value
+            elif operator == "greater_than_or_equals":
+                return actual_value >= expected_value
             elif operator == "less_than":
                 return actual_value < expected_value
+            elif operator == "less_than_or_equals":
+                return actual_value <= expected_value
         
         # Unknown condition type - default to False for safety
         self.logger.warning(f"Unknown condition type: {condition_type}")

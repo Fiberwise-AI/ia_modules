@@ -22,8 +22,6 @@ test.describe('Sidebar & Mobile Menu', () => {
     const sidebar = page.locator('aside');
     const sidebarClass = await sidebar.getAttribute('class');
     expect(sidebarClass).toMatch(/w-20|w-16/);
-    
-    await page.screenshot({ path: 'test-results/sidebar-collapsed.png', fullPage: true });
   });
 
   test('should expand sidebar from collapsed state', async ({ page }) => {
@@ -77,9 +75,7 @@ test.describe('Sidebar & Mobile Menu', () => {
     // Sidebar should slide in
     const sidebar = page.locator('aside');
     await expect(sidebar).toBeVisible();
-    
-    await page.screenshot({ path: 'test-results/mobile-menu-open.png', fullPage: true });
-    
+
     await page.close();
     await context.close();
   });

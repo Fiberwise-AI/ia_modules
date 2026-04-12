@@ -73,7 +73,7 @@ class SQLCheckpointer(BaseCheckpointer):
         }
 
         try:
-            await self.db.execute(query, params)
+            self.db.execute(query, params)
             return checkpoint_id
         except Exception as e:
             raise CheckpointSaveError(f"Failed to save checkpoint: {e}")
@@ -100,7 +100,7 @@ class SQLCheckpointer(BaseCheckpointer):
             params = {"thread_id": thread_id}
 
         try:
-            row = await self.db.fetch_one(query, params)
+            row = self.db.fetch_one(query, params)
             if not row:
                 return None
 
@@ -150,10 +150,7 @@ class SQLCheckpointer(BaseCheckpointer):
             params = {"thread_id": thread_id, "limit": limit, "offset": offset}
 
         try:
-            # fetch_all is sync, returns list directly
-            import asyncio
-            loop = asyncio.get_event_loop()
-            rows = await loop.run_in_executor(None, self.db.fetch_all, query, params)
+            rows = self.db.fetch_all(query, params)
             return [
                 Checkpoint(
                     checkpoint_id=row["checkpoint_id"],
@@ -181,7 +178,7 @@ class SQLCheckpointer(BaseCheckpointer):
         params = {"thread_id": thread_id, "checkpoint_id": checkpoint_id}
 
         try:
-            await self.db.execute(query, params)
+            self.db.execute(query, params)
             return True
         except Exception:
             return False
@@ -206,7 +203,7 @@ class SQLCheckpointer(BaseCheckpointer):
             params = {"thread_id": thread_id}
 
         try:
-            result = await self.db.execute(query, params)
+            result = self.db.execute(query, params)
             return result.rowcount if hasattr(result, 'rowcount') else 0
         except Exception:
             return 0
@@ -223,7 +220,7 @@ class SQLCheckpointer(BaseCheckpointer):
             WHERE thread_id = :thread_id
             """
             params = {"thread_id": thread_id}
-            row = await self.db.fetch_one(query, params)
+            row = self.db.fetch_one(query, params)
 
             return {
                 'total_checkpoints': row['total'] if row else 0,
@@ -237,10 +234,10 @@ class SQLCheckpointer(BaseCheckpointer):
                    COUNT(DISTINCT thread_id) as thread_count
             FROM pipeline_checkpoints
             """
-            row = await self.db.fetch_one(query)
+            row = self.db.fetch_one(query)
 
             threads_query = "SELECT DISTINCT thread_id FROM pipeline_checkpoints"
-            threads = await self.db.fetch_all(threads_query)
+            threads = self.db.fetch_all(threads_query)
 
             return {
                 'total_checkpoints': row['total'] if row else 0,

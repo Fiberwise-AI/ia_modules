@@ -3,14 +3,22 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 import { execSync } from 'child_process'
 
-// Resolve WSL2 IP so the Vite proxy (Windows) can reach the backend (WSL2).
-// Falls back to localhost for native setups.
+// Backend host resolution:
+// - Default: localhost (backend running natively, same machine as Vite)
+// - Set BACKEND_HOST=wsl to resolve the WSL2 IP (when backend runs in WSL2
+//   and Vite runs on Windows).
+// - Or set BACKEND_HOST=<ip-or-host> directly.
 let backendHost = 'localhost'
-try {
-  const wslIp = execSync('wsl -d Ubuntu bash -lc "hostname -I"', { encoding: 'utf-8' }).trim().split(/\s+/)[0]
-  if (wslIp) backendHost = wslIp
-} catch {
-  // Not running under WSL or wsl command unavailable — use localhost
+const override = process.env.BACKEND_HOST
+if (override === 'wsl') {
+  try {
+    const wslIp = execSync('wsl -d Ubuntu bash -lc "hostname -I"', { encoding: 'utf-8' }).trim().split(/\s+/)[0]
+    if (wslIp) backendHost = wslIp
+  } catch {
+    // wsl command unavailable — stay on localhost
+  }
+} else if (override) {
+  backendHost = override
 }
 
 const API_TARGET = `http://${backendHost}:7331`

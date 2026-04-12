@@ -151,7 +151,7 @@ class GraphPipelineRunner:
 
     def _get_central_logger(self):
         """Get the central logging service"""
-        if self.services and hasattr(self.services, 'get'):
+        if self.services:
             return self.services.get('central_logger')
         return None
 
@@ -253,7 +253,7 @@ class GraphPipelineRunner:
                 return result
 
             # Log successful execution end to database
-            self._log_execution_end_to_database(execution_id, success=True)
+            await self._log_execution_end_to_database(execution_id, success=True)
 
             # Write central logs to database
             await self._write_central_logs_to_database()
@@ -265,7 +265,7 @@ class GraphPipelineRunner:
 
         except Exception as e:
             # Log failed execution end to database
-            self._log_execution_end_to_database(execution_id, success=False, error=str(e))
+            await self._log_execution_end_to_database(execution_id, success=False, error=str(e))
 
             # Write central logs to database even on failure
             await self._write_central_logs_to_database()
@@ -278,7 +278,7 @@ class GraphPipelineRunner:
     async def _start_execution_logging(self, config: PipelineConfig, input_data: Dict[str, Any], execution_id: str):
         """Start execution logging with provided execution ID"""
         # Start execution in tracker
-        if self.services and hasattr(self.services, 'get'):
+        if self.services:
             execution_tracker = self.services.get('execution_tracker')
             if execution_tracker and hasattr(execution_tracker, 'start_execution'):
                 try:
@@ -303,20 +303,33 @@ class GraphPipelineRunner:
             "step_count": len(config.steps)
         })
 
-    def _log_execution_end_to_database(self, execution_id: str, success: bool, error: Optional[str] = None):
-        """Log pipeline execution end to execution tracker"""
-        if self.services and hasattr(self.services, 'get'):
-            execution_tracker = self.services.get('execution_tracker')
-            if execution_tracker and hasattr(execution_tracker, 'end_execution'):
-                execution_tracker.end_execution(
-                    execution_id=execution_id,
-                    success=success,
-                    error=error
-                )
+    async def _log_execution_end_to_database(self, execution_id: str, success: bool, error: Optional[str] = None):
+        """Log pipeline execution end to execution tracker and reliability metrics."""
+        if not self.services:
+            return
+
+        execution_tracker = self.services.get('execution_tracker')
+        if execution_tracker:
+            from .execution_tracker import ExecutionStatus
+            await execution_tracker.update_execution_status(
+                execution_id=execution_id,
+                status=ExecutionStatus.COMPLETED if success else ExecutionStatus.FAILED,
+                error_message=error,
+            )
+
+        reliability = self.services.get('reliability_metrics')
+        if reliability and execution_tracker:
+            step_records = await execution_tracker.get_execution_steps(execution_id)
+            await reliability.record_workflow(
+                workflow_id=execution_id,
+                steps=len(step_records),
+                retries=sum(s.retry_count for s in step_records),
+                success=success,
+            )
 
     async def _write_central_logs_to_database(self):
         """Write central logger logs to database via execution tracker"""
-        if self.services and hasattr(self.services, 'get'):
+        if self.services:
             execution_tracker = self.services.get('execution_tracker')
             central_logger = self.services.get('central_logger')
             if execution_tracker and central_logger and hasattr(central_logger, 'write_to_database'):
@@ -419,7 +432,7 @@ class GraphPipelineRunner:
             self.execution_stats['end_time'] = datetime.now()
 
             # Log successful execution
-            self._log_execution_end_to_database(execution_id, success=True)
+            await self._log_execution_end_to_database(execution_id, success=True)
             await self._write_central_logs_to_database()
             self._log_to_central_service("SUCCESS", "Real agent pipeline execution completed successfully",
                                        data={"execution_stats": self.execution_stats})
@@ -428,7 +441,7 @@ class GraphPipelineRunner:
 
         except Exception as e:
             # Log failed execution
-            self._log_execution_end_to_database(execution_id, success=False, error=str(e))
+            await self._log_execution_end_to_database(execution_id, success=False, error=str(e))
             await self._write_central_logs_to_database()
             self._log_to_central_service("ERROR", f"Real agent pipeline execution failed: {str(e)}")
             raise
@@ -589,7 +602,7 @@ class GraphPipelineRunner:
                 await self._write_central_logs_to_database()
                 return result
 
-            self._log_execution_end_to_database(execution_id, success=True)
+            await self._log_execution_end_to_database(execution_id, success=True)
             await self._write_central_logs_to_database()
             self._log_to_central_service(
                 "SUCCESS",
@@ -599,7 +612,7 @@ class GraphPipelineRunner:
             return result
 
         except Exception as e:
-            self._log_execution_end_to_database(execution_id, success=False, error=str(e))
+            await self._log_execution_end_to_database(execution_id, success=False, error=str(e))
             await self._write_central_logs_to_database()
             self._log_to_central_service("ERROR", f"Pipeline execution failed: {str(e)}")
             raise

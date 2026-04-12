@@ -187,13 +187,19 @@ class TestGraphPipelineRunnerHelpers:
         runner = GraphPipelineRunner()
         runner._log_step_data("step", "s1", "input", 42)
 
-    def test_log_execution_end_to_database(self):
+    async def test_log_execution_end_to_database(self):
+        from ia_modules.pipeline.execution_tracker import ExecutionStatus
+
         services = ServiceRegistry()
-        tracker = MagicMock()
+        tracker = AsyncMock()
         services.register("execution_tracker", tracker)
         runner = GraphPipelineRunner(services)
-        runner._log_execution_end_to_database("eid", True)
-        tracker.end_execution.assert_called_once()
+        await runner._log_execution_end_to_database("eid", True)
+        tracker.update_execution_status.assert_called_once_with(
+            execution_id="eid",
+            status=ExecutionStatus.COMPLETED,
+            error_message=None,
+        )
 
     async def test_write_central_logs(self):
         services = ServiceRegistry()
@@ -1754,7 +1760,11 @@ class TestHITLManager:
 # ---------------------------------------------------------------------------
 # 7. subprocess_executor.py
 # ---------------------------------------------------------------------------
-from ia_modules.agents.subprocess_executor import SubprocessExecutor, _find_executable
+from ia_modules.agents.subprocess_executor import (
+    SubprocessExecutor,
+    _find_executable,
+    _write_opencode_json,
+)
 from ia_modules.agents.executor import AgentConfig, AgentEvent, CLIType, EventType, AgentMode
 
 
@@ -1767,11 +1777,40 @@ class TestFindExecutable:
         assert result is None or isinstance(result, str)
 
 
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="POSIX file mode not enforced on Windows",
+)
+def test_write_opencode_json_creates_owner_only_config_dir(tmp_path):
+    """[26] ``_write_opencode_json`` creates its opencode config dir 0o700.
+
+    Previously the dir inherited the process umask (typically 0o755)
+    which made the per-agent config world-listable — an attacker on
+    the same host could enumerate job ids and pipeline metadata even
+    though the ``opencode.json`` file itself was 0o600.
+    """
+    import stat
+
+    cleanup = _write_opencode_json(
+        str(tmp_path),
+        provider="openai",
+        api_key="sk-test-not-real",
+        model="gpt-4",
+    )
+    try:
+        cfg_dir = tmp_path / "opencode"
+        assert cfg_dir.is_dir()
+        mode = stat.S_IMODE(cfg_dir.stat().st_mode)
+        assert mode & 0o077 == 0, f"expected owner-only, got {oct(mode)}"
+    finally:
+        cleanup()
+
+
 class TestSubprocessExecutorInit:
     def test_default_init(self):
         exc = SubprocessExecutor()
         assert exc.bridge_dir is None
-        assert exc.max_concurrent == 4
+        assert exc.max_concurrent == 3
 
     def test_with_bridge_dir(self):
         exc = SubprocessExecutor(bridge_dir="/tmp/bridge", node_path="/usr/bin/node")

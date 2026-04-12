@@ -12,15 +12,17 @@ _backend_dir = str(Path(__file__).parent.parent)
 if _backend_dir not in sys.path:
     sys.path.insert(0, _backend_dir)
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional
 from services.pattern_service import PatternService
 
 router = APIRouter(prefix="/api/patterns", tags=["patterns"])
 
-# Shared service instance
-pattern_service = PatternService()
+
+def _get_service(request: Request) -> PatternService:
+    """Fetch the container-constructed PatternService."""
+    return request.app.state.services.pattern_service
 
 
 # ==================== REQUEST MODELS ====================
@@ -55,69 +57,64 @@ class MetacognitionRequest(BaseModel):
 # ==================== ENDPOINTS ====================
 
 @router.post("/reflection")
-async def run_reflection(request: ReflectionRequest) -> Dict[str, Any]:
+async def run_reflection(body: ReflectionRequest, request: Request) -> Dict[str, Any]:
     """Run the reflection pattern: self-critique and iterative improvement"""
     try:
-        result = await pattern_service.reflection_example(
-            initial_output=request.initial_output,
-            criteria=request.criteria,
-            max_iterations=request.max_iterations
+        return await _get_service(request).reflection_example(
+            initial_output=body.initial_output,
+            criteria=body.criteria,
+            max_iterations=body.max_iterations
         )
-        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/planning")
-async def run_planning(request: PlanningRequest) -> Dict[str, Any]:
+async def run_planning(body: PlanningRequest, request: Request) -> Dict[str, Any]:
     """Run the planning pattern: goal decomposition into steps"""
     try:
-        result = await pattern_service.planning_example(
-            goal=request.goal,
-            constraints=request.constraints
+        return await _get_service(request).planning_example(
+            goal=body.goal,
+            constraints=body.constraints
         )
-        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/tool-use")
-async def run_tool_use(request: ToolUseRequest) -> Dict[str, Any]:
+async def run_tool_use(body: ToolUseRequest, request: Request) -> Dict[str, Any]:
     """Run the tool use pattern: dynamic tool selection and planning"""
     try:
-        result = await pattern_service.tool_use_example(
-            task=request.task,
-            available_tools=request.available_tools
+        return await _get_service(request).tool_use_example(
+            task=body.task,
+            available_tools=body.available_tools
         )
-        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/agentic-rag")
-async def run_agentic_rag(request: AgenticRAGRequest) -> Dict[str, Any]:
+async def run_agentic_rag(body: AgenticRAGRequest, request: Request) -> Dict[str, Any]:
     """Run the agentic RAG pattern: query refinement and retrieval"""
     try:
-        query = request.query or request.initial_query
+        query = body.query or body.initial_query
         if not query:
             raise ValueError("Either 'query' or 'initial_query' is required")
-        result = await pattern_service.agentic_rag_example(
+        return await _get_service(request).agentic_rag_example(
             initial_query=query,
-            max_refinements=request.max_refinements
+            max_refinements=body.max_refinements
         )
-        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/metacognition")
-async def run_metacognition(request: MetacognitionRequest) -> Dict[str, Any]:
+async def run_metacognition(body: MetacognitionRequest, request: Request) -> Dict[str, Any]:
     """Run the metacognition pattern: self-monitoring and adaptation"""
     try:
-        result = await pattern_service.metacognition_example(
-            execution_trace=request.execution_trace,
-            performance_metrics=request.performance_metrics
+        return await _get_service(request).metacognition_example(
+            execution_trace=body.execution_trace,
+            performance_metrics=body.performance_metrics
         )
-        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

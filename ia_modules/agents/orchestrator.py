@@ -294,6 +294,9 @@ class AgentOrchestrator:
             await self.state.update(input_data)
         self.logger.info("Starting workflow from %s", start_step)
 
+        reliability = self.services.get('reliability_metrics') if self.services else None
+        workflow_success = True
+
         current = start_step
         steps_taken = 0
         execution_path = []
@@ -332,8 +335,12 @@ class AgentOrchestrator:
                     except Exception as e:
                         self.logger.warning("Hook failed on step_complete: %s", e)
 
+                if reliability:
+                    await reliability.record_step(agent=current, success=True)
+
             except Exception as e:
                 self.logger.error("Step %s failed: %s", current, e)
+                workflow_success = False
 
                 # Fire error hooks
                 for hook in self.on_step_error:
@@ -341,6 +348,9 @@ class AgentOrchestrator:
                         await hook(current, e)
                     except Exception as hook_error:
                         self.logger.warning("Hook failed on step_error: %s", hook_error)
+
+                if reliability:
+                    await reliability.record_step(agent=current, success=False)
 
                 await self.state.set("error", str(e))
                 await self.state.set("failed_step", current)
@@ -365,6 +375,14 @@ class AgentOrchestrator:
         # Save execution metadata
         await self.state.set("execution_path", execution_path)
         await self.state.set("total_steps", steps_taken)
+
+        if reliability:
+            await reliability.record_workflow(
+                workflow_id=self.state.thread_id,
+                steps=steps_taken,
+                retries=0,
+                success=workflow_success,
+            )
 
         self.logger.info(
             "Workflow complete in %d steps: %s",

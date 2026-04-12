@@ -5,6 +5,12 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    /* Global font size baseline — 80% of default (16px → 12.8px).
+       Tailwind uses rem, so every text-* and spacing class scales proportionally. */
+    font-size: 80%;
+  }
+
   body {
     margin: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

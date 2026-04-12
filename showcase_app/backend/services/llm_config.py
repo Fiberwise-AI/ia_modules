@@ -21,10 +21,16 @@ Tools are defined per agent role, not globally. Mode is derived from tools.
 
 import logging
 import os
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from ia_modules.agents.subprocess_executor import (
+    get_shared_executor,
+    set_shared_executor as set_shared_agent_executor,  # re-exported for main.py
+)
 from ia_modules.pipeline.llm_step import LLMStep
+from ia_modules.pipeline.services import ServiceRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +38,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_CWD = str(Path(__file__).resolve().parent.parent.parent)
 
 
+@lru_cache(maxsize=1)
 def get_llm_config() -> Dict[str, Any]:
     """Read LLM configuration from environment.
 
@@ -74,8 +81,14 @@ def derive_mode(tools: list[str]) -> str:
     return "execute" if _WRITE_TOOLS.intersection(tools) else "research"
 
 
+@lru_cache(maxsize=1)
 def get_agent_config() -> Dict[str, Any]:
     """Read agent workspace configuration from environment.
+
+    Cached: env vars are loaded once at app startup (dotenv in main.py) and
+    the cwd/logs_dir resolution + mkdir calls are idempotent, so memoizing
+    skips the per-call Path.resolve + mkdir syscalls. Cached for the whole
+    process lifetime.
 
     Returns a dict with: cwd, logs_dir, timeout_seconds.
     Tools and mode are defined per agent role, not here.
@@ -93,7 +106,7 @@ def get_agent_config() -> Dict[str, Any]:
         logs_dir = str(Path(_DEFAULT_CWD) / "logs" / "agents")
     timeout = int(os.getenv("AGENT_TIMEOUT", "120"))
 
-    # Ensure directories exist
+    # Ensure directories exist (idempotent; only runs once thanks to lru_cache)
     Path(cwd).mkdir(parents=True, exist_ok=True)
     Path(logs_dir).mkdir(parents=True, exist_ok=True)
 
@@ -145,11 +158,21 @@ async def llm_call(
         **extra_config,
     }
 
+    executor = get_shared_executor()
+
+    step = LLMStep(step_name, step_config)
+    # Attach a minimal service registry carrying the shared executor
+    # so AgentStep._get_executor() finds it (standalone steps have no
+    # orchestrator wiring services for them).
+    step_services = ServiceRegistry()
+    step_services.register("agent_executor", executor)
+    step.services = step_services
+
     try:
-        step = LLMStep(step_name, step_config)
         result = await step.run({"prompt": user_message})
-        text = result.get("text", "").strip() or None
-        return LLMCallResult(text, result.get("agent_job_id"), result.get("event_count", 0))
     except Exception as e:
-        logger.debug("LLM call failed (falling back to simulation): %s", e)
+        logger.warning("LLM call failed (step=%s): %s", step_name, e, exc_info=True)
         return LLMCallResult(None)
+
+    text = result.get("text", "").strip() or None
+    return LLMCallResult(text, result.get("agent_job_id"), result.get("event_count", 0))

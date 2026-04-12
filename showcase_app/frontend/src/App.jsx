@@ -248,9 +248,11 @@ function AppContent() {
             <Route path="/executions" element={<ExecutionsPage />} />
             <Route path="/executions/:jobId" element={<ExecutionDetailPage />} />
             <Route path="/patterns" element={<PatternsPage />} />
+            <Route path="/patterns/:patternId" element={<PatternsPage />} />
             <Route path="/web-scraping" element={<WebScrapingPage />} />
             <Route path="/multi-agent" element={<MultiAgentDashboard />} />
             <Route path="/collaboration" element={<CollaborationPage />} />
+            <Route path="/collaboration/:patternId" element={<CollaborationPage />} />
             <Route path="/guardrails" element={<GuardrailsPage />} />
             <Route path="/metrics" element={<MetricsPage />} />
             <Route path="/agents" element={<AgentDashboard />} />

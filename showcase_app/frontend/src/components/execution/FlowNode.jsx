@@ -1,5 +1,6 @@
 import React from 'react'
 import { CheckCircle, XCircle, Play, Circle } from 'lucide-react'
+import { parseBackendTimestamp } from '../../lib/utils'
 
 export default function FlowNode({ step, index }) {
   const getNodeColor = (status) => {
@@ -54,9 +55,9 @@ export default function FlowNode({ step, index }) {
           )}
 
           <div className="mt-2 flex items-center space-x-4 text-sm opacity-75">
-            <span>Started: {new Date(step.started_at).toLocaleTimeString()}</span>
+            <span>Started: {parseBackendTimestamp(step.started_at).toLocaleTimeString()}</span>
             {step.completed_at && (
-              <span>Completed: {new Date(step.completed_at).toLocaleTimeString()}</span>
+              <span>Completed: {parseBackendTimestamp(step.completed_at).toLocaleTimeString()}</span>
             )}
           </div>
         </div>

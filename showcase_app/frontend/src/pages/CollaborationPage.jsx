@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { collaborationAPI, agentExecutionsAPI } from '../services/api'
 import toast from 'react-hot-toast'
@@ -13,6 +14,7 @@ import {
   XCircle,
   Clock,
   ArrowRight,
+  ArrowLeft,
   CheckCircle2,
   Shield,
   Share2,
@@ -20,6 +22,10 @@ import {
   Loader2,
   History,
 } from 'lucide-react'
+
+// URL slug <-> internal pattern id (only difference is hyphen vs underscore)
+const urlToId = (slug) => slug.replace(/-/g, '_')
+const idToUrl = (id) => id.replace(/_/g, '-')
 
 const PATTERN_ICONS = {
   consensus: <CheckCircle2 size={28} />,
@@ -69,12 +75,15 @@ const DEFAULT_CONFIGS = {
 }
 
 export default function CollaborationPage() {
-  const [selectedPattern, setSelectedPattern] = useState(null)
+  const { patternId: urlPatternId } = useParams()
+  const navigate = useNavigate()
+  const selectedPattern = urlPatternId ? urlToId(urlPatternId) : null
   const [configs, setConfigs] = useState(DEFAULT_CONFIGS)
   const [results, setResults] = useState({})
   const [expandedSteps, setExpandedSteps] = useState({})
   const [liveSteps, setLiveSteps] = useState([]) // WS-streamed steps during a run
   const [activeRunId, setActiveRunId] = useState(null)
+  const [formCollapsed, setFormCollapsed] = useState(false)
   const wsRef = useRef(null)
 
   const { data: patternsData } = useQuery({
@@ -96,16 +105,22 @@ export default function CollaborationPage() {
     refetchInterval: 15000,
   })
 
-  // WebSocket connection for real-time collaboration updates
+  // WebSocket connection for real-time collaboration updates.
+  // StrictMode double-invokes this effect in dev, so the cleanup must
+  // close the socket regardless of readyState (CONNECTING or OPEN) —
+  // otherwise the first instance stays alive and every `collab_step`
+  // message is delivered twice, duplicating live timeline rows.
   useEffect(() => {
     const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.host}`
     let ws
+    let cancelled = false
 
     try {
       ws = new WebSocket(`${wsUrl}/ws/collaboration`)
       wsRef.current = ws
 
       ws.onmessage = (event) => {
+        if (cancelled) return
         try {
           const msg = JSON.parse(event.data)
           if (msg.type === 'collab_step' && msg.run_id) {
@@ -119,11 +134,17 @@ export default function CollaborationPage() {
       }
 
       ws.onerror = () => {}
-      ws.onclose = () => { wsRef.current = null }
+      ws.onclose = () => { if (wsRef.current === ws) wsRef.current = null }
     } catch {}
 
     return () => {
-      if (ws && ws.readyState === WebSocket.OPEN) ws.close()
+      cancelled = true
+      if (!ws) return
+      // Close whether still connecting or already open — StrictMode
+      // cleanup fires before OPEN, so readyState==OPEN guard leaks the socket.
+      if (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN) {
+        ws.close()
+      }
     }
   }, [refetchExecs])
 
@@ -159,6 +180,7 @@ export default function CollaborationPage() {
 
   const handleRun = (patternId) => {
     const config = configs[patternId]
+    setFormCollapsed(true)
     mutations[patternId].mutate(config)
   }
 
@@ -177,137 +199,175 @@ export default function CollaborationPage() {
   const isRunning = (id) => mutations[id]?.isPending
   const prevExecutions = execData?.executions || []
 
+  // -- Grid view (no pattern selected) --
+  if (!selectedPattern) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+            Agent Collaboration Patterns
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Explore four collaboration patterns from ia_modules: how agents work together to solve problems
+          </p>
+        </div>
+
+        {/* Pattern Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {patterns.map((pattern) => (
+            <button
+              key={pattern.id}
+              onClick={() => navigate(`/collaboration/${idToUrl(pattern.id)}`)}
+              className="text-left p-5 rounded-xl border-2 transition-all duration-200 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md"
+            >
+              <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${PATTERN_COLORS[pattern.id]} text-white mb-3`}>
+                {PATTERN_ICONS[pattern.id]}
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{pattern.name}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                {pattern.description}
+              </p>
+              <div className="flex flex-wrap gap-1 mt-3">
+                {(pattern.use_cases || []).slice(0, 2).map((uc, i) => (
+                  <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    {uc}
+                  </span>
+                ))}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // -- Detail view (pattern selected) --
+  const currentPattern = patterns.find((p) => p.id === selectedPattern)
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
-          Agent Collaboration Patterns
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Explore four collaboration patterns from ia_modules: how agents work together to solve problems
-        </p>
-      </div>
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/collaboration')}
+        className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+      >
+        <ArrowLeft size={16} /> Back to collaboration patterns
+      </button>
 
-      {/* Pattern Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {patterns.map((pattern) => (
-          <button
-            key={pattern.id}
-            onClick={() => setSelectedPattern(selectedPattern === pattern.id ? null : pattern.id)}
-            className={`
-              text-left p-5 rounded-xl border-2 transition-all duration-200
-              ${selectedPattern === pattern.id
-                ? `${PATTERN_BG[pattern.id]} border-opacity-100 shadow-lg scale-[1.02]`
-                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
-              }
-            `}
-          >
-            <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${PATTERN_COLORS[pattern.id]} text-white mb-3`}>
-              {PATTERN_ICONS[pattern.id]}
-            </div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{pattern.name}</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
-              {pattern.description}
-            </p>
-            <div className="flex flex-wrap gap-1 mt-3">
-              {(pattern.use_cases || []).slice(0, 2).map((uc, i) => (
-                <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
-                  {uc}
-                </span>
-              ))}
-            </div>
-          </button>
-        ))}
+      {/* Pattern Header */}
+      <div className="flex items-center gap-4">
+        <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${PATTERN_COLORS[selectedPattern]} text-white`}>
+          {PATTERN_ICONS[selectedPattern]}
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+            {currentPattern?.name || selectedPattern}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            {currentPattern?.description || ''}
+          </p>
+        </div>
       </div>
 
       {/* Selected Pattern Configuration & Run */}
-      {selectedPattern && (
-        <div className={`rounded-xl border-2 overflow-hidden ${PATTERN_BG[selectedPattern]}`}>
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                Configure & Run: {patterns.find((p) => p.id === selectedPattern)?.name}
-              </h2>
-              <button
-                onClick={() => handleRun(selectedPattern)}
-                disabled={isRunning(selectedPattern)}
-                className={`
-                  flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-medium
-                  bg-gradient-to-r ${PATTERN_COLORS[selectedPattern]}
-                  hover:opacity-90 disabled:opacity-50 transition-all shadow-lg
-                `}
-              >
-                {isRunning(selectedPattern) ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Running...
-                  </>
-                ) : (
-                  <>
-                    <Play size={18} />
-                    Run
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Pattern-specific config forms */}
-            {selectedPattern === 'consensus' && (
-              <ConsensusConfig config={configs.consensus} onChange={(f, v) => updateConfig('consensus', f, v)} />
-            )}
-            {selectedPattern === 'debate' && (
-              <DebateConfig config={configs.debate} onChange={(f, v) => updateConfig('debate', f, v)} />
-            )}
-            {selectedPattern === 'hierarchical' && (
-              <HierarchicalConfig config={configs.hierarchical} onChange={(f, v) => updateConfig('hierarchical', f, v)} />
-            )}
-            {selectedPattern === 'peer_to_peer' && (
-              <PeerToPeerConfig config={configs.peer_to_peer} onChange={(f, v) => updateConfig('peer_to_peer', f, v)} />
-            )}
+      <div className={`rounded-xl border-2 overflow-hidden ${PATTERN_BG[selectedPattern]}`}>
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => setFormCollapsed((c) => !c)}
+              className="flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-gray-100 hover:text-gray-600 dark:hover:text-gray-300 transition"
+            >
+              {formCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+              Configure & Run: {currentPattern?.name}
+            </button>
+            <button
+              onClick={() => handleRun(selectedPattern)}
+              disabled={isRunning(selectedPattern)}
+              className={`
+                flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-medium
+                bg-gradient-to-r ${PATTERN_COLORS[selectedPattern]}
+                hover:opacity-90 disabled:opacity-50 transition-all shadow-lg
+              `}
+            >
+              {isRunning(selectedPattern) ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Running...
+                </>
+              ) : (
+                <>
+                  <Play size={18} />
+                  Run
+                </>
+              )}
+            </button>
           </div>
-        </div>
-      )}
 
-      {/* Results */}
-      {selectedPattern && (isRunning(selectedPattern) || results[selectedPattern]) && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              {isRunning(selectedPattern) && <Loader2 size={18} className="animate-spin text-blue-500" />}
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                {isRunning(selectedPattern) ? 'Running...' : 'Results'}
-              </h2>
-            </div>
-            {results[selectedPattern] && (
-              <ResultSummary result={results[selectedPattern]} patternId={selectedPattern} />
-            )}
-            <div className="mt-4 space-y-2">
-              {isRunning(selectedPattern) && liveSteps.map((step, idx) => (
-                <StepAccordion
-                  key={`live-${idx}`}
-                  step={step}
-                  stepKey={`live_${idx}`}
-                  isExpanded={expandedSteps[`live_${idx}`] ?? idx === liveSteps.length - 1}
-                  onToggle={toggleStep}
-                />
-              ))}
-              {results[selectedPattern] && (results[selectedPattern].history || []).map((step, idx) => (
-                <StepAccordion
-                  key={`${selectedPattern}_${idx}`}
-                  step={step}
-                  stepKey={`${selectedPattern}_${idx}`}
-                  isExpanded={expandedSteps[`${selectedPattern}_${idx}`]}
-                  onToggle={toggleStep}
-                />
-              ))}
+          {/* Pattern-specific config forms */}
+          {!formCollapsed && (
+            <>
+              {selectedPattern === 'consensus' && (
+                <ConsensusConfig config={configs.consensus} onChange={(f, v) => updateConfig('consensus', f, v)} />
+              )}
+              {selectedPattern === 'debate' && (
+                <DebateConfig config={configs.debate} onChange={(f, v) => updateConfig('debate', f, v)} />
+              )}
+              {selectedPattern === 'hierarchical' && (
+                <HierarchicalConfig config={configs.hierarchical} onChange={(f, v) => updateConfig('hierarchical', f, v)} />
+              )}
+              {selectedPattern === 'peer_to_peer' && (
+                <PeerToPeerConfig config={configs.peer_to_peer} onChange={(f, v) => updateConfig('peer_to_peer', f, v)} />
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Results — single timeline source: live WS stream while running, full history once complete */}
+      {(isRunning(selectedPattern) || results[selectedPattern]) && (() => {
+        const running = isRunning(selectedPattern)
+        const timeline = annotateRounds(
+          running ? liveSteps : (results[selectedPattern]?.history || [])
+        )
+        return (
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                {running && <Loader2 size={18} className="animate-spin text-blue-500" />}
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                  {running ? 'Running...' : 'Results'}
+                </h2>
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                  {timeline.length} step{timeline.length === 1 ? '' : 's'}
+                </span>
+              </div>
+              {!running && results[selectedPattern] && (
+                <ResultSummary result={results[selectedPattern]} patternId={selectedPattern} />
+              )}
+              <div className="mt-4 space-y-2">
+                {timeline.map((step, idx) => {
+                  const key = `${selectedPattern}_${idx}_${step.phase || ''}_${step.agent || ''}`
+                  return (
+                    <StepAccordion
+                      key={key}
+                      step={step}
+                      stepKey={key}
+                      isExpanded={
+                        expandedSteps[key] ?? (running && idx === timeline.length - 1)
+                      }
+                      onToggle={toggleStep}
+                    />
+                  )
+                })}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Previous Executions */}
-      {selectedPattern && prevExecutions.length > 0 && (
+      {prevExecutions.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-6">
             <div className="flex items-center gap-2 mb-4">
@@ -408,7 +468,7 @@ function PreviousExecutionRow({ exec }) {
 
               {/* Same accordion timeline as the live run */}
               <div className="space-y-2">
-                {(fullResult.history || []).map((step, idx) => (
+                {annotateRounds(fullResult.history || []).map((step, idx) => (
                   <StepAccordion
                     key={`prev_${exec.job_id}_${idx}`}
                     step={step}
@@ -944,7 +1004,30 @@ function stepSummary(step) {
   const clean = cleanMessage(raw)
   // Take first line, cap at 120 chars
   const firstLine = clean.split('\n')[0]
-  return firstLine.length > 120 ? firstLine.slice(0, 117) + '...' : firstLine
+  const capped = firstLine.length > 120 ? firstLine.slice(0, 117) + '...' : firstLine
+  // Prefix with round/iteration context so repeated step_complete rows across
+  // rounds are visually distinct (backend reuses the same summary per round).
+  return step._roundLabel ? `${step._roundLabel} · ${capped}` : capped
+}
+
+/**
+ * Walk a flat history array and tag each step with a derived `_roundLabel`
+ * based on the most recent round/iteration marker phase seen. This lets the
+ * accordion distinguish otherwise-identical step_complete rows across rounds
+ * without needing a backend change.
+ */
+function annotateRounds(steps) {
+  let currentLabel = null
+  return steps.map((step) => {
+    const phase = step.phase || ''
+    // Match phases like "round_1_opening", "voting_round_2", "round_3_start"
+    const m = phase.match(/round[_\s]*(\d+)|voting_round_(\d+)/i)
+    if (m) {
+      const n = m[1] || m[2]
+      currentLabel = `Round ${n}`
+    }
+    return currentLabel ? { ...step, _roundLabel: currentLabel } : step
+  })
 }
 
 function StepDetail({ step }) {

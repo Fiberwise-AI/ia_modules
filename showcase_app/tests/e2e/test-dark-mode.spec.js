@@ -24,8 +24,6 @@ test.describe('Dark Mode & Theme', () => {
     const htmlElement = page.locator('html');
     const hasDarkClass = await htmlElement.evaluate(el => el.classList.contains('dark'));
     expect(hasDarkClass).toBe(true);
-    
-    await page.screenshot({ path: 'test-results/dark-mode-active.png', fullPage: true });
   });
 
   test('should persist theme to localStorage', async ({ page }) => {
@@ -66,8 +64,6 @@ test.describe('Dark Mode & Theme', () => {
 
     // Check that the dark class exists on the html element
     await expect(page.locator('html')).toHaveClass(/dark/);
-
-    await page.screenshot({ path: 'test-results/dark-theme-styles.png', fullPage: true });
   });
 
   test('should toggle theme with keyboard shortcut cmd+d', async ({ page }) => {

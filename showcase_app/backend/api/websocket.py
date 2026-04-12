@@ -26,6 +26,7 @@ class ConnectionManager:
         self.pipeline_connections: Dict[str, Set[WebSocket]] = {}  # pipeline_id -> connections
         self.hitl_connections: Dict[str, Set[WebSocket]] = {}  # user_id -> connections
         self.collaboration_connections: Set[WebSocket] = set()  # collab pattern streaming
+        self.patterns_connections: Set[WebSocket] = set()  # agentic pattern streaming
 
     async def connect_metrics(self, websocket: WebSocket):
         """Connect to metrics stream"""
@@ -118,6 +119,31 @@ class ConnectionManager:
                 disconnected.add(connection)
         for connection in disconnected:
             self.collaboration_connections.discard(connection)
+
+    async def connect_patterns(self, websocket: WebSocket):
+        """Connect to agentic patterns stream"""
+        await websocket.accept()
+        self.patterns_connections.add(websocket)
+        logger.info(f"Patterns WebSocket connected. Total: {len(self.patterns_connections)}")
+
+    def disconnect_patterns(self, websocket: WebSocket):
+        """Disconnect from patterns stream"""
+        self.patterns_connections.discard(websocket)
+        logger.info(f"Patterns WebSocket disconnected. Remaining: {len(self.patterns_connections)}")
+
+    async def broadcast_patterns(self, message: dict):
+        """Broadcast to all patterns connections"""
+        if not self.patterns_connections:
+            return
+        disconnected = set()
+        for connection in self.patterns_connections:
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                logger.error(f"Error sending to patterns WebSocket: {e}")
+                disconnected.add(connection)
+        for connection in disconnected:
+            self.patterns_connections.discard(connection)
 
     async def connect_pipeline(self, pipeline_id: str, websocket: WebSocket):
         """Connect to pipeline stream"""
@@ -247,6 +273,13 @@ async def websocket_execution_endpoint(websocket: WebSocket, job_id: str):
     """WebSocket endpoint for real-time execution updates"""
     await manager.connect_execution(job_id, websocket)
 
+    # Wire this socket into the ia_modules ExecutionTracker so library-
+    # emitted step updates (from _broadcast_step_update) flow through.
+    pipeline_service = getattr(websocket.app.state.services, "pipeline_service", None)
+    tracker = pipeline_service.tracker if pipeline_service else None
+    if tracker:
+        tracker.add_websocket_connection(websocket)
+
     try:
         # Send initial message
         await websocket.send_json({
@@ -276,9 +309,12 @@ async def websocket_execution_endpoint(websocket: WebSocket, job_id: str):
                 })
 
     except WebSocketDisconnect:
-        manager.disconnect_execution(job_id, websocket)
+        pass
     except Exception as e:
         logger.error(f"WebSocket error: {e}", exc_info=True)
+    finally:
+        if tracker:
+            tracker.remove_websocket_connection(websocket)
         manager.disconnect_execution(job_id, websocket)
 
 
@@ -391,6 +427,35 @@ async def websocket_hitl_endpoint(websocket: WebSocket, user_id: str):
     except Exception as e:
         logger.error(f"HITL WebSocket error for user {user_id}: {e}", exc_info=True)
         manager.disconnect_hitl(user_id, websocket)
+
+
+@router.websocket("/patterns")
+async def websocket_patterns_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time agentic pattern updates"""
+    await manager.connect_patterns(websocket)
+    try:
+        await websocket.send_json({
+            "type": "connected",
+            "message": "Connected to patterns stream",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        while True:
+            try:
+                await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                await websocket.send_json({
+                    "type": "pong",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+            except asyncio.TimeoutError:
+                await websocket.send_json({
+                    "type": "keepalive",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+    except WebSocketDisconnect:
+        manager.disconnect_patterns(websocket)
+    except Exception as e:
+        logger.error(f"Patterns WebSocket error: {e}", exc_info=True)
+        manager.disconnect_patterns(websocket)
 
 
 @router.websocket("/collaboration")

@@ -8,7 +8,7 @@ import ExecutionHeader from '../components/execution/ExecutionHeader'
 import ExecutionStatusCard from '../components/execution/ExecutionStatusCard'
 import ExecutionError from '../components/execution/ExecutionError'
 import ExecutionTimeline from '../components/execution/ExecutionTimeline'
-import PipelineGraphSection from '../components/execution/PipelineGraphSection'
+import { /* PipelineGraphCard, */ PipelineFlowCard } from '../components/execution/PipelineGraphSection'
 import SpanTimeline from '../components/telemetry/SpanTimeline'
 import CheckpointList from '../components/checkpoint/CheckpointList'
 import ConversationHistory from '../components/memory/ConversationHistory'
@@ -30,7 +30,10 @@ export default function ExecutionDetailPage() {
       const response = await executionAPI.get(jobId)
       return response.data
     },
-    refetchInterval: false,
+    refetchInterval: (query) => {
+      const s = query.state.data?.status
+      return s === 'completed' || s === 'failed' ? false : 1000
+    },
   })
 
   const { data: pipeline } = useQuery({
@@ -59,6 +62,17 @@ export default function ExecutionDetailPage() {
       ...old,
       ...data
     }))
+    // Terminal frames are partial (no progress/counts/current_step) — force a
+    // final refetch so the cache reflects the canonical server state. Without
+    // this, the status flip to "completed" stops the refetchInterval and the
+    // derived fields stay stale (e.g. "67% / Running 1" after finish).
+    if (
+      data?.type === 'execution_completed' ||
+      data?.type === 'execution_failed' ||
+      data?.type === 'execution_paused'
+    ) {
+      queryClient.invalidateQueries({ queryKey: ['execution', jobId] })
+    }
   }, [jobId, queryClient])
 
   useExecutionWebSocket(jobId, handleWebSocketUpdate)
@@ -85,30 +99,34 @@ export default function ExecutionDetailPage() {
   return (
     <div className="space-y-4">
       <ExecutionHeader onBack={() => navigate('/executions')} />
-      <ExecutionStatusCard execution={execution} />
+
+      <section id="section-status"><ExecutionStatusCard execution={execution} /></section>
       <ExecutionError error={execution.error} />
 
-      {hasSteps && <ExecutionTimeline execution={execution} />}
+      <section id="section-timeline"><ExecutionTimeline execution={execution} pipeline={pipeline} /></section>
 
-      <PipelineGraphSection pipeline={pipeline} execution={execution} />
+      {/* <section id="section-pipeline-graph"><PipelineGraphCard pipeline={pipeline} execution={execution} /></section> */}
+      <section id="section-pipeline-flow"><PipelineFlowCard execution={execution} /></section>
 
       {hasSpans && (
-        <SpanTimeline jobId={jobId} spans={telemetryData.timeline} />
+        <section id="section-trace"><SpanTimeline jobId={jobId} spans={telemetryData.timeline} /></section>
       )}
 
-      {hasSteps && <StepDetailsList steps={execution.steps} />}
+      {hasSteps && <section id="section-step-details"><StepDetailsList steps={execution.steps} /></section>}
 
-      <DataViewer title="Input Data" data={execution.input_data} />
-      <DataViewer
-        title="Final Output"
-        data={execution.output_data}
-        maxHeight="max-h-96 overflow-y-auto"
-      />
+      {execution.input_data && (
+        <section id="section-input"><DataViewer title="Input Data" data={execution.input_data} /></section>
+      )}
+      {execution.output_data && (
+        <section id="section-output">
+          <DataViewer title="Final Output" data={execution.output_data} />
+        </section>
+      )}
 
-      <CheckpointList jobId={jobId} />
-      <ConversationHistory sessionId={jobId} />
-      <ReplayComparison jobId={jobId} />
-      <DecisionTimeline jobId={jobId} />
+      <section id="section-checkpoints"><CheckpointList jobId={jobId} /></section>
+      <section id="section-conversation"><ConversationHistory sessionId={jobId} /></section>
+      <section id="section-replay"><ReplayComparison jobId={jobId} /></section>
+      <section id="section-decisions"><DecisionTimeline jobId={jobId} /></section>
     </div>
   )
 }

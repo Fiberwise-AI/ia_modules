@@ -22,23 +22,8 @@ router = APIRouter(prefix="/api/collaboration", tags=["collaboration"])
 
 
 def _get_service(request: Request) -> CollaborationService:
-    """Get or create CollaborationService wired with exec_svc and WS broadcast."""
-    services = request.app.state.services
-
-    # Lazy-init: create once, store on container
-    if not hasattr(services, "_collaboration_service") or services._collaboration_service is None:
-        from api.websocket import get_ws_manager
-        ws_mgr = get_ws_manager()
-
-        async def ws_callback(msg):
-            await ws_mgr.broadcast_collaboration(msg)
-
-        services._collaboration_service = CollaborationService(
-            exec_svc=getattr(services, "agent_execution_service", None),
-            ws_callback=ws_callback,
-        )
-
-    return services._collaboration_service
+    """Fetch the container-constructed CollaborationService."""
+    return request.app.state.services.collaboration_service
 
 
 # ==================== REQUEST MODELS ====================
@@ -73,9 +58,9 @@ class PeerToPeerRequest(BaseModel):
 # ==================== ENDPOINTS ====================
 
 @router.get("/patterns")
-async def get_patterns() -> Dict[str, Any]:
+async def get_patterns(request: Request) -> Dict[str, Any]:
     """List available collaboration patterns with descriptions."""
-    return {"patterns": CollaborationService().get_patterns()}
+    return {"patterns": _get_service(request).get_patterns()}
 
 
 @router.post("/consensus")

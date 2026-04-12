@@ -1,5 +1,6 @@
 import React from 'react'
 import { CheckCircle, XCircle, Clock, Circle, ChevronDown, ChevronRight } from 'lucide-react'
+import { parseBackendTimestamp } from '../../lib/utils'
 
 export default function StepsList({ steps }) {
   const [expandedSteps, setExpandedSteps] = React.useState(new Set())
@@ -80,14 +81,14 @@ export default function StepsList({ steps }) {
                 {step.started_at && (
                   <div>
                     <div className="text-xs font-medium text-gray-600 dark:text-gray-400">Started</div>
-                    <div className="text-sm">{new Date(step.started_at).toLocaleString()}</div>
+                    <div className="text-sm">{parseBackendTimestamp(step.started_at).toLocaleString()}</div>
                   </div>
                 )}
 
                 {step.completed_at && (
                   <div>
                     <div className="text-xs font-medium text-gray-600 dark:text-gray-400">Completed</div>
-                    <div className="text-sm">{new Date(step.completed_at).toLocaleString()}</div>
+                    <div className="text-sm">{parseBackendTimestamp(step.completed_at).toLocaleString()}</div>
                   </div>
                 )}
 

@@ -1,5 +1,6 @@
 import React from 'react'
 import { CheckCircle, XCircle, Clock, Play, AlertCircle } from 'lucide-react'
+import { parseBackendTimestamp } from '../../lib/utils'
 
 export default function ExecutionStatusCard({ execution }) {
   const getStatusIcon = (status) => {
@@ -33,9 +34,12 @@ export default function ExecutionStatusCard({ execution }) {
   }
 
   const getDuration = () => {
-    const start = new Date(execution.started_at)
-    const end = execution.completed_at ? new Date(execution.completed_at) : new Date()
-    const durationMs = end - start
+    // Backend emits naive ISO strings (tzinfo stripped) for UTC timestamps.
+    // new Date(naiveIso) parses as local time in most browsers, so we append
+    // 'Z' when there's no timezone suffix to force UTC interpretation.
+    const start = parseBackendTimestamp(execution.started_at)
+    const end = execution.completed_at ? parseBackendTimestamp(execution.completed_at) : new Date()
+    const durationMs = Math.max(end - start, 0)
     const seconds = Math.floor(durationMs / 1000)
 
     if (seconds < 60) return `${seconds}s`
@@ -78,10 +82,10 @@ export default function ExecutionStatusCard({ execution }) {
       </div>
 
       <div className="mt-4 flex items-center justify-between text-sm flex-wrap gap-2">
-        <span>Started: {new Date(execution.started_at).toLocaleString()}</span>
+        <span>Started: {parseBackendTimestamp(execution.started_at).toLocaleString()}</span>
         <span>Duration: {getDuration()}</span>
         {execution.completed_at && (
-          <span>Completed: {new Date(execution.completed_at).toLocaleString()}</span>
+          <span>Completed: {parseBackendTimestamp(execution.completed_at).toLocaleString()}</span>
         )}
       </div>
     </div>

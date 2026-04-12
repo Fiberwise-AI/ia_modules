@@ -20,7 +20,7 @@ test.describe('Pipeline Editor - Build Pipeline', () => {
     // Verify nodes appear on canvas
     const nodeCount = await page.locator('[class*="react-flow__node"]').count();
     expect(nodeCount).toBeGreaterThanOrEqual(2);
-    await page.screenshot({ path: 'test-results/editor-two-nodes-added.png', fullPage: true });
+
 
     // Step 3: Connect nodes via drag-and-drop on ReactFlow handles
     // Find the output handle of first node and drag to input handle of second node
@@ -53,7 +53,7 @@ test.describe('Pipeline Editor - Build Pipeline', () => {
       }
     }
 
-    await page.screenshot({ path: 'test-results/editor-nodes-connected.png', fullPage: true });
+
 
     // Step 4: Save the pipeline
     // Look for save button
@@ -68,7 +68,7 @@ test.describe('Pipeline Editor - Build Pipeline', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
 
-    await page.screenshot({ path: 'test-results/pipelines-page-after-save.png', fullPage: true });
+
 
     // Step 6: Verify the new pipeline appears in the list
     // Check for any pipeline card (the one we just created)
@@ -84,7 +84,7 @@ test.describe('Pipeline Editor - Build Pipeline', () => {
       await firstCard.click();
       await page.waitForTimeout(1000);
 
-      await page.screenshot({ path: 'test-results/pipeline-details-opened.png', fullPage: true });
+
 
       // Verify we can see the pipeline details or execute it
       // Look for execute/run button or pipeline information
@@ -96,7 +96,7 @@ test.describe('Pipeline Editor - Build Pipeline', () => {
       // At least one should be visible
       expect(hasExecuteBtn || hasSteps || true).toBe(true);
 
-      await page.screenshot({ path: 'test-results/pipeline-details-view.png', fullPage: true });
+
     }
   });
 
@@ -120,6 +120,6 @@ test.describe('Pipeline Editor - Build Pipeline', () => {
     const nodeCount = await page.locator('[class*="react-flow__node"]').count();
     expect(nodeCount).toBeGreaterThanOrEqual(3);
 
-    await page.screenshot({ path: 'test-results/editor-multiple-nodes.png', fullPage: true });
+
   });
 });

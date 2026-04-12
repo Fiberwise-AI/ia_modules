@@ -1,17 +1,18 @@
 import React from 'react'
 import { Calendar, Clock } from 'lucide-react'
+import { parseBackendTimestamp } from '../../lib/utils'
 
 export default function ExecutionMetadata({ execution }) {
   const formatTime = (timestamp) => {
     if (!timestamp) return 'N/A'
-    return new Date(timestamp).toLocaleString()
+    return parseBackendTimestamp(timestamp).toLocaleString()
   }
 
   const calculateDuration = () => {
     if (!execution.started_at) return 'N/A'
-    const start = new Date(execution.started_at)
-    const end = execution.completed_at ? new Date(execution.completed_at) : new Date()
-    const seconds = Math.floor((end - start) / 1000)
+    const start = parseBackendTimestamp(execution.started_at)
+    const end = execution.completed_at ? parseBackendTimestamp(execution.completed_at) : new Date()
+    const seconds = Math.max(Math.floor((end - start) / 1000), 0)
 
     if (seconds < 60) return `${seconds}s`
     const minutes = Math.floor(seconds / 60)

@@ -12,17 +12,57 @@ Each pattern uses LLMStep (via llm_call) for LLM interactions,
 the same primitive used by the collaboration patterns and pipeline editor.
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Awaitable, Callable, Dict, List, Any, Optional
+from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from datetime import datetime, UTC
+from functools import wraps
 import json
 import logging
 import re
 import time
+import uuid
 
 from .llm_config import llm_call
 from .llm_monitoring_service import LLMMonitoringService
 
 logger = logging.getLogger(__name__)
+
+WSCallback = Callable[[Dict[str, Any]], Awaitable[None]]
+
+
+class _WorkflowTracker:
+    """Per-request counter for one in-flight pattern run.
+
+    Carried on a ContextVar so concurrent pattern runs on the same
+    PatternService singleton don't corrupt each other's step counts.
+    """
+    __slots__ = ("workflow_id", "step_count", "success")
+
+    def __init__(self, workflow_id: str):
+        self.workflow_id = workflow_id
+        self.step_count = 0
+        self.success = True
+
+
+_current_tracker: ContextVar[Optional[_WorkflowTracker]] = ContextVar(
+    "pattern_service_current_tracker", default=None
+)
+
+
+def _tracked(pattern: str):
+    """Decorator — wrap a pattern_example method in a reliability workflow.
+
+    Records one workflow row per invocation with the true LLM step count,
+    isolated per async task via ContextVar.
+    """
+    def decorator(fn):
+        @wraps(fn)
+        async def wrapper(self, *args, **kwargs):
+            async with self._track_workflow(pattern):
+                return await fn(self, *args, **kwargs)
+        return wrapper
+    return decorator
 
 
 def _parse_json_response(text: str) -> Any:
@@ -65,8 +105,56 @@ def _parse_json_response(text: str) -> Any:
 class PatternService:
     """Service for demonstrating agentic design patterns."""
 
-    def __init__(self):
+    def __init__(self, container):
+        """Resolve all deps from the ServiceContainer — no caller boilerplate.
+
+        container must already have ws_manager and reliability_service set
+        (done in main.py lifespan).
+        """
         self.monitoring_service = LLMMonitoringService()
+        self.reliability_metrics = container.reliability_service.metrics
+        self.ws_callback: WSCallback = container.ws_manager.broadcast_patterns
+
+    @asynccontextmanager
+    async def _track_workflow(self, pattern: str):
+        """Record a pattern run as one reliability workflow.
+
+        Tracker is bound to the current async task via ContextVar so
+        concurrent pattern runs on the singleton don't contaminate each
+        other's step counts.
+        """
+        workflow_id = f"patterns-{pattern}-{uuid.uuid4().hex[:8]}"
+        tracker = _WorkflowTracker(workflow_id)
+        token = _current_tracker.set(tracker)
+        try:
+            yield workflow_id
+        except BaseException:
+            tracker.success = False
+            raise
+        finally:
+            _current_tracker.reset(token)
+            try:
+                await self.reliability_metrics.record_workflow(
+                    workflow_id=workflow_id,
+                    steps=tracker.step_count,
+                    retries=0,
+                    success=tracker.success,
+                )
+            except Exception as e:
+                logger.error(f"record_workflow failed for {workflow_id}: {e}")
+
+    async def _emit(self, pattern: str, event: str, **data: Any) -> None:
+        """Broadcast a pattern lifecycle event over the WebSocket."""
+        try:
+            await self.ws_callback({
+                "type": "pattern_event",
+                "pattern": pattern,
+                "event": event,
+                "timestamp": datetime.now(UTC).isoformat(),
+                **data,
+            })
+        except Exception as e:
+            logger.error(f"ws_callback failed for pattern={pattern} event={event}: {e}")
 
     async def _monitored_llm_call(
         self,
@@ -94,11 +182,15 @@ class PatternService:
 
         # Make LLM call via LLMStep and track time
         start_time = time.time()
-        result = await llm_call(
-            system_prompt=system_prompt,
-            user_message=user_message,
-            step_name=step_name,
-        )
+        try:
+            result = await llm_call(
+                system_prompt=system_prompt,
+                user_message=user_message,
+                step_name=step_name,
+            )
+        except Exception:
+            await self.reliability_metrics.record_step(agent=step_name, success=False)
+            raise
         duration = time.time() - start_time
 
         # Track usage
@@ -110,10 +202,15 @@ class PatternService:
             duration_seconds=duration
         )
 
+        await self.reliability_metrics.record_step(agent=step_name, success=True)
+        tracker = _current_tracker.get()
+        if tracker is not None:
+            tracker.step_count += 1
         return result.text or ""
 
     # ==================== REFLECTION PATTERN ====================
 
+    @_tracked("reflection")
     async def reflection_example(
         self,
         initial_output: str,
@@ -121,13 +218,22 @@ class PatternService:
         max_iterations: int = 3
     ) -> Dict[str, Any]:
         """Demonstrate reflection pattern with self-critique and iterative improvement."""
+        await self._emit("reflection", "started", initial_output=initial_output, max_iterations=max_iterations)
         iterations = []
         current_output = initial_output
 
         for i in range(max_iterations):
+            await self._emit("reflection", "iteration_start", iteration=i + 1, output=current_output)
             critique = await self._llm_generate_critique(current_output, criteria)
             quality_score = self._calculate_quality_score(critique, criteria)
             improvements = self._extract_improvements(critique)
+            await self._emit(
+                "reflection", "critiqued",
+                iteration=i + 1,
+                quality_score=quality_score,
+                improvements=improvements,
+                critique=critique,
+            )
 
             iteration_data = {
                 "iteration": i + 1,
@@ -142,10 +248,13 @@ class PatternService:
 
             if quality_score >= 0.85:
                 iteration_data["improved_output"] = current_output
+                await self._emit("reflection", "converged", iteration=i + 1, quality_score=quality_score)
                 break
 
             current_output = await self._llm_apply_improvements(current_output, improvements, criteria)
+            await self._emit("reflection", "improved", iteration=i + 1, new_output=current_output)
 
+        await self._emit("reflection", "completed", total_iterations=len(iterations))
         return {
             "pattern": "reflection",
             "initial_output": initial_output,
@@ -225,13 +334,17 @@ class PatternService:
 
     # ==================== PLANNING PATTERN ====================
 
+    @_tracked("planning")
     async def planning_example(
         self,
         goal: str,
         constraints: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Demonstrate planning pattern with goal decomposition."""
+        await self._emit("planning", "started", goal=goal, constraints=constraints or {})
+        await self._emit("planning", "decomposing", goal=goal)
         subgoals = await self._llm_decompose_goal(goal, constraints)
+        await self._emit("planning", "decomposed", count=len(subgoals))
 
         steps = []
         for i, subgoal in enumerate(subgoals):
@@ -244,7 +357,9 @@ class PatternService:
                 "success_criteria": subgoal.get("success_criteria", [])
             }
             steps.append(step)
+            await self._emit("planning", "step", step=step)
 
+        await self._emit("planning", "completed", total_steps=len(steps))
         return {
             "pattern": "planning",
             "goal": goal,
@@ -295,13 +410,22 @@ class PatternService:
 
     # ==================== TOOL USE PATTERN ====================
 
+    @_tracked("tool_use")
     async def tool_use_example(
         self,
         task: str,
         available_tools: List[str]
     ) -> Dict[str, Any]:
         """Demonstrate tool use pattern with dynamic tool selection."""
+        await self._emit("tool_use", "started", task=task, available_tools=available_tools)
+        await self._emit("tool_use", "analyzing", task=task)
         tool_analysis = await self._llm_analyze_and_select_tools(task, available_tools)
+        await self._emit(
+            "tool_use", "selected",
+            selected_tools=tool_analysis.get("selected_tools", []),
+            execution_plan=tool_analysis.get("execution_plan", []),
+        )
+        await self._emit("tool_use", "completed")
 
         return {
             "pattern": "tool_use",
@@ -349,19 +473,29 @@ class PatternService:
 
     # ==================== AGENTIC RAG PATTERN ====================
 
+    @_tracked("agentic_rag")
     async def agentic_rag_example(
         self,
         initial_query: str,
         max_refinements: int = 3
     ) -> Dict[str, Any]:
         """Demonstrate agentic RAG with query refinement."""
+        await self._emit("agentic_rag", "started", initial_query=initial_query, max_refinements=max_refinements)
         iterations = []
         current_query = initial_query
 
         for i in range(max_refinements):
+            await self._emit("agentic_rag", "iteration_start", iteration=i + 1, query=current_query)
             documents = self._retrieve_documents(current_query)
+            await self._emit("agentic_rag", "retrieved", iteration=i + 1, count=len(documents))
 
             evaluation = await self._llm_evaluate_documents(current_query, documents)
+            await self._emit(
+                "agentic_rag", "evaluated",
+                iteration=i + 1,
+                average_relevance=evaluation["average_relevance"],
+                reasoning=evaluation["reasoning"],
+            )
 
             iteration_data = {
                 "iteration": i + 1,
@@ -374,6 +508,7 @@ class PatternService:
 
             if evaluation["average_relevance"] >= 0.75:
                 iterations.append(iteration_data)
+                await self._emit("agentic_rag", "converged", iteration=i + 1, relevance=evaluation["average_relevance"])
                 break
 
             refined_query = await self._llm_refine_query(
@@ -384,7 +519,9 @@ class PatternService:
 
             iterations.append(iteration_data)
             current_query = refined_query
+            await self._emit("agentic_rag", "refined", iteration=i + 1, new_query=refined_query)
 
+        await self._emit("agentic_rag", "completed", total_iterations=len(iterations))
         return {
             "pattern": "agentic_rag",
             "initial_query": initial_query,
@@ -467,13 +604,27 @@ class PatternService:
 
     # ==================== METACOGNITION PATTERN ====================
 
+    @_tracked("metacognition")
     async def metacognition_example(
         self,
         execution_trace: List[Dict],
         performance_metrics: Dict[str, float]
     ) -> Dict[str, Any]:
         """Demonstrate metacognition with self-monitoring."""
+        await self._emit(
+            "metacognition", "started",
+            trace_length=len(execution_trace),
+            metrics=performance_metrics,
+        )
+        await self._emit("metacognition", "analyzing")
         analysis = await self._llm_analyze_performance(execution_trace, performance_metrics)
+        await self._emit(
+            "metacognition", "analyzed",
+            assessment=analysis.get("assessment", {}),
+            issues=analysis.get("issues", []),
+            adjustments=analysis.get("adjustments", []),
+        )
+        await self._emit("metacognition", "completed")
 
         return {
             "pattern": "metacognition",

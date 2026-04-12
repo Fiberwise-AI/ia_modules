@@ -10,9 +10,9 @@ _backend_dir = Path(__file__).parent
 if str(_backend_dir) not in sys.path:
     sys.path.insert(0, str(_backend_dir))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 import logging
@@ -25,7 +25,12 @@ load_dotenv()
 from pathlib import Path  # noqa: E402
 
 from nexusql import DatabaseManager  # noqa: E402
-from ia_modules.reliability.decision_trail import DecisionTrailBuilder  # noqa: E402
+from ia_modules.agents.subprocess_executor import SubprocessExecutor  # noqa: E402
+# DEPRECATED: decision trail feature disabled in showcase. The ia_modules
+# DecisionTrailBuilder requires live StateManager/ToolRegistry instances from
+# the run being inspected, which the showcase's per-run execution flows don't
+# retain. Re-enable only with a proper per-run registry.
+# from ia_modules.reliability.decision_trail import DecisionTrailBuilder  # noqa: E402
 from ia_modules.pipeline.importer import PipelineImportService  # noqa: E402
 from ia_modules.telemetry.integration import configure_agent_telemetry, configure_llm_telemetry  # noqa: E402
 
@@ -56,11 +61,14 @@ from services.telemetry_service import TelemetryService  # noqa: E402
 from services.checkpoint_service import CheckpointService  # noqa: E402
 from services.memory_service import MemoryService  # noqa: E402
 from services.replay_service import ReplayService  # noqa: E402
-from services.decision_trail_service import DecisionTrailService  # noqa: E402
+# DEPRECATED: see note above DecisionTrailBuilder import.
+# from services.decision_trail_service import DecisionTrailService  # noqa: E402
 from services.plugin_service import PluginService  # noqa: E402
 from services.guardrails_service import GuardrailsService
 from services.agent_execution_service import AgentExecutionService
-from services.llm_config import get_agent_config  # noqa: E402
+from services.collaboration_service import CollaborationService  # noqa: E402
+from services.pattern_service import PatternService  # noqa: E402
+from services.llm_config import get_agent_config, set_shared_agent_executor  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -88,11 +96,22 @@ async def lifespan(app: FastAPI):
         raise RuntimeError(f"Database initialization failed. Check DATABASE_URL in .env: {db_url}")
     logger.info(f"✓ Database initialized ({services.db_manager.config.database_type.value})")
 
+    # Shared SubprocessExecutor — one per process. Its Semaphore is the
+    # single gate that caps in-flight agent subprocesses across every
+    # pipeline run, every collaboration pattern, and every llm_call().
+    # Default of 3 keeps memory bounded on a dev box; override with
+    # AGENT_MAX_CONCURRENT for larger hosts or CI.
+    agent_max_concurrent = int(os.getenv("AGENT_MAX_CONCURRENT", "3"))
+    services.agent_executor = SubprocessExecutor(max_concurrent=agent_max_concurrent)
+    set_shared_agent_executor(services.agent_executor)
+    logger.info(f"✓ Shared agent executor initialized (max_concurrent={agent_max_concurrent})")
+
     # Initialize services
     services.metrics_service = MetricsService(services.db_manager)
     services.pipeline_service = PipelineService(
         services.metrics_service,
-        services.db_manager
+        services.db_manager,
+        agent_executor=services.agent_executor,
     )
     services.reliability_service = ReliabilityService(services.db_manager)
     services.scheduler_service = SchedulerService(services.pipeline_service, services.db_manager)
@@ -130,18 +149,16 @@ async def lifespan(app: FastAPI):
         pipeline_service=services.pipeline_service
     )
     
-    # Initialize decision trail builder from ia_modules
-    decision_trail_builder = DecisionTrailBuilder(
-        state_manager=None,  # Can be added if state management is needed
-        tool_registry=None,   # Can be added if tool tracking is needed
-        checkpointer=services.pipeline_service.checkpointer
-    )
-    
-    # Initialize decision trail service
-    services.decision_trail_service = DecisionTrailService(
-        decision_trail_builder=decision_trail_builder,
-        reliability_metrics=services.reliability_service
-    )
+    # DEPRECATED: decision trail wiring disabled. See import note above.
+    # decision_trail_builder = DecisionTrailBuilder(
+    #     state_manager=...,  # must be the live per-run StateManager
+    #     tool_registry=...,  # must be the live per-run ToolRegistry
+    #     checkpointer=services.pipeline_service.checkpointer,
+    # )
+    # services.decision_trail_service = DecisionTrailService(
+    #     decision_trail_builder=decision_trail_builder,
+    #     reliability_metrics=services.reliability_service,
+    # )
 
     # Initialize plugin service
     services.plugin_service = PluginService()
@@ -159,6 +176,17 @@ async def lifespan(app: FastAPI):
     await services.agent_execution_service.initialize()
     backfill = await services.agent_execution_service.scan_and_backfill()
     logger.info("✓ Agent execution service initialized (backfill: %s)", backfill)
+
+    # WebSocket manager — process-wide singleton, exposed on container so
+    # services can broadcast without importing api.websocket themselves.
+    from api.websocket import get_ws_manager
+    services.ws_manager = get_ws_manager()
+
+    # Container-DI services — take the full container in their constructor
+    # and resolve their own deps. No lazy init, no per-route boilerplate.
+    services.collaboration_service = CollaborationService(services)
+    services.pattern_service = PatternService(services)
+    logger.info("✓ Collaboration & pattern services initialized")
 
     logger.info("✓ Services initialized successfully")
 
@@ -198,6 +226,30 @@ app = FastAPI(
     version="0.0.3",
     lifespan=lifespan
 )
+
+# Log any 5xx response body so HTTPExceptions raised inside routes
+# (which bypass the global exception handler) still show up in server logs.
+# The body is drained and re-emitted verbatim so headers, status, media_type,
+# and the original response schema (e.g. FastAPI's {"detail": ...}) are
+# preserved for clients. Currently no endpoint returns a StreamingResponse;
+# if that changes, this middleware will buffer its body into memory on 5xx.
+@app.middleware("http")
+async def log_5xx_responses(request: Request, call_next):
+    response = await call_next(request)
+    if response.status_code < 500:
+        return response
+    body = b"".join([chunk async for chunk in response.body_iterator])
+    detail = body.decode("utf-8", errors="replace")
+    logger.error(
+        f"{response.status_code} on {request.method} {request.url.path}: {detail}"
+    )
+    return Response(
+        content=body,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+        media_type=response.media_type,
+    )
+
 
 # CORS middleware - MUST be added BEFORE routes
 app.add_middleware(
@@ -295,11 +347,18 @@ app.include_router(collaboration_router, tags=["Collaboration"])
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     """Handle uncaught exceptions"""
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    logger.error(
+        f"Unhandled exception on {request.method} {request.url.path}: "
+        f"{type(exc).__name__}: {exc}",
+        exc_info=True,
+    )
     return JSONResponse(
         status_code=500,
         content={
             "error": "Internal server error",
+            "type": type(exc).__name__,
+            "detail": str(exc),
+            "path": request.url.path,
         }
     )
 
@@ -335,9 +394,10 @@ def get_replay_service() -> ReplayService:
     return app.state.services.replay_service
 
 
-def get_decision_trail_service() -> DecisionTrailService:
-    """Get decision trail service instance"""
-    return app.state.services.decision_trail_service
+# DEPRECATED: decision trail feature disabled.
+# def get_decision_trail_service() -> DecisionTrailService:
+#     """Get decision trail service instance"""
+#     return app.state.services.decision_trail_service
 
 
 def get_db_manager() -> DatabaseManager:

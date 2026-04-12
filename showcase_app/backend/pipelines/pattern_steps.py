@@ -4,12 +4,14 @@ Agentic Design Pattern Steps for Pipelines
 These demonstrate AI agent patterns as reusable pipeline steps.
 Each pattern is a building block that can be composed into larger workflows.
 
-Patterns:
-1. Reflection - Self-critique and iterative improvement
-2. Planning - Multi-step goal decomposition
-3. Tool Use - Dynamic capability selection
-4. Agentic RAG - Query refinement and relevance evaluation
-5. Metacognition - Self-monitoring and strategy adjustment
+Reusable Step subclasses:
+1. ReflectionStep - Self-critique and iterative improvement
+2. PlanningStep   - Multi-step goal decomposition
+3. ToolUseStep    - Dynamic capability selection
+
+Note: Agentic RAG and Metacognition patterns live in
+`backend/services/pattern_service.py` as demo methods (agentic_rag_example,
+metacognition_example) rather than reusable Step subclasses.
 """
 
 from ia_modules.pipeline.core import Step
