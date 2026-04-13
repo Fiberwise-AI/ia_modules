@@ -137,7 +137,7 @@ class ToolChain:
 
     def add_parallel_steps(
         self,
-        steps: List[tuple],
+        steps: List[tuple[str, Dict[str, str], str]],
         parallel_group: Optional[int] = None
     ) -> "ToolChain":
         """
@@ -255,7 +255,7 @@ class ToolChain:
 
         # Group steps by parallel group
         sequential_steps = [s for s in self.steps if s.parallel_group is None]
-        parallel_groups = {}
+        parallel_groups: dict[int, list[Any]] = {}
 
         for step in self.steps:
             if step.parallel_group is not None:
@@ -292,7 +292,7 @@ class ToolChain:
 
             # Process results
             for step, result in zip(group_steps, results):
-                if isinstance(result, Exception):
+                if isinstance(result, BaseException):
                     errors[step.output_key] = str(result)
                     steps_skipped.append(step.output_key)
                 else:
@@ -453,7 +453,7 @@ class ChainBuilder:
 
     def parallel(
         self,
-        steps: List[tuple],
+        steps: List[tuple[str, Dict[str, str], str]],
         parallel_group: Optional[int] = None
     ) -> "ChainBuilder":
         """Add parallel steps. See ToolChain.add_parallel_steps for details."""

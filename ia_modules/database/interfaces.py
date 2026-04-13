@@ -144,7 +144,7 @@ class DatabaseInterface(ABC):
 
 def create_query_result(
     success: bool = True,
-    data: List[Dict[str, Any]] = None,
+    data: Optional[List[Dict[str, Any]]] = None,
     **kwargs
 ) -> QueryResult:
     """Create a query result with common defaults"""

@@ -22,8 +22,8 @@ def plugin(
     author: Optional[str] = None,
     description: Optional[str] = None,
     plugin_type: PluginType = PluginType.CONDITION,
-    tags: Optional[list] = None,
-    dependencies: Optional[list] = None,
+    tags: Optional[list[str]] = None,
+    dependencies: Optional[list[str]] = None,
     auto_register: bool = True
 ):
     """
@@ -62,7 +62,7 @@ def plugin(
         )
 
         # Override metadata property
-        cls.metadata = property(lambda self: metadata)
+        cls.metadata = property(lambda self: metadata)  # type: ignore[assignment]
 
         # Auto-register if requested
         if auto_register:
@@ -83,7 +83,7 @@ def condition_plugin(
     version: str = "1.0.0",
     author: Optional[str] = None,
     description: Optional[str] = None,
-    tags: Optional[list] = None,
+    tags: Optional[list[str]] = None,
     auto_register: bool = True
 ):
     """
@@ -116,7 +116,7 @@ def step_plugin(
     version: str = "1.0.0",
     author: Optional[str] = None,
     description: Optional[str] = None,
-    tags: Optional[list] = None,
+    tags: Optional[list[str]] = None,
     auto_register: bool = True
 ):
     """
@@ -191,7 +191,7 @@ def function_plugin(
             plugin_type=plugin_type
         )
 
-        plugin_class.metadata = property(lambda self: metadata)
+        plugin_class.metadata = property(lambda self: metadata)  # type: ignore[assignment]
         plugin_class.__name__ = name
         plugin_class.__doc__ = description or func.__doc__
 

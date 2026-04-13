@@ -110,8 +110,8 @@ class SQLConversationMemory(ConversationMemory):
         limit: int = 10
     ) -> List[Message]:
         """Search messages by content"""
-        conditions = []
-        params = {}
+        conditions: List[str] = []
+        params: Dict[str, Any] = {}
 
         # Build WHERE clause with named parameters
         conditions.append("content LIKE :search_query")

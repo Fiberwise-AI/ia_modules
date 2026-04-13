@@ -311,7 +311,7 @@ class LogicError(PipelineError):
             severity=ErrorSeverity.ERROR,
             step_id=step_id,
             recoverable=False,
-            context=context,
+            context=context or {},
             original_exception=original_exception
         )
 

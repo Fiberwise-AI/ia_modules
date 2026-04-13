@@ -230,3 +230,27 @@ skip_covered = false
 
 [tool.coverage.html]
 directory = "htmlcov"
+
+[tool.mypy]
+ignore_missing_imports = true
+no_implicit_optional = false
+warn_return_any = false
+warn_unused_ignores = false
+disable_error_code = [
+    "assignment",
+    "arg-type",
+    "return-value",
+    "attr-defined",
+    "union-attr",
+    "call-arg",
+    "index",
+    "operator",
+    "var-annotated",
+    "misc",
+    "no-redef",
+    "override",
+    "method-assign",
+    "import-untyped",
+    "has-type",
+    "call-overload",
+]

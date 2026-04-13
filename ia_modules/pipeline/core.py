@@ -162,7 +162,7 @@ class Step:
             from .retry import RetryConfig
             self.retry_config = RetryConfig(**retry_config_dict)
         else:
-            self.retry_config = None
+            self.retry_config: Optional[RetryConfig] = None  # type: ignore[assignment]
 
         # Services will be injected by Pipeline
         self.services = None
@@ -635,7 +635,7 @@ class Pipeline:
                 raise ValueError("No start step defined in pipeline flow")
 
             step_index = 0
-            visited_steps = set()  # Track visited steps for loop detection
+            visited_steps: set[str] = set()  # Track visited steps for loop detection
             max_steps = 100  # Safety limit to prevent infinite loops
             
             # Execute steps dynamically based on flow transitions
@@ -873,7 +873,7 @@ class Pipeline:
 
                         # Store remaining parallel steps to execute after current
                         if not hasattr(self, '_pending_parallel_steps'):
-                            self._pending_parallel_steps = []
+                            self._pending_parallel_steps: list[Any] = []
                         self._pending_parallel_steps.extend(pending_steps)
                     else:
                         # Single next step

@@ -23,6 +23,21 @@ except ImportError:
 # Force in-memory database for tests so the showcase app's file-based DB is never touched
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
+# Default env vars for docker-compose.test.yml (only set if not already provided)
+_DOCKER_COMPOSE_DEFAULTS = {
+    "TEST_POSTGRESQL_URL": "postgresql://testuser:testpass@localhost:15432/ia_modules_test",
+    "TEST_MYSQL_URL": "mysql://testuser:testpass@localhost:13306/ia_modules_test",
+    "TEST_MSSQL_URL": "mssql://sa:TestPass123!@localhost:11433/master",
+    "REDIS_URL": "redis://localhost:16379",
+    "PROMETHEUS_URL": "http://localhost:19090",
+    "GRAFANA_URL": "http://localhost:13001",
+    "OTEL_COLLECTOR_URL": "http://localhost:14318",
+    "OTEL_COLLECTOR_ENDPOINT": "http://localhost:14318",
+    "JAEGER_URL": "http://localhost:16686",
+}
+for _key, _val in _DOCKER_COMPOSE_DEFAULTS.items():
+    os.environ.setdefault(_key, _val)
+
 from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
 # This file can be used to define pytest fixtures that are shared across all tests

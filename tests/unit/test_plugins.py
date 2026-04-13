@@ -403,12 +403,10 @@ class TestPluginRegistry:
 
     def test_get_info(self, registry):
         registry.register(DummyCondition)
-        # get_info calls plugin.get_info() which references self._initialized
-        # This may raise AttributeError; we test gracefully
-        # get_info references self._initialized which is never set in Plugin base
-        # This is a known bug in Plugin.get_info - test that it raises AttributeError
-        with pytest.raises(AttributeError):
-            registry.get_info("dummy_condition")
+        info = registry.get_info("dummy_condition")
+        assert info is not None
+        assert info['name'] == 'dummy_condition'
+        assert info['initialized'] is True
 
     def test_get_info_nonexistent(self, registry):
         assert registry.get_info("nope") is None

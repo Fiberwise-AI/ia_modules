@@ -53,7 +53,7 @@ class DisclaimerRail(BaseGuardrail):
     Useful for medical, legal, or financial advice.
     """
 
-    def __init__(self, config, disclaimer_text: str = None):
+    def __init__(self, config, disclaimer_text: Optional[str] = None):
         """
         Initialize disclaimer rail.
 

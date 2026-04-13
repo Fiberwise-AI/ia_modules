@@ -186,7 +186,9 @@ class SQLCheckpointer(BaseCheckpointer):
     async def delete_checkpoints(
         self,
         thread_id: str,
-        pipeline_id: Optional[str] = None
+        pipeline_id: Optional[str] = None,
+        before: Optional[datetime] = None,
+        keep_latest: int = 0,
     ) -> int:
         """Delete all checkpoints for thread (optionally filtered by pipeline)"""
         if pipeline_id:

@@ -42,8 +42,8 @@ class AgentConditionEvaluator(ConditionEvaluator):
     def __init__(self,
                  model: str,
                  prompt_template: str,
-                 context_fields: List[str] = None,
-                 expected_outputs: List[str] = None,
+                 context_fields: Optional[List[str]] = None,
+                 expected_outputs: Optional[List[str]] = None,
                  confidence_threshold: float = 0.7,
                  max_retries: int = 2):
         self.model = model
@@ -314,9 +314,9 @@ class AdvancedRouter:
                 value=condition_config["value"]
             )
         elif condition_type == "agent":
-            evaluator = AgentConditionEvaluator(**condition_config)
+            evaluator: Any = AgentConditionEvaluator(**condition_config)
         elif condition_type == "function":
-            evaluator = FunctionConditionEvaluator(**condition_config)
+            evaluator: Any = FunctionConditionEvaluator(**condition_config)
 
         return await evaluator.evaluate(context)
 

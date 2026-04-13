@@ -5,7 +5,7 @@ Integrates all tool system components for production use.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from .tool_registry import AdvancedToolRegistry
 from .tool_planner import ToolPlanner, Task, ExecutionPlan
@@ -338,7 +338,7 @@ class AdvancedToolExecutor:
 
         return result
 
-    def _create_tool_executor(self):
+    def _create_tool_executor(self) -> Callable:
         """
         Create tool executor function for chains and parallel execution.
 
@@ -370,7 +370,7 @@ class AdvancedToolExecutor:
         Returns:
             Input mapping dictionary
         """
-        mapping = {}
+        mapping: Dict[str, str] = {}
 
         # Get tool parameters
         tool = self.registry.get_tool(step["tool_name"], step.get("version"))

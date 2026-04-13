@@ -41,7 +41,7 @@ class RetryConfig:
     initial_delay: float = 1.0
     max_delay: float = 60.0
     backoff_multiplier: float = 2.0
-    retryable_exceptions: tuple = (Exception,)
+    retryable_exceptions: tuple[type[Exception], ...] = (Exception,)
     on_retry: Optional[Callable[[int, Exception], None]] = None
 
 
@@ -243,6 +243,7 @@ class RetryExecutor:
                 await asyncio.sleep(delay)
 
         # Should never reach here, but just in case
+        assert last_exception is not None
         raise last_exception
 
     def _calculate_delay(self, attempt: int) -> float:
@@ -284,7 +285,7 @@ class FallbackConfig:
         default_value: Default value to return
     """
     fallback_functions: List[Callable] = field(default_factory=list)
-    fallback_on_exceptions: tuple = (Exception,)
+    fallback_on_exceptions: tuple[type[Exception], ...] = (Exception,)
     return_default_on_all_failures: bool = False
     default_value: Any = None
 
@@ -355,6 +356,7 @@ class FallbackExecutor:
             self.logger.warning("All functions failed, returning default value")
             return self.config.default_value
 
+        assert last_exception is not None
         raise last_exception
 
 

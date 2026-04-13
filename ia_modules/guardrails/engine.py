@@ -271,7 +271,7 @@ class GuardrailsEngine:
         self,
         user_input: str,
         llm_callable,
-        conversation_history: Optional[List[Dict]] = None,
+        conversation_history: Optional[List[Dict[str, Any]]] = None,
         input_context: Optional[Dict[str, Any]] = None,
         output_context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
@@ -363,14 +363,14 @@ class GuardrailsEngine:
             "warnings": self._extract_warnings([input_result, output_result, dialog_result])
         }
 
-    def _extract_warnings(self, results: List[Optional[Dict]]) -> List[str]:
+    def _extract_warnings(self, results: List[Optional[Dict[str, Any]]]) -> List[str]:
         """Extract warning messages from results."""
-        warnings = []
+        warnings: List[str] = []
         for result in results:
             if result is None:
                 continue
             for rail_result in result.get("results", []):
-                if rail_result.action == RailAction.WARN:
+                if rail_result.action == RailAction.WARN and rail_result.reason is not None:
                     warnings.append(rail_result.reason)
         return warnings
 

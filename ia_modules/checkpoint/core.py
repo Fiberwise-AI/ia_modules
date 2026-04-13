@@ -203,6 +203,7 @@ class BaseCheckpointer(ABC):
     async def list_checkpoints(
         self,
         thread_id: str,
+        pipeline_id: Optional[str] = None,
         limit: int = 10,
         offset: int = 0
     ) -> List[Checkpoint]:
@@ -231,8 +232,9 @@ class BaseCheckpointer(ABC):
     async def delete_checkpoints(
         self,
         thread_id: str,
+        pipeline_id: Optional[str] = None,
         before: Optional[datetime] = None,
-        keep_latest: int = 0
+        keep_latest: int = 0,
     ) -> int:
         """
         Delete checkpoints for a thread.

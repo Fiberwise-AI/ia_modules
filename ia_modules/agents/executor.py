@@ -136,7 +136,7 @@ class AgentEvent:
         return d
 
 
-def normalize_event(raw: dict, seq: int = 0, job_id: str = None) -> AgentEvent:
+def normalize_event(raw: dict, seq: int = 0, job_id: Optional[str] = None) -> AgentEvent:
     """Normalize a raw CLI NDJSON dict into an AgentEvent.
 
     Handles both Claude Code and OpenCode event formats.
@@ -148,7 +148,7 @@ def normalize_event(raw: dict, seq: int = 0, job_id: str = None) -> AgentEvent:
 
     # Claude Code: assistant message with nested content array
     if etype == "assistant":
-        return _normalize_assistant(raw, seq, job_id, timestamp)
+        return _normalize_assistant(raw, seq, job_id or '', timestamp)
 
     # OpenCode: tool_use with part.tool, part.state
     if etype == "tool_use":
@@ -212,7 +212,7 @@ def normalize_event(raw: dict, seq: int = 0, job_id: str = None) -> AgentEvent:
     # error events (OpenCode: {"type":"error","error":{"name":"...","data":{"message":"..."}}})
     if etype == "error":
         err = raw.get("error", {})
-        err_msg = err.get("message", "") if isinstance(err, str) else ""
+        err_msg = err if isinstance(err, str) else ""
         if isinstance(err, dict):
             err_data = err.get("data", {})
             err_msg = err_data.get("message", "") if isinstance(err_data, dict) else str(err_data)

@@ -412,8 +412,8 @@ class TimeBasedDecisionStep(HumanInputStep):
 
     def __init__(self, name: str, config: Optional[Dict[str, Any]] = None):
         """Initialize with task tracking"""
-        super().__init__(name, config)
-        self._timeout_tasks = []
+        super().__init__(name, config or {})
+        self._timeout_tasks: list[Any] = []
 
     async def run(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute time-based decision step"""

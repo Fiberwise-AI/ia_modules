@@ -119,7 +119,7 @@ class MiniOIDCProvider:
 
     def get_jwks(self) -> dict:
         """Return JWKS (public keys)."""
-        return self._jwks_json
+        return self._jwks_json  # type: ignore[return-value]
 
     def issue_token(
         self,
@@ -152,7 +152,7 @@ class MiniOIDCProvider:
             payload.update(claims)
 
         # Sign with private key using python-jose
-        priv_pem = self._private_key.private_bytes(
+        priv_pem = self._private_key.private_bytes(  # type: ignore[union-attr]
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption(),

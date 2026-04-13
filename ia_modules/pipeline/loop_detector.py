@@ -69,9 +69,9 @@ class LoopDetector:
             >>> len(loops)
             1
         """
-        loops = []
-        visited = set()
-        rec_stack = []
+        loops: list[list[str]] = []
+        visited: set[str] = set()
+        rec_stack: list[str] = []
 
         # Build adjacency list
         graph = self._build_graph()
@@ -93,7 +93,7 @@ class LoopDetector:
         if self._graph is not None:
             return self._graph
 
-        graph = {}
+        graph: dict[str, list[str]] = {}
         for transition in self.transitions:
             from_step = transition['from']
             to_step = transition['to']

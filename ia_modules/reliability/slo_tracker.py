@@ -301,7 +301,7 @@ class SLOTracker:
             mtte_p50_ms=mtte_stats["p50_ms"],
             mtte_p95_ms=mtte_stats["p95_ms"],
             mtte_p99_ms=mtte_stats["p99_ms"],
-            total_mtte_measurements=mtte_stats["count"],
+            total_mtte_measurements=int(mtte_stats["count"]),
             rsr=rsr,
             total_rsr_attempts=total_rsr_attempts,
             successful_replays=successful_replays

@@ -358,7 +358,7 @@ class CostTracker:
         ]
 
         # Calculate totals
-        total_cost = sum(c.amount for c in period_costs)
+        total_cost: float = sum(c.amount for c in period_costs)
 
         # Count workflows in period
         workflows_in_period = set()
@@ -401,7 +401,7 @@ class CostTracker:
             cost_per_workflow=cost_per_workflow,
             tokens_per_workflow=tokens_per_workflow,
             by_category=by_category,
-            by_agent=by_agent,
+            by_agent=by_agent,  # type: ignore[arg-type]
             period_start=since,
             period_end=until
         )

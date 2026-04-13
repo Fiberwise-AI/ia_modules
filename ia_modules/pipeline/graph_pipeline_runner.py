@@ -193,8 +193,8 @@ class GraphPipelineRunner:
     async def run_pipeline_from_json(
         self,
         pipeline_config: Dict[str, Any],
-        input_data: Dict[str, Any] = None,
-        execution_context: ExecutionContext = None,
+        input_data: Optional[Dict[str, Any]] = None,
+        execution_context: Optional[ExecutionContext] = None,
         use_enhanced_features: bool = True
     ) -> Dict[str, Any]:
         """
@@ -525,8 +525,8 @@ class GraphPipelineRunner:
         name: str,
         steps: List[Step],
         flow: Dict[str, Any],
-        input_data: Dict[str, Any] = None,
-        execution_context: ExecutionContext = None,
+        input_data: Optional[Dict[str, Any]] = None,
+        execution_context: Optional[ExecutionContext] = None,
         loop_config: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Run a pipeline from pre-built Step instances.
@@ -664,7 +664,7 @@ class GraphPipelineRunner:
 
 async def run_graph_pipeline(
     pipeline_config: Dict[str, Any],
-    input_data: Dict[str, Any] = None,
+    input_data: Optional[Dict[str, Any]] = None,
     services: Optional[ServiceRegistry] = None
 ) -> Dict[str, Any]:
     """
@@ -684,7 +684,7 @@ async def run_graph_pipeline(
 
 async def run_graph_pipeline_from_file(
     pipeline_file: str,
-    input_data: Dict[str, Any] = None,
+    input_data: Optional[Dict[str, Any]] = None,
     services: Optional[ServiceRegistry] = None
 ) -> Dict[str, Any]:
     """

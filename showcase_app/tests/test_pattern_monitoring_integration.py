@@ -84,7 +84,7 @@ def pattern_service_with_mock():
         from backend.services.pattern_service import PatternService
         container = _make_mock_container()
         service = PatternService(container)
-        return service
+        yield service
 
 
 class TestPatternServiceMonitoring:

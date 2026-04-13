@@ -124,7 +124,7 @@ class AdvancedToolRegistry:
         self.default_versions: Dict[str, str] = {}
 
         # Capability index: capability -> set of (tool_name, version)
-        self.capability_index: Dict[str, Set[tuple]] = defaultdict(set)
+        self.capability_index: Dict[str, Set[tuple[str, str]]] = defaultdict(set)
 
         # Result cache: cache_key -> CacheEntry
         self.cache: Dict[str, CacheEntry] = {}

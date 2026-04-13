@@ -51,6 +51,7 @@ class Plugin(ABC):
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config = config or {}
         self.logger = logging.getLogger(f"Plugin.{self.__class__.__name__}")
+        self._initialized: bool = True
 
     @property
     @abstractmethod
