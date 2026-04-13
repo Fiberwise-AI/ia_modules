@@ -45,7 +45,7 @@ class TestLLMTelemetry:
 
     def test_error_tracking(self, llm_telemetry):
         with pytest.raises(ValueError):
-            with llm_telemetry.trace_llm_call("chat", "openai", "gpt-4o") as ctx:
+            with llm_telemetry.trace_llm_call("chat", "openai", "gpt-4o") as _ctx:
                 raise ValueError("Rate limit exceeded")
 
         spans = llm_telemetry.get_spans()

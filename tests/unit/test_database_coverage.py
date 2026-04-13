@@ -6,7 +6,6 @@ factory creation logic, and abstract interface compliance.
 """
 
 import asyncio
-import os
 from abc import ABC
 from unittest.mock import MagicMock, AsyncMock, patch
 
@@ -24,7 +23,6 @@ from ia_modules.database.factory import (
     get_nexusql_database,
     get_sqlalchemy_database,
     set_default_backend,
-    _DEFAULT_BACKEND,
 )
 
 
@@ -372,33 +370,33 @@ class TestDatabaseFactory:
     @patch("ia_modules.database.factory.NexuSQLAdapter")
     def test_default_backend_is_nexusql(self, mock_adapter):
         mock_adapter.return_value = MagicMock()
-        db = get_database("sqlite:///test.db")
+        _db = get_database("sqlite:///test.db")
         mock_adapter.assert_called_once_with("sqlite:///test.db")
 
     @patch("ia_modules.database.factory.SQLAlchemyAdapter")
     def test_explicit_sqlalchemy_backend(self, mock_adapter):
         mock_adapter.return_value = MagicMock()
-        db = get_database("sqlite:///test.db", backend="sqlalchemy")
+        _db = get_database("sqlite:///test.db", backend="sqlalchemy")
         mock_adapter.assert_called_once_with("sqlite:///test.db")
 
     @patch("ia_modules.database.factory.NexuSQLAdapter")
     def test_explicit_nexusql_backend(self, mock_adapter):
         mock_adapter.return_value = MagicMock()
-        db = get_database("sqlite:///test.db", backend="nexusql")
+        _db = get_database("sqlite:///test.db", backend="nexusql")
         mock_adapter.assert_called_once_with("sqlite:///test.db")
 
     @patch("ia_modules.database.factory.SQLAlchemyAdapter")
     def test_env_var_backend(self, mock_adapter, monkeypatch):
         monkeypatch.setenv("IA_DATABASE_BACKEND", "sqlalchemy")
         mock_adapter.return_value = MagicMock()
-        db = get_database("sqlite:///test.db")
+        _db = get_database("sqlite:///test.db")
         mock_adapter.assert_called_once()
 
     @patch("ia_modules.database.factory.NexuSQLAdapter")
     def test_env_var_nexusql(self, mock_adapter, monkeypatch):
         monkeypatch.setenv("IA_DATABASE_BACKEND", "nexusql")
         mock_adapter.return_value = MagicMock()
-        db = get_database("sqlite:///test.db")
+        _db = get_database("sqlite:///test.db")
         mock_adapter.assert_called_once()
 
     def test_invalid_backend_raises_value_error(self):
@@ -422,7 +420,7 @@ class TestDatabaseFactory:
         original = factory_mod._DEFAULT_BACKEND
         try:
             set_default_backend(DatabaseBackend.SQLALCHEMY)
-            db = get_database("sqlite:///test.db")
+            _db = get_database("sqlite:///test.db")
             mock_adapter.assert_called_once()
         finally:
             # Restore so other tests aren't affected
@@ -436,7 +434,7 @@ class TestDatabaseFactory:
         original = factory_mod._DEFAULT_BACKEND
         try:
             set_default_backend(DatabaseBackend.NEXUSQL)
-            db = get_database("sqlite:///test.db")
+            _db = get_database("sqlite:///test.db")
             mock_adapter.assert_called_once()
         finally:
             factory_mod._DEFAULT_BACKEND = original
@@ -461,13 +459,13 @@ class TestDatabaseFactory:
     @patch("ia_modules.database.factory.NexuSQLAdapter")
     def test_get_nexusql_database(self, mock_adapter):
         mock_adapter.return_value = MagicMock()
-        result = get_nexusql_database("sqlite:///test.db")
+        _result = get_nexusql_database("sqlite:///test.db")
         mock_adapter.assert_called_once_with("sqlite:///test.db")
 
     @patch("ia_modules.database.factory.SQLAlchemyAdapter")
     def test_get_sqlalchemy_database(self, mock_adapter):
         mock_adapter.return_value = MagicMock()
-        result = get_sqlalchemy_database("sqlite:///test.db", echo=True)
+        _result = get_sqlalchemy_database("sqlite:///test.db", echo=True)
         mock_adapter.assert_called_once_with("sqlite:///test.db", echo=True)
 
     # -- Return type ---------------------------------------------------------

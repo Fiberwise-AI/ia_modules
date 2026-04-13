@@ -6,14 +6,9 @@ This tests the integration between pattern steps and the graph pipeline runner.
 
 import pytest
 import json
-import os
-import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from ia_modules.pipeline.graph_pipeline_runner import GraphPipelineRunner
-from backend.pipelines.pattern_steps import ReflectionStep, PlanningStep, ToolUseStep
 
 
 class MockAdapter:
@@ -45,7 +40,7 @@ async def test_pipeline_json_structure_validation():
                 "id": "test_step",
                 "name": "Test Step",
                 "step_class": "ReflectionStep",
-                "module": "showcase_app.backend.pipelines.pattern_steps",
+                "module": "backend.pipelines.pattern_steps",
                 "config": {
                     "initial_output": "Test",
                     "criteria": {"quality": "High"},
@@ -138,7 +133,7 @@ async def test_agentic_patterns_demo_json_valid():
     assert len(config.steps) == 3
     assert config.steps[0].id == "plan_research"
     assert config.steps[0].step_class == "PlanningStep"
-    assert config.steps[0].module == "showcase_app.backend.pipelines.pattern_steps"
+    assert config.steps[0].module == "backend.pipelines.pattern_steps"
 
 
 @pytest.mark.asyncio
@@ -147,8 +142,8 @@ async def test_pattern_step_execution_in_pipeline():
     from unittest.mock import patch
 
     # Patch both possible module paths (test import vs pipeline dynamic import)
-    with patch("backend.pipelines.pattern_steps._make_adapter", return_value=MockAdapter()), \
-         patch("showcase_app.backend.pipelines.pattern_steps._make_adapter", return_value=MockAdapter()):
+    with patch("pipelines.pattern_steps._make_adapter", return_value=MockAdapter()), \
+         patch("backend.pipelines.pattern_steps._make_adapter", return_value=MockAdapter()):
 
         pipeline_config = {
             "name": "reflection_test",
@@ -158,7 +153,7 @@ async def test_pattern_step_execution_in_pipeline():
                     "id": "improve",
                     "name": "Improve Text",
                     "step_class": "ReflectionStep",
-                    "module": "showcase_app.backend.pipelines.pattern_steps",
+                    "module": "backend.pipelines.pattern_steps",
                     "config": {
                         "initial_output": "This is a test",
                         "criteria": {"quality": "Must be high quality"},
@@ -194,8 +189,8 @@ async def test_multi_pattern_pipeline():
     """Test pipeline with multiple pattern types"""
     from unittest.mock import patch
 
-    with patch("backend.pipelines.pattern_steps._make_adapter", return_value=MockAdapter()), \
-         patch("showcase_app.backend.pipelines.pattern_steps._make_adapter", return_value=MockAdapter()):
+    with patch("pipelines.pattern_steps._make_adapter", return_value=MockAdapter()), \
+         patch("backend.pipelines.pattern_steps._make_adapter", return_value=MockAdapter()):
 
         pipeline_config = {
             "name": "multi_pattern_test",
@@ -205,7 +200,7 @@ async def test_multi_pattern_pipeline():
                     "id": "plan",
                     "name": "Plan",
                     "step_class": "PlanningStep",
-                    "module": "showcase_app.backend.pipelines.pattern_steps",
+                    "module": "backend.pipelines.pattern_steps",
                     "config": {
                         "goal": "Test goal",
                         "constraints": []
@@ -215,7 +210,7 @@ async def test_multi_pattern_pipeline():
                     "id": "reflect",
                     "name": "Reflect",
                     "step_class": "ReflectionStep",
-                    "module": "showcase_app.backend.pipelines.pattern_steps",
+                    "module": "backend.pipelines.pattern_steps",
                     "config": {
                         "initial_output": "Test output",
                         "criteria": {"quality": "High"},

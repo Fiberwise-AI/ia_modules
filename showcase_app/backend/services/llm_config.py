@@ -26,8 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from ia_modules.agents.subprocess_executor import (
-    get_shared_executor,
-    set_shared_executor as set_shared_agent_executor,  # re-exported for main.py
+    get_shared_executor,  # re-exported for main.py
 )
 from ia_modules.pipeline.llm_step import LLMStep
 from ia_modules.pipeline.services import ServiceRegistry

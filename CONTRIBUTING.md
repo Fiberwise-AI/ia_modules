@@ -27,7 +27,7 @@ By participating in this project, you agree to:
 
 ### Prerequisites
 
-- Python 3.9 or higher
+- Python 3.14 or higher
 - Git
 - Basic understanding of async/await in Python
 - Familiarity with pipeline/workflow concepts (helpful but not required)
@@ -75,7 +75,7 @@ pip install -e ".[dev,all]"
 # Run tests to ensure everything works
 pytest tests/ -v
 
-# Should see: 650 tests, 644 passing, 6 skipped
+# Verify tests pass
 ```
 
 ## Project Structure

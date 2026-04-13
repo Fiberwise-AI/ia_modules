@@ -517,7 +517,7 @@ class TestAgentPipelineObservabilityE2E:
         )
 
         with pytest.raises(RuntimeError, match="Simulated agent failure"):
-            with telemetry.trace_agent_execution("broken_agent", "broken") as ctx:
+            with telemetry.trace_agent_execution("broken_agent", "broken") as _ctx:
                 await broken.execute({})
 
         otel_provider.force_flush(timeout_millis=5_000)

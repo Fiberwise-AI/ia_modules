@@ -11,6 +11,7 @@ from typing import List, Dict, Optional, Any
 from pydantic import BaseModel, Field
 from datetime import datetime, timezone
 from enum import Enum
+from pathlib import Path as _Path
 import logging
 import json
 import time
@@ -25,11 +26,6 @@ from ia_modules.agents.executor import (
 from ia_modules.agents.subprocess_executor import SubprocessExecutor
 from ia_modules.pipeline.ndjson_logger import NdjsonLogger
 
-import sys
-from pathlib import Path as _Path
-_backend_dir = str(_Path(__file__).parent.parent)
-if _backend_dir not in sys.path:
-    sys.path.insert(0, _backend_dir)
 from services.llm_config import llm_call as _llm_call, get_llm_config, get_agent_config, derive_mode
 
 logger = logging.getLogger(__name__)
@@ -225,7 +221,7 @@ ROLE_SYSTEM_PROMPTS = {
 
 def _simulate_agent(role: str, task: str, prev_output: str = "") -> str:
     """Simulation fallback when LLM is unavailable."""
-    context = f" (building on previous output)" if prev_output else ""
+    context = " (building on previous output)" if prev_output else ""
     if role == "researcher":
         return f"Research on '{task}'{context}:\n- Key finding 1: Comprehensive background gathered\n- Key finding 2: Critical data points identified\n- Key finding 3: Relevant trends observed"
     elif role == "analyst":

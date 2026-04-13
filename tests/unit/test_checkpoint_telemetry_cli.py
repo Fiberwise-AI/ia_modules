@@ -5,28 +5,22 @@ Comprehensive unit tests for:
 3. CLI: visualize.py
 """
 
-import asyncio
 import json
 import socket
 import uuid
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
-from unittest.mock import AsyncMock, MagicMock, Mock, patch, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from ia_modules.checkpoint.core import (
-    BaseCheckpointer,
-    Checkpoint,
     CheckpointDeleteError,
-    CheckpointError,
     CheckpointLoadError,
     CheckpointSaveError,
     CheckpointStatus,
 )
 from ia_modules.telemetry.metrics import Metric, MetricType
 from ia_modules.telemetry.exporters import (
-    MetricsExporter,
     PrometheusExporter,
     CloudWatchExporter,
     DatadogExporter,

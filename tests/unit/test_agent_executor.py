@@ -1,6 +1,5 @@
 """Tests for agent executor protocol, types, and normalize_event."""
 
-import pytest
 from ia_modules.agents.executor import (
     AgentConfig,
     AgentEvent,

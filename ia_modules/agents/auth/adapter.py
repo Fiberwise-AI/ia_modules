@@ -7,7 +7,6 @@ methods without knowing which IDP is backing it.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass

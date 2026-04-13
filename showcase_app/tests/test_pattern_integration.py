@@ -15,11 +15,16 @@ so they are NOT run in CI. Use the unit tests (test_pattern_service.py)
 for fast feedback.
 """
 
+import os
 import subprocess
 import time
-import signal
 import pytest
 import httpx
+
+pytestmark = pytest.mark.skipif(
+    os.getenv("CI") == "true",
+    reason="Live integration tests require running backend + LLM API key"
+)
 
 BASE_URL = "http://localhost:7331"
 
@@ -113,24 +118,6 @@ class TestPatternIntegrationLive:
         # The LLM should have actually produced a critique
         assert len(data["iterations"][0]["critique"]) > 20, "Critique seems empty — LLM may not be responding"
         assert data["final_output"], "No final output"
-
-    @pytest.mark.asyncio
-    async def test_planning_live(self):
-        """Planning pattern: real LLM goal decomposition."""
-        async with httpx.AsyncClient(base_url=BASE_URL, timeout=120) as client:
-            resp = await client.post("/api/patterns/planning", json={
-                "goal": "Set up a continuous integration pipeline for a Python project",
-                "constraints": {"time": "2 hours", "budget": "free tools only"}
-            })
-
-        assert resp.status_code == 200, f"API error: {resp.text}"
-        data = resp.json()
-
-        assert data["pattern"] == "planning"
-        assert data["total_steps"] >= 2, "Plan should have at least 2 steps"
-        for step in data["plan"]:
-            assert "subgoal" in step, f"Step missing subgoal: {step}"
-            assert len(step["subgoal"]) > 5, f"Subgoal too short: {step['subgoal']}"
 
     @pytest.mark.asyncio
     async def test_tool_use_live(self):

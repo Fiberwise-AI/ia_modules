@@ -4,27 +4,23 @@ Test to verify parallel pipeline works correctly in showcase app context
 
 import asyncio
 import json
+import sys
 import uuid
 from pathlib import Path
-import sys
 
-# Add parent directories to path
-current_dir = Path(__file__).parent
-showcase_dir = current_dir.parent
-ia_modules_dir = showcase_dir.parent
-sys.path.insert(0, str(ia_modules_dir))
-sys.path.insert(0, str(showcase_dir))
+from ia_modules.pipeline.runner import create_pipeline_from_json
+from ia_modules.pipeline.core import ExecutionContext
+from ia_modules.pipeline.services import ServiceRegistry
 
-from ia_modules.pipeline.runner import create_pipeline_from_json  # noqa: E402
-from ia_modules.pipeline.core import ExecutionContext  # noqa: E402
-from ia_modules.pipeline.services import ServiceRegistry  # noqa: E402
+# ia_modules root is two levels up from showcase_app/tests/
+_ia_modules_dir = Path(__file__).resolve().parent.parent.parent
 
 
 async def test_parallel_pipeline_output():
     """Test that parallel pipeline produces non-empty statistics"""
-    
+
     # Load the parallel pipeline
-    pipeline_file = ia_modules_dir / "tests" / "pipelines" / "parallel_pipeline" / "pipeline.json"
+    pipeline_file = _ia_modules_dir / "tests" / "pipelines" / "parallel_pipeline" / "pipeline.json"
     
     print(f"Loading pipeline from: {pipeline_file}")
     

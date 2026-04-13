@@ -45,7 +45,7 @@ No more subclassing `Step` for common patterns — use the new built-ins:
 
 ### 🧪 Testing
 
-- **2,993+ test cases** across unit, integration, and e2e suites (up from 2,852)
+- Unit, integration, showcase, and Playwright e2e test suites
 - New agent auth test suite covering MiniOIDCAdapter, JWT validation, and claim enforcement
 - New step-type tests for LLMStep, FunctionStep, A2AStep, ParallelStep, OrchestratorStep
 
@@ -131,12 +131,6 @@ Versions 0.1.0 through 0.1.3 were published to PyPI (0.1.1 on 2025-11-21, 0.1.2 
 ### 🚀 Major Release: Complete AI Agent Framework
 
 This release transforms IA Modules into a **comprehensive AI agent framework**, combining multi-agent workflows with general-purpose pipeline orchestration, advanced scheduling, and observability features. The codebase is **validated for development and staging environments**.
-
-**Production Readiness Note:** While all features are implemented and tested (98% test pass rate), additional validation is recommended before production deployment:
-- Performance testing under load (not yet conducted)
-- Security audit (not yet completed)
-- Disaster recovery procedures (not yet tested)
-- See [showcase_app/REVIEW_FEATURES_E2E.md](showcase_app/REVIEW_FEATURES_E2E.md) for detailed production checklist
 
 **Key Features Implemented**:
 - ✅ Cyclic Graphs - Loop support in pipelines with safety mechanisms

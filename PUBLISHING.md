@@ -107,7 +107,7 @@ python -m twine upload dist/* -u __token__ -p YOUR_PYPI_TOKEN
 
 The GitHub Actions workflow (`.github/workflows/publish.yml`):
 1. ✅ Checks out code
-2. ✅ Sets up Python 3.11
+2. ✅ Sets up Python 3.14
 3. ✅ Installs dependencies
 4. ✅ Runs unit tests (`pytest tests/unit/`)
 5. ✅ Builds package (`python -m build`)

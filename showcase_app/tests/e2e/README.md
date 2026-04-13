@@ -128,11 +128,11 @@ Tests automatically run in GitHub Actions on:
 
 ### GitHub Actions Workflow
 
-The workflow (`.github/workflows/e2e-tests.yml`):
+The `showcase-e2e` job in `.github/workflows/test.yml`:
 1. Sets up Node.js and Python environments
 2. Installs frontend and backend dependencies
 3. Starts both backend (FastAPI) and frontend (Vite) servers
-4. Runs tests across Chromium, Firefox, and WebKit
+4. Runs tests with Chromium
 5. Uploads test reports and screenshots as artifacts
 
 ### Running Locally with Production-like Setup

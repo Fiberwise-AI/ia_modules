@@ -1,16 +1,5 @@
 """API package"""
 
-import sys
-from pathlib import Path
-
-# Remove conflicting ia_modules/pipeline from sys.path (has a services.py that conflicts)
-sys.path = [p for p in sys.path if 'ia_modules' not in p or 'showcase_app' in p]
-
-# Add backend to sys.path for services imports
-_backend_dir = str(Path(__file__).parent.parent)
-if _backend_dir not in sys.path:
-    sys.path.insert(0, _backend_dir)
-
 # Export all routers for easy import
 from .pipelines import router as pipelines_router
 from .execution import router as execution_router

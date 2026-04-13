@@ -88,12 +88,10 @@ jobs:
     - name: Lint with ruff
       run: |
         ruff check . --output-format=github
-      continue-on-error: true
 
     - name: Type check with mypy
       run: |
         mypy ia_modules --ignore-missing-imports
-      continue-on-error: true
 
   integration:
     runs-on: ubuntu-latest
@@ -248,7 +246,6 @@ jobs:
         JAEGER_URL: http://localhost:16686
       run: |
         pytest tests/integration/test_observability_integration.py tests/integration/test_agent_pipeline_observability_e2e.py -v --tb=short
-      continue-on-error: true  # Don't fail build if observability tests fail
 
     - name: Run all other integration tests
       env:
@@ -260,6 +257,7 @@ jobs:
         OTEL_COLLECTOR_URL: http://localhost:14318
         GRAFANA_URL: http://localhost:13001
         JAEGER_URL: http://localhost:16686
+      # These files are ignored here because they already run in dedicated steps above (PostgreSQL, Redis, Observability)
       run: |
         pytest tests/integration/ -v --tb=short -k "not mssql" \
           --ignore=tests/integration/test_postgresql_integration.py \
@@ -314,14 +312,11 @@ jobs:
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/showcase
         REDIS_URL: redis://localhost:6379
-        PYTHONPATH: .:showcase_app/backend
+        PYTHONPATH: showcase_app/backend
+      # e2e tests are ignored here because they run in the showcase-e2e job via Playwright
       run: |
         pytest showcase_app/tests/ -v --tb=short -k "not e2e" \
-          --ignore=showcase_app/tests/e2e \
-          --ignore=showcase_app/tests/test_api_response.py \
-          --ignore=showcase_app/tests/test_graph_display.py \
-          --ignore=showcase_app/tests/test_llm_monitoring.py \
-          --ignore=showcase_app/tests/test_multi_agent_service.py
+          --ignore=showcase_app/tests/e2e
 
   showcase-e2e:
     runs-on: ubuntu-latest

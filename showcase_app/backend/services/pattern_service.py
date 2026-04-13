@@ -384,25 +384,31 @@ class PatternService:
             user_message=(
                 f"Break down this goal into a step-by-step plan:\n\n"
                 f"GOAL: {goal}\n\n"
-                f"CONSTRAINTS:\n{constraints_text}\n\n" if constraints_text else ""
-                f"Create a plan with 3-5 steps. For each step, provide:\n"
-                f"1. description: What needs to be done\n"
-                f"2. reasoning: Why this step is important\n"
-                f"3. duration: Estimated time in minutes\n"
-                f"4. dependencies: Which previous steps must complete first (use step numbers)\n"
-                f"5. success_criteria: How to know this step is complete (list of 2-3 criteria)\n\n"
-                f"Return valid JSON array."
+                + (f"CONSTRAINTS:\n{constraints_text}\n\n" if constraints_text else "")
+                + "Create a plan with 3-5 steps. For each step, provide:\n"
+                "1. description: What needs to be done\n"
+                "2. reasoning: Why this step is important\n"
+                "3. duration: Estimated time in minutes\n"
+                "4. dependencies: Which previous steps must complete first (use step numbers)\n"
+                "5. success_criteria: How to know this step is complete (list of 2-3 criteria)\n\n"
+                "Return valid JSON array."
             ),
             temperature=0.5,
             step_name="planning_decompose",
         )
 
         parsed = _parse_json_response(result)
+        if not parsed:
+            logger.warning("Planning LLM returned unparseable response: %r", result[:500] if result else result)
 
         if isinstance(parsed, dict):
             for key in ("steps", "plan"):
                 if key in parsed:
                     return parsed[key]
+            # LLM may use an unexpected key — grab the first list value
+            for v in parsed.values():
+                if isinstance(v, list):
+                    return v
             return []
         elif isinstance(parsed, list):
             return parsed

@@ -418,7 +418,7 @@ class PipelineService:
         import datetime
 
         pipeline_id = str(uuid.uuid4())
-        slug = pipeline_data.get("name", "pipeline").lower().replace(" ", "-")[:50] + "-" + str(uuid.uuid4())[:8]
+        _slug = pipeline_data.get("name", "pipeline").lower().replace(" ", "-")[:50] + "-" + str(uuid.uuid4())[:8]
         now = datetime.datetime.now().isoformat()
 
         # Cache in memory only - SQLite threading issues prevent DB writes from async context

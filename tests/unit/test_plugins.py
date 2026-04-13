@@ -4,14 +4,9 @@ Comprehensive tests for the ia_modules plugins system.
 Covers: base classes, decorators, loader, registry, and all builtin plugins.
 """
 
-import asyncio
-import os
-import sys
-import tempfile
 import textwrap
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -876,7 +871,7 @@ class TestPluginLoader:
         dirs = loader.get_default_plugin_dirs()
         assert isinstance(dirs, list)
         # builtin directory should be present
-        builtin = Path(__file__).parent.parent.parent / "ia_modules" / "plugins" / "builtin"
+        _builtin = Path(__file__).parent.parent.parent / "ia_modules" / "plugins" / "builtin"
         # At minimum the list should contain paths
         for d in dirs:
             assert isinstance(d, Path)

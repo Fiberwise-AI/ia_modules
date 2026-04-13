@@ -8,8 +8,7 @@ import json
 import math
 import pytest
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
-from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock, patch
 
 from ia_modules.tools.builtin_tools.api_caller import (
     APICallerTool,
@@ -537,7 +536,7 @@ class TestFileOperationsTool:
         subdir.mkdir()
         # subdir has no extension so validation will fail with allowed_extensions.
         # Use allowed_extensions=[".txt", ".json"]-like approach by including "" extension.
-        tool = FileOperationsTool(base_path=str(tmp_path), allowed_extensions=[".txt", ".json"])
+        _tool = FileOperationsTool(base_path=str(tmp_path), allowed_extensions=[".txt", ".json"])
         # allowed_extensions=[".txt", ".json"] falls through to the default list, so let's
         # create a directory that looks like an allowed extension.
         subdir2 = tmp_path / "data.txt"

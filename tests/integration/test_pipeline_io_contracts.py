@@ -218,7 +218,7 @@ class TestInputOutputContracts:
     def test_all_steps_have_inputs_or_outputs(self, pipeline_config):
         """Every step should declare at least inputs or outputs (catches lazy omissions)."""
         name, config = pipeline_config
-        start_at = config.get("flow", {}).get("start_at", "")
+        _start_at = config.get("flow", {}).get("start_at", "")
 
         missing = []
         for step in config.get("steps", []):

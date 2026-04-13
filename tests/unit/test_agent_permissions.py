@@ -1,6 +1,5 @@
 """Tests for ia_modules.agents.permissions — token-based enforcement."""
 
-import os
 import pytest
 from ia_modules.agents.permissions import enforce_agent_claims, ClaimsViolation
 

@@ -29,7 +29,7 @@ This comprehensive developer guide covers everything needed to work with, extend
 ### Prerequisites
 
 **Python Environment:**
-- Python 3.8 or higher
+- Python 3.14 or higher
 - pip package manager
 - Virtual environment support (venv or conda)
 
@@ -1318,7 +1318,7 @@ class ParallelProcessingStep(Step):
 
 ```dockerfile
 # Dockerfile
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # Set working directory
 WORKDIR /app

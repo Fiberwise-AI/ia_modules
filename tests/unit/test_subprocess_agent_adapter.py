@@ -1,11 +1,10 @@
 """Tests for SubprocessAgentAdapter — the pattern-compatible agent wrapper."""
 
-import pytest
 from unittest.mock import MagicMock
 
 from ia_modules.utils.llm_adapters import SubprocessAgentAdapter
 from ia_modules.agents.executor import (
-    AgentConfig, AgentEvent, AgentMode, CLIType, EventType,
+    AgentEvent, AgentMode, CLIType, EventType,
 )
 
 

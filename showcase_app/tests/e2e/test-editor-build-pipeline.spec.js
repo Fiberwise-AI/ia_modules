@@ -9,12 +9,12 @@ test.describe('Pipeline Editor - Build Pipeline', () => {
     await page.waitForTimeout(1000);
 
     // Step 2: Add nodes from module palette
-    // Click "Task Step" to add first node
-    await page.getByText('Task Step').first().click();
+    // Click "LLM" to add first node
+    await page.getByText('LLM', { exact: true }).first().click();
     await page.waitForTimeout(300);
 
-    // Click "Transform" to add second node
-    await page.getByText('Transform').first().click();
+    // Click "Function" to add second node
+    await page.getByText('Function', { exact: true }).first().click();
     await page.waitForTimeout(300);
 
     // Verify nodes appear on canvas
@@ -73,7 +73,7 @@ test.describe('Pipeline Editor - Build Pipeline', () => {
     // Step 6: Verify the new pipeline appears in the list
     // Check for any pipeline card (the one we just created)
     const pipelineCards = page.locator('[class*="card"], [class*="pipeline"]').filter({
-      hasText: /pipeline|task|transform/i
+      hasText: /pipeline|llm|function/i
     });
     const cardCount = await pipelineCards.count();
 
@@ -107,13 +107,13 @@ test.describe('Pipeline Editor - Build Pipeline', () => {
     await page.waitForTimeout(1000);
 
     // Add different node types
-    await page.getByText('Decision').first().click();
+    await page.getByText('Agent', { exact: true }).first().click();
     await page.waitForTimeout(300);
 
-    await page.getByText('Parallel').first().click();
+    await page.getByText('Parallel', { exact: true }).first().click();
     await page.waitForTimeout(300);
 
-    await page.getByText('Task Step').first().click();
+    await page.getByText('Orchestrator', { exact: true }).first().click();
     await page.waitForTimeout(300);
 
     // Verify multiple nodes on canvas

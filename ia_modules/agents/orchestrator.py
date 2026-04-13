@@ -11,9 +11,8 @@ through step I/O like Pipeline does.
 Backward-compatible with BaseAgent — legacy agents are wrapped automatically.
 """
 
-import asyncio
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Callable, Any, Union
+from typing import Dict, List, Optional, Callable, Any
 import logging
 import time
 

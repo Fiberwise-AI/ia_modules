@@ -5,13 +5,6 @@ Exposes four agent collaboration patterns (consensus, debate, hierarchical,
 peer-to-peer) built on top of ia_modules AgentOrchestrator.
 """
 
-import sys
-from pathlib import Path
-
-_backend_dir = str(Path(__file__).parent.parent)
-if _backend_dir not in sys.path:
-    sys.path.insert(0, _backend_dir)
-
 import json
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
