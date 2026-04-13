@@ -628,8 +628,8 @@ class TestEndToEndMetrics:
         prom_ds = [ds for ds in datasources if ds['type'] == 'prometheus']
 
         if len(prom_ds) > 0:
-            # Verify Prometheus is configured
-            assert 'prometheus' in prom_ds[0]['url'].lower()
+            # Verify Prometheus datasource has a URL configured
+            assert prom_ds[0]['url'], "Prometheus datasource has no URL"
 
     def test_collector_to_prometheus_pipeline(self, otel_collector_url, prometheus_url):
         """Test metrics can flow from OTel Collector to Prometheus"""

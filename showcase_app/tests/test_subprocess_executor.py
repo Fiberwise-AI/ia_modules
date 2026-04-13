@@ -15,10 +15,7 @@ from pathlib import Path
 import pytest
 from dotenv import load_dotenv
 
-pytestmark = pytest.mark.skipif(
-    os.getenv("CI") == "true",
-    reason="Live integration tests require CLI agents on PATH + LLM API key",
-)
+pytestmark = pytest.mark.integration
 
 # Load .env from showcase_app/backend/ so tests get the real API key/provider
 _env_path = Path(__file__).resolve().parent.parent / "backend" / ".env"

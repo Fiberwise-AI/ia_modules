@@ -11,8 +11,6 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import redis as redis_sync
-import redis.asyncio as redis
-
 from ia_modules.reliability.redis_metric_storage import RedisMetricStorage
 
 # Check if Redis server is actually running (synchronous ping — no event loop issues)

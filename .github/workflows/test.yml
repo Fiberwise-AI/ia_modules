@@ -273,17 +273,26 @@ jobs:
       with:
         python-version: "3.14"
 
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -e ".[dev,all]"
         pip install -r showcase_app/backend/requirements.txt
+        npm install -g @anthropic/opencode
 
     - name: Run showcase Python tests
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/showcase
         REDIS_URL: redis://localhost:6379
         PYTHONPATH: showcase_app/backend
+        LLM_PROVIDER: zai-coding-plan
+        LLM_MODEL: glm-5.1
+        LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
       # e2e tests are ignored here because they run in the showcase-e2e job via Playwright
       run: |
         pytest showcase_app/tests/ -v --tb=short -k "not e2e" \
