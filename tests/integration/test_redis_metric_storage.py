@@ -1,47 +1,37 @@
 """
 Tests for Redis metric storage.
 
-Requires Redis server running on localhost:6379 for integration tests.
+Requires Redis server running for integration tests.
 Tests use a separate Redis database (db=15) to avoid conflicts.
 """
 
+import os
 import pytest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
-# Check if redis is available
+import redis as redis_sync
+import redis.asyncio as redis
+
+from ia_modules.reliability.redis_metric_storage import RedisMetricStorage
+
+# Check if Redis server is actually running (synchronous ping — no event loop issues)
+_redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379")
 try:
-    import redis.asyncio as redis
-    REDIS_AVAILABLE = True
-except ImportError:
-    REDIS_AVAILABLE = False
-
-# Check if Redis server is actually running
-REDIS_SERVER_AVAILABLE = False
-if REDIS_AVAILABLE:
-    try:
-        import asyncio
-        async def check_redis():
-            try:
-                client = redis.Redis.from_url("redis://localhost:6379/15", decode_responses=True)
-                await client.ping()
-                await client.aclose()
-                return True
-            except Exception:
-                return False
-        REDIS_SERVER_AVAILABLE = asyncio.run(check_redis())
-    except Exception:
-        REDIS_SERVER_AVAILABLE = False
-
-from ia_modules.reliability.redis_metric_storage import RedisMetricStorage  # noqa: E402
+    _client = redis_sync.Redis.from_url(f"{_redis_url}/15", decode_responses=True, socket_timeout=2)
+    _client.ping()
+    _client.close()
+    REDIS_SERVER_AVAILABLE = True
+except Exception:
+    REDIS_SERVER_AVAILABLE = False
 
 
 pytestmark = [
     pytest.mark.redis,
     pytest.mark.integration,
     pytest.mark.skipif(
-        not REDIS_AVAILABLE or not REDIS_SERVER_AVAILABLE,
-        reason="redis package not installed or Redis server not running"
+        not REDIS_SERVER_AVAILABLE,
+        reason="Redis server not running"
     )
 ]
 
@@ -49,8 +39,9 @@ pytestmark = [
 @pytest.fixture
 async def redis_storage():
     """Create Redis storage for testing."""
+    _redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379")
     storage = RedisMetricStorage(
-        redis_url="redis://localhost:6379/15",  # Use db 15 for tests
+        redis_url=f"{_redis_url}/15",  # Use db 15 for tests
         key_prefix="test:reliability",
         ttl_days=1  # Short TTL for tests
     )
@@ -69,9 +60,10 @@ async def redis_storage():
 @pytest.mark.asyncio
 async def test_redis_storage_creation():
     """Test creating Redis storage instance."""
-    storage = RedisMetricStorage(redis_url="redis://localhost:6379/15")
+    _redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379")
+    storage = RedisMetricStorage(redis_url=f"{_redis_url}/15")
 
-    assert storage.redis_url == "redis://localhost:6379/15"
+    assert storage.redis_url == f"{_redis_url}/15"
     assert storage.key_prefix == "reliability"
     assert storage.ttl_seconds == 90 * 86400
 

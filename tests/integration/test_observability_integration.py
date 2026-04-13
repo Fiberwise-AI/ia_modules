@@ -579,54 +579,6 @@ class TestJaegerHealth:
 class TestJaegerTracing:
     """Test sending traces to Jaeger"""
 
-    @pytest.mark.skipif(True, reason="Requires OpenTelemetry packages")
-    def test_send_trace_to_jaeger(self, jaeger_url):
-        """Test sending a trace span to Jaeger via OTLP"""
-        try:
-            from opentelemetry import trace
-            from opentelemetry.sdk.trace import TracerProvider
-            from opentelemetry.sdk.trace.export import BatchSpanProcessor
-            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-            from opentelemetry.sdk.resources import Resource
-
-            # Create tracer provider
-            resource = Resource.create({
-                "service.name": "ia_modules_test",
-                "deployment.environment": "test"
-            })
-
-            provider = TracerProvider(resource=resource)
-
-            # Configure OTLP exporter to Jaeger
-            jaeger_otlp_endpoint = jaeger_url.replace('16686', '4317').replace('http://', '')
-            otlp_exporter = OTLPSpanExporter(
-                endpoint=jaeger_otlp_endpoint,
-                insecure=True
-            )
-
-            # Add span processor
-            provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
-            trace.set_tracer_provider(provider)
-
-            # Create a tracer and span
-            tracer = trace.get_tracer("ia_modules.test")
-
-            with tracer.start_as_current_span("test_operation") as span:
-                span.set_attribute("test.attribute", "test_value")
-                span.set_attribute("operation.type", "integration_test")
-                time.sleep(0.1)
-
-            # Force flush
-            provider.force_flush()
-            time.sleep(3)
-
-            # Verify
-            response = requests.get(f"{jaeger_url}/api/services", timeout=5)
-            assert response.status_code == 200
-
-        except ImportError:
-            pytest.skip("OpenTelemetry tracing packages not installed")
-
     def test_jaeger_collector_health(self, jaeger_url):
         """Test Jaeger collector health"""
         # Jaeger collector health may be on different port
