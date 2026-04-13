@@ -283,7 +283,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[dev,all]"
         pip install -r showcase_app/backend/requirements.txt
-        npm install -g @anthropic/opencode
+        npm install -g opencode-ai
 
     - name: Run showcase Python tests
       env:

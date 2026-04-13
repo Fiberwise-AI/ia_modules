@@ -5,6 +5,7 @@ Test configuration and fixtures
 import os
 from pathlib import Path
 import pytest
+from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
 # Note: sys.path manipulation removed - rely on proper package installation
 # Install with: pip install -e .
@@ -34,7 +35,6 @@ _DOCKER_COMPOSE_DEFAULTS = {
 for _key, _val in _DOCKER_COMPOSE_DEFAULTS.items():
     os.environ.setdefault(_key, _val)
 
-from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
 # This file can be used to define pytest fixtures that are shared across all tests
 
@@ -42,7 +42,6 @@ from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 pytest_plugins = [
     "pytest_asyncio",
 ]
-
 
 # Database connection configurations for testing
 def get_database_configs():
