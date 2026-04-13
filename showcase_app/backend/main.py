@@ -66,7 +66,8 @@ from services.guardrails_service import GuardrailsService  # noqa: E402
 from services.agent_execution_service import AgentExecutionService  # noqa: E402
 from services.collaboration_service import CollaborationService  # noqa: E402
 from services.pattern_service import PatternService  # noqa: E402
-from services.llm_config import get_agent_config, set_shared_agent_executor  # noqa: E402
+from services.llm_config import get_agent_config  # noqa: E402
+from ia_modules.agents.subprocess_executor import set_shared_executor as set_shared_agent_executor  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
