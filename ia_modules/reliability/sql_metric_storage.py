@@ -61,7 +61,7 @@ class SQLMetricStorage(MetricStorage):
         """
 
         timestamp_str = record.get("timestamp")
-        timestamp = datetime.fromisoformat(timestamp_str) if timestamp_str else datetime.now(timezone.utc)
+        timestamp: Any = datetime.fromisoformat(timestamp_str) if timestamp_str else datetime.now(timezone.utc)
 
         params = {
             "agent_name": record["agent"],
@@ -99,7 +99,7 @@ class SQLMetricStorage(MetricStorage):
             """
 
             timestamp_str = record.get("timestamp")
-            timestamp = datetime.fromisoformat(timestamp_str) if timestamp_str else datetime.now(timezone.utc)
+            timestamp: Any = datetime.fromisoformat(timestamp_str) if timestamp_str else datetime.now(timezone.utc)
 
             params = {
                 "workflow_id": record["workflow_id"],

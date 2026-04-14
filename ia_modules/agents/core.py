@@ -6,7 +6,7 @@ Implements the base agent abstraction with role-based specialization.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 import logging
 
 from .state import StateManager

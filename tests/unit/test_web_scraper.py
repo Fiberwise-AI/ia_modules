@@ -6,6 +6,9 @@ safety features, and error handling.
 """
 
 import pytest
+
+pytest.importorskip("aiohttp", reason="aiohttp not installed — web_scraper pending refactor")
+
 from unittest.mock import Mock, patch, AsyncMock
 import aiohttp
 from ia_modules.tools.builtin_tools.web_scraper import (

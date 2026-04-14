@@ -15,7 +15,7 @@ pip install -e ".[cli]"
 ```
 
 **Dependencies:**
-- Python 3.9+
+- Python 3.14+
 - nexusql (database adapter for SQLAlchemy)
 
 ## Quick Start

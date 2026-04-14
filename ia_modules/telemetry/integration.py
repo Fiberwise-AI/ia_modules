@@ -330,7 +330,7 @@ class PipelineTelemetry:
         """Get all spans or spans for a specific trace"""
         if trace_id:
             return self.tracer.get_spans(trace_id)
-        return self.tracer.get_spans()
+        return self.tracer.get_spans()  # type: ignore[attr-defined]
 
 
 class _PipelineContext:

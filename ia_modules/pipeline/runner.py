@@ -65,7 +65,7 @@ def create_step_from_json(step_def: Dict[str, Any], context: Dict[str, Any] = No
 
 async def create_step_from_json_async(
     step_def: Dict[str, Any],
-    context: Dict[str, Any] = None,
+    context: Optional[Dict[str, Any]] = None,
     db_provider=None,
     pipeline_id: Optional[str] = None
 ) -> Step:
@@ -156,7 +156,7 @@ async def run_pipeline_from_json(
     execution_context=None,
     # Legacy parameters for backward compatibility
     websocket_manager=None,
-    user_id: int = None,
+    user_id: Optional[int] = None,
     execution_id: str = None
 ) -> Dict[str, Any]:
     """Main runner function - execute pipeline from JSON configuration

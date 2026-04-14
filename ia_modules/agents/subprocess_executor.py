@@ -15,7 +15,6 @@ import json
 import logging
 import os
 import shutil
-import subprocess
 import time
 from pathlib import Path
 from typing import AsyncIterator, Optional
@@ -73,7 +72,7 @@ def _write_opencode_json(
         m = model.strip()
         if not m.startswith(f"{provider}/"):
             m = f"{provider}/{m}"
-        oc_config["provider"][provider]["models"] = {model: {"name": model}}
+        oc_config["provider"][provider]["models"] = {model: {"name": model}}  # type: ignore[index]
         oc_config["model"] = m
 
     # Write with mode 0o600 where the platform honours it — on POSIX
@@ -163,13 +162,13 @@ class SubprocessExecutor:
         from being spawned.
         """
         if self._auth is not None:
-            token = self._auth.mint(
+            token = self._auth.mint(  # type: ignore[union-attr]
                 cwd=config.cwd,
                 mode=config.mode.value,
                 tools=list(config.tools),
             )
             # Raises ClaimsViolation on mismatch — do NOT catch here.
-            self._auth.verify_and_enforce(
+            self._auth.verify_and_enforce(  # type: ignore[union-attr]
                 token,
                 cwd=config.cwd,
                 mode=config.mode.value,
@@ -227,9 +226,9 @@ class SubprocessExecutor:
     async def _run_via_bridge(self, config: AgentConfig) -> AsyncIterator[AgentEvent]:
         """Run agent via Node.js bridge script."""
         if config.cli_type == CLIType.OPENCODE:
-            script = self.bridge_dir / "run_agent_opencode.mjs"
+            script = self.bridge_dir / "run_agent_opencode.mjs"  # type: ignore[operator]
         else:
-            script = self.bridge_dir / "run_agent.mjs"
+            script = self.bridge_dir / "run_agent.mjs"  # type: ignore[operator]
 
         if not script.exists():
             raise FileNotFoundError(f"Bridge script not found: {script}")
@@ -257,7 +256,7 @@ class SubprocessExecutor:
         if config.api_key:
             stdin_config["apiKey"] = config.api_key
         if config.cli_type == CLIType.OPENCODE and config.provider and config.api_key:
-            stdin_config["providerConfig"] = {
+            stdin_config["providerConfig"] = {  # type: ignore[assignment]
                 "provider": config.provider,
                 "apiKey": config.api_key,
             }
@@ -404,7 +403,7 @@ class SubprocessExecutor:
         seq = 0
         try:
             while True:
-                line = await proc.stdout.readline()
+                line = await proc.stdout.readline()  # type: ignore[union-attr]
                 if not line:
                     break
                 text = line.decode(errors="replace").strip()

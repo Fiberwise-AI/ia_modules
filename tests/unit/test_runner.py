@@ -56,7 +56,7 @@ def test_create_step_from_json_with_context():
     }
     context = {'parameters': {'test_value': 999}}
     step = create_step_from_json(step_def, context)
-    assert step.config['value'] == '999'  # Template resolution returns strings
+    assert step.config['value'] == 999  # Whole-value templates preserve type
 
 
 def test_create_pipeline_from_json_basic():

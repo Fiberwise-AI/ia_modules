@@ -382,13 +382,13 @@ def tool(
             registry.register(tool_def)
 
         # Attach tool definition to function for later registration
-        func._tool_definition = tool_def
+        func._tool_definition = tool_def  # type: ignore[attr-defined]
 
         @wraps(func)
         async def wrapper(*args, **kwargs):
             return await func(*args, **kwargs)
 
-        wrapper._tool_definition = tool_def
+        wrapper._tool_definition = tool_def  # type: ignore[attr-defined]
         return wrapper
 
     return decorator

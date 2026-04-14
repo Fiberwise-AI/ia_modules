@@ -8,8 +8,7 @@ Comprehensive unit tests for pipeline modules:
 import json
 import uuid
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, AsyncMock, patch, PropertyMock
-from typing import Dict, Any
+from unittest.mock import MagicMock, AsyncMock, patch
 
 import pytest
 

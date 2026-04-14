@@ -55,6 +55,19 @@ class MockExecutionTracker:
             "status": "running"
         }
 
+    async def update_execution_status(self, execution_id: str, status=None, error: str = None, error_message: str = None, **kwargs):
+        final_error = error_message if error_message is not None else error
+        self.ended.append(execution_id)
+        if execution_id in self.executions:
+            status_str = status.value if hasattr(status, 'value') else str(status)
+            self.executions[execution_id]["status"] = status_str
+            self.executions[execution_id]["success"] = status_str == "completed"
+            if final_error:
+                self.executions[execution_id]["error"] = final_error
+
+    async def get_execution_steps(self, execution_id: str):
+        return []
+
     def end_execution(self, execution_id: str, success: bool, error: str = None):
         self.ended.append(execution_id)
         if execution_id in self.executions:

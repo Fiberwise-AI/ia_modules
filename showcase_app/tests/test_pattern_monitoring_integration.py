@@ -6,61 +6,85 @@ rate limiting, cost tracking, and usage statistics.
 """
 
 import pytest
-import os
-import sys
-from unittest.mock import patch, AsyncMock
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from types import SimpleNamespace
+from unittest.mock import patch, AsyncMock, MagicMock
 
 
-class MockAdapter:
-    """Mock adapter matching SubprocessAgentAdapter.generate() interface."""
+def _make_llm_result(text: str):
+    """Build an object mimicking LLMCallResult with .text attribute."""
+    return SimpleNamespace(text=text, job_id=None, event_count=0)
 
-    async def generate(self, prompt: str, model: str = None, temperature: float = 0.7, max_tokens: int = None, **kwargs):
-        """Return plain string based on prompt content.
 
-        Uses distinctive phrases from each pattern's prompt to avoid
-        ambiguity (e.g. 'step' appears in tool-use JSON templates too).
-        """
-        prompt_lower = prompt.lower()
-        # Reflection: critique step
-        if "critical evaluator" in prompt_lower:
-            return "The output is acceptable. Clarity is good. The content is complete."
-        # Reflection: improvement step
-        elif "expert editor" in prompt_lower:
-            return "This is an improved version with better clarity and completeness."
-        # Tool use: analyze and select tools
-        elif "available tools" in prompt_lower:
-            return '{"analysis": {"task_type": "test", "required_capabilities": ["search"], "complexity": "low"}, "selected_tools": [{"tool": "search", "reasoning": "needed", "priority": 1}], "execution_plan": [{"step": 1, "tool": "search", "action": "search", "input": "query", "output": "results"}], "reasoning": "search is best"}'
-        # Planning: goal decomposition
-        elif "break down this goal" in prompt_lower:
-            return '[{"description": "Step 1", "reasoning": "Important", "duration": 30, "dependencies": [], "success_criteria": ["Done"]}]'
-        # RAG: query refinement
-        elif "refining search queries" in prompt_lower:
-            return "refined search query with better keywords"
-        # RAG: document evaluation
-        elif "evaluating document relevance" in prompt_lower:
-            return '{"document_scores": [{"document_number": 1, "title": "Doc 1", "relevance_score": 0.9, "reasoning": "relevant"}], "average_relevance": 0.9, "reasoning": "good results", "refinement_suggestion": "none needed"}'
-        # Metacognition: performance analysis
-        elif "analyzing your own performance" in prompt_lower:
-            return '{"assessment": {"overall_score": 0.8, "summary": "Good", "strengths": ["fast"], "weaknesses": ["none"]}, "patterns": ["consistent"], "issues": [], "adjustments": ["none needed"], "confidence": 0.9}'
-        else:
-            return "Mock response for the given prompt"
+def _mock_llm_call_side_effect(system_prompt: str, user_message: str, **kwargs):
+    """Return canned LLMCallResult based on the system_prompt content.
+
+    Uses distinctive phrases from each pattern's prompt to avoid ambiguity.
+    """
+    prompt_lower = (system_prompt + " " + user_message).lower()
+    # Reflection: critique step
+    if "critical evaluator" in prompt_lower:
+        return _make_llm_result(
+            "The output is acceptable. Clarity is good. The content is complete."
+        )
+    # Reflection: improvement step
+    if "expert editor" in prompt_lower:
+        return _make_llm_result(
+            "This is an improved version with better clarity and completeness."
+        )
+    # Tool use: analyze and select tools
+    if "available tools" in prompt_lower:
+        return _make_llm_result(
+            '{"analysis": {"task_type": "test", "required_capabilities": ["search"], "complexity": "low"}, '
+            '"selected_tools": [{"tool": "search", "reasoning": "needed", "priority": 1}], '
+            '"execution_plan": [{"step": 1, "tool": "search", "action": "search", "input": "query", "output": "results"}], '
+            '"reasoning": "search is best"}'
+        )
+    # Planning: goal decomposition
+    if "break down this goal" in prompt_lower:
+        return _make_llm_result(
+            '[{"description": "Step 1", "reasoning": "Important", "duration": 30, '
+            '"dependencies": [], "success_criteria": ["Done"]}]'
+        )
+    # RAG: query refinement
+    if "refining search queries" in prompt_lower:
+        return _make_llm_result("refined search query with better keywords")
+    # RAG: document evaluation
+    if "evaluating document relevance" in prompt_lower:
+        return _make_llm_result(
+            '{"document_scores": [{"document_number": 1, "title": "Doc 1", '
+            '"relevance_score": 0.9, "reasoning": "relevant"}], '
+            '"average_relevance": 0.9, "reasoning": "good results", '
+            '"refinement_suggestion": "none needed"}'
+        )
+    # Metacognition: performance analysis
+    if "analyzing your own performance" in prompt_lower:
+        return _make_llm_result(
+            '{"assessment": {"overall_score": 0.8, "summary": "Good", '
+            '"strengths": ["fast"], "weaknesses": ["none"]}, '
+            '"patterns": ["consistent"], "issues": [], '
+            '"adjustments": ["none needed"], "confidence": 0.9}'
+        )
+    return _make_llm_result("Mock response for the given prompt")
+
+
+def _make_mock_container():
+    """Build a minimal mock container that satisfies PatternService.__init__."""
+    container = MagicMock()
+    container.reliability_service.metrics.record_workflow = AsyncMock()
+    container.reliability_service.metrics.record_step = AsyncMock()
+    container.ws_manager.broadcast_patterns = AsyncMock()
+    return container
 
 
 @pytest.fixture
-def mock_adapter():
-    return MockAdapter()
-
-
-@pytest.fixture
-def pattern_service_with_mock(mock_adapter):
-    """Pattern service with mocked adapter."""
-    with patch("backend.services.pattern_service._make_adapter", return_value=mock_adapter), \
-         patch("showcase_app.backend.services.pattern_service._make_adapter", return_value=mock_adapter):
+def pattern_service_with_mock():
+    """Pattern service with llm_call mocked out."""
+    mock_llm = AsyncMock(side_effect=_mock_llm_call_side_effect)
+    with patch("backend.services.pattern_service.llm_call", mock_llm):
         from backend.services.pattern_service import PatternService
-        service = PatternService()
-        return service
+        container = _make_mock_container()
+        service = PatternService(container)
+        yield service
 
 
 class TestPatternServiceMonitoring:
@@ -72,9 +96,11 @@ class TestPatternServiceMonitoring:
         service = pattern_service_with_mock
 
         result = await service._monitored_llm_call(
-            prompt="Test prompt",
+            system_prompt="Test system prompt",
+            user_message="Test user message",
             temperature=0.7,
-            max_tokens=1000
+            max_tokens=1000,
+            step_name="test",
         )
 
         assert isinstance(result, str)
@@ -91,9 +117,11 @@ class TestPatternServiceMonitoring:
         from fastapi import HTTPException
         with pytest.raises(HTTPException) as exc_info:
             await service._monitored_llm_call(
-                prompt="Test",
+                system_prompt="Test",
+                user_message="Test",
                 temperature=0.7,
-                max_tokens=1000
+                max_tokens=1000,
+                step_name="test",
             )
 
         assert exc_info.value.status_code == 429
@@ -124,9 +152,11 @@ class TestPatternServiceMonitoring:
 
         for _ in range(3):
             await service._monitored_llm_call(
-                prompt="Test",
+                system_prompt="Test",
+                user_message="Test",
                 temperature=0.7,
-                max_tokens=500
+                max_tokens=500,
+                step_name="test",
             )
 
         stats = service.monitoring_service.get_stats()
@@ -194,75 +224,58 @@ class TestPatternServiceWithAdapter:
 
 
 class TestAPIEndpoints:
-    """Test API endpoints with monitoring"""
+    """Test API endpoint functions call through to PatternService correctly"""
 
     @pytest.mark.asyncio
-    async def test_llm_status_endpoint_no_keys(self):
-        """Status endpoint shows unconfigured when no API keys"""
-        from backend.api.patterns import get_llm_status
+    async def test_run_reflection_endpoint(self):
+        """run_reflection delegates to PatternService.reflection_example"""
+        from backend.api.patterns import run_reflection, ReflectionRequest
 
-        old_env = {
-            "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY"),
-            "ANTHROPIC_API_KEY": os.environ.get("ANTHROPIC_API_KEY"),
-            "GEMINI_API_KEY": os.environ.get("GEMINI_API_KEY")
-        }
+        mock_service = AsyncMock()
+        mock_service.reflection_example.return_value = {"pattern": "reflection"}
 
-        for key in old_env:
-            if key in os.environ:
-                del os.environ[key]
+        mock_request = MagicMock()
+        mock_request.app.state.services.pattern_service = mock_service
 
-        try:
-            result = await get_llm_status()
-
-            assert result["configured"] is False
-            assert result["configured_count"] == 0
-            assert "must be configured" in result["message"]
-
-            for provider in result["providers"]:
-                assert provider["status"] == "not_configured"
-                assert "setup_guide" in provider
-        finally:
-            for key, value in old_env.items():
-                if value is not None:
-                    os.environ[key] = value
-
-    @pytest.mark.asyncio
-    async def test_llm_status_endpoint_with_keys(self):
-        """Status endpoint shows configured when API keys present"""
-        from backend.api.patterns import get_llm_status
-
-        os.environ["OPENAI_API_KEY"] = "test-key-123"
-
-        try:
-            result = await get_llm_status()
-
-            assert result["configured"] is True
-            assert result["configured_count"] >= 1
-
-            openai_provider = next(p for p in result["providers"] if p["name"] == "openai")
-            assert openai_provider["status"] == "configured"
-            assert "model" in openai_provider
-        finally:
-            del os.environ["OPENAI_API_KEY"]
-
-    @pytest.mark.asyncio
-    async def test_llm_stats_endpoint(self):
-        """Stats endpoint returns usage statistics"""
-        from backend.api.patterns import get_llm_stats, monitoring_service
-
-        monitoring_service.track_usage(
-            provider="subprocess",
-            model="cli_agent",
-            input_tokens=0,
-            output_tokens=0,
-            duration_seconds=1.5
+        body = ReflectionRequest(
+            initial_output="test",
+            criteria={"clarity": "be clear"},
         )
+        result = await run_reflection(body, mock_request)
+        assert result == {"pattern": "reflection"}
+        mock_service.reflection_example.assert_awaited_once()
 
-        result = await get_llm_stats()
+    @pytest.mark.asyncio
+    async def test_run_planning_endpoint(self):
+        """run_planning delegates to PatternService.planning_example"""
+        from backend.api.patterns import run_planning, PlanningRequest
 
-        assert "total_requests" in result
-        assert "total_tokens" in result
-        assert "total_cost" in result
+        mock_service = AsyncMock()
+        mock_service.planning_example.return_value = {"pattern": "planning"}
+
+        mock_request = MagicMock()
+        mock_request.app.state.services.pattern_service = mock_service
+
+        body = PlanningRequest(goal="build a house")
+        result = await run_planning(body, mock_request)
+        assert result == {"pattern": "planning"}
+        mock_service.planning_example.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_run_agentic_rag_endpoint(self):
+        """run_agentic_rag delegates to PatternService.agentic_rag_example"""
+        from backend.api.patterns import run_agentic_rag, AgenticRAGRequest
+
+        mock_service = AsyncMock()
+        mock_service.agentic_rag_example.return_value = {"pattern": "agentic_rag"}
+
+        mock_request = MagicMock()
+        mock_request.app.state.services.pattern_service = mock_service
+
+        body = AgenticRAGRequest(query="machine learning basics")
+        result = await run_agentic_rag(body, mock_request)
+        assert result == {"pattern": "agentic_rag"}
+        mock_service.agentic_rag_example.assert_awaited_once()
 
 
 class TestRateLimitingIntegration:
@@ -280,9 +293,11 @@ class TestRateLimitingIntegration:
         from fastapi import HTTPException
         with pytest.raises(HTTPException) as exc_info:
             await service._monitored_llm_call(
-                prompt="Test",
+                system_prompt="Test",
+                user_message="Test",
                 temperature=0.7,
-                max_tokens=1000
+                max_tokens=1000,
+                step_name="test",
             )
 
         assert "Retry-After" in exc_info.value.headers

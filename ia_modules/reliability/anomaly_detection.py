@@ -224,7 +224,7 @@ class AnomalyDetector:
         Returns:
             List of detected anomalies
         """
-        anomalies = []
+        anomalies: list[dict[str, Any]] = []
 
         # Determine which metrics to check
         metrics_to_check = [metric_name] if metric_name else list(self._history.keys())
@@ -263,7 +263,7 @@ class AnomalyDetector:
         history: List[tuple]
     ) -> List[Anomaly]:
         """Check for threshold breaches."""
-        anomalies = []
+        anomalies: list[dict[str, Any]] = []
 
         if metric_name not in self._thresholds:
             return anomalies
@@ -307,7 +307,7 @@ class AnomalyDetector:
         history: List[tuple]
     ) -> List[Anomaly]:
         """Check for statistical anomalies using Z-score."""
-        anomalies = []
+        anomalies: list[dict[str, Any]] = []
 
         if len(history) < self.min_baseline_samples:
             return anomalies
@@ -368,7 +368,7 @@ class AnomalyDetector:
         history: List[tuple]
     ) -> List[Anomaly]:
         """Check for sudden rate-of-change anomalies."""
-        anomalies = []
+        anomalies: list[dict[str, Any]] = []
 
         if len(history) < 2:
             return anomalies

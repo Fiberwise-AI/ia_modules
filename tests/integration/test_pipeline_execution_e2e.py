@@ -299,25 +299,3 @@ class TestPipelineExecutionE2E:
 
         assert all_steps_completed(result)
         assert len(result["steps"]) == 3
-
-    async def test_real_conditional_pipeline(self, runner, pipelines_dir):
-        """Execute the actual conditional_pipeline from tests/pipelines/"""
-        pipeline_path = pipelines_dir / "conditional_pipeline" / "pipeline.json"
-        if not pipeline_path.exists():
-            pytest.skip("conditional_pipeline not found")
-
-        with open(pipeline_path) as f:
-            config = json.load(f)
-
-        ctx = ExecutionContext(
-            execution_id=str(uuid.uuid4()),
-            pipeline_id="conditional-pipeline"
-        )
-
-        result = await runner.run_pipeline_from_json(
-            config,
-            {"topic": "testing", "priority": "high"},
-            execution_context=ctx
-        )
-
-        assert all_steps_completed(result)

@@ -4,14 +4,9 @@ Comprehensive tests for the ia_modules plugins system.
 Covers: base classes, decorators, loader, registry, and all builtin plugins.
 """
 
-import asyncio
-import os
-import sys
-import tempfile
 import textwrap
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -408,12 +403,10 @@ class TestPluginRegistry:
 
     def test_get_info(self, registry):
         registry.register(DummyCondition)
-        # get_info calls plugin.get_info() which references self._initialized
-        # This may raise AttributeError; we test gracefully
-        # get_info references self._initialized which is never set in Plugin base
-        # This is a known bug in Plugin.get_info - test that it raises AttributeError
-        with pytest.raises(AttributeError):
-            registry.get_info("dummy_condition")
+        info = registry.get_info("dummy_condition")
+        assert info is not None
+        assert info['name'] == 'dummy_condition'
+        assert info['initialized'] is True
 
     def test_get_info_nonexistent(self, registry):
         assert registry.get_info("nope") is None
@@ -876,7 +869,7 @@ class TestPluginLoader:
         dirs = loader.get_default_plugin_dirs()
         assert isinstance(dirs, list)
         # builtin directory should be present
-        builtin = Path(__file__).parent.parent.parent / "ia_modules" / "plugins" / "builtin"
+        _builtin = Path(__file__).parent.parent.parent / "ia_modules" / "plugins" / "builtin"
         # At minimum the list should contain paths
         for d in dirs:
             assert isinstance(d, Path)

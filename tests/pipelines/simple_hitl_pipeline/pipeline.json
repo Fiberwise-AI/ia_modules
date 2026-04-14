@@ -2,6 +2,7 @@
     "name": "Simple HITL Getting Started",
     "description": "Simple 3-step pipeline demonstrating human-in-the-loop pause and resume",
     "version": "1.0.0",
+    "parameters": [],
     "steps": [
         {
             "id": "step1_prepare",

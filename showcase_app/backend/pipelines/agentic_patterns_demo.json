@@ -7,7 +7,7 @@
       "id": "plan_research",
       "name": "Plan Research Task",
       "step_class": "PlanningStep",
-      "module": "showcase_app.backend.pipelines.pattern_steps",
+      "module": "backend.pipelines.pattern_steps",
       "config": {
         "goal": "Research and summarize the key benefits of renewable energy",
         "constraints": [
@@ -25,7 +25,7 @@
       "id": "use_tools",
       "name": "Calculate ROI with Tools",
       "step_class": "ToolUseStep",
-      "module": "showcase_app.backend.pipelines.pattern_steps",
+      "module": "backend.pipelines.pattern_steps",
       "config": {
         "task": "Calculate the ROI of installing 5kW solar panels with $15,000 cost and $100/month savings",
         "available_tools": [
@@ -39,7 +39,7 @@
       "id": "improve_draft",
       "name": "Improve Draft with Reflection",
       "step_class": "ReflectionStep",
-      "module": "showcase_app.backend.pipelines.pattern_steps",
+      "module": "backend.pipelines.pattern_steps",
       "config": {
         "initial_output": "Solar and wind power are renewable energy sources. They help reduce carbon emissions. Solar panels can save money on electricity bills. Wind turbines generate clean energy. Both are becoming more affordable.",
         "criteria": {

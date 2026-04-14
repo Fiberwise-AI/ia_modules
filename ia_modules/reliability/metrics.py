@@ -454,10 +454,12 @@ class ReliabilityMetrics:
         ma = await self.get_ma(since=since)
 
         # Calculate per-agent metrics
-        agent_metrics = {}
+        agent_metrics: Dict[str, AgentMetrics] = {}
         agent_names = set(s.get("agent") for s in steps)
 
         for agent in agent_names:
+            if agent is None:
+                continue
             agent_steps = [s for s in steps if s.get("agent") == agent]
 
             agent_metrics[agent] = AgentMetrics(

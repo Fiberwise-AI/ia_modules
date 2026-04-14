@@ -25,7 +25,7 @@ class Metric:
     """Base metric class"""
     name: str
     metric_type: MetricType
-    value: Union[int, float]
+    value: Union[int, float, Dict[str, object]]
     labels: Dict[str, str] = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
     help_text: str = ""
@@ -306,7 +306,7 @@ class MetricsCollector:
         with self._lock:
             if name not in self._metrics:
                 self._metrics[name] = Counter(name, help_text, labels)
-            return self._metrics[name]
+            return self._metrics[name]  # type: ignore[return-value]
 
     def gauge(
         self,
@@ -318,7 +318,7 @@ class MetricsCollector:
         with self._lock:
             if name not in self._metrics:
                 self._metrics[name] = Gauge(name, help_text, labels)
-            return self._metrics[name]
+            return self._metrics[name]  # type: ignore[return-value]
 
     def histogram(
         self,
@@ -331,7 +331,7 @@ class MetricsCollector:
         with self._lock:
             if name not in self._metrics:
                 self._metrics[name] = Histogram(name, help_text, labels, buckets)
-            return self._metrics[name]
+            return self._metrics[name]  # type: ignore[return-value]
 
     def summary(
         self,
@@ -344,7 +344,7 @@ class MetricsCollector:
         with self._lock:
             if name not in self._metrics:
                 self._metrics[name] = Summary(name, help_text, labels, quantiles)
-            return self._metrics[name]
+            return self._metrics[name]  # type: ignore[return-value]
 
     def collect_all(self) -> List[Metric]:
         """Collect all metrics from all registered metrics"""

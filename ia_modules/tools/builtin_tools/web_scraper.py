@@ -36,7 +36,7 @@ class ScrapedContent:
     title: str = ""
     text_content: str = ""
     html_content: Optional[str] = None
-    metadata: Dict[str, Any] = None
+    metadata: Optional[Dict[str, Any]] = None
     success: bool = True
     error_message: str = ""
 
@@ -93,7 +93,7 @@ class WebScraperTool:
         self.max_retries = max_retries
 
         self.logger = logging.getLogger("WebScraperTool")
-        self._last_request_time = 0
+        self._last_request_time: float = 0.0
         self._robots_cache: Dict[str, RobotFileParser] = {}
 
         # Create aiohttp session
@@ -155,7 +155,8 @@ class WebScraperTool:
                 )
 
             # Fetch content
-            async with self._session.get(
+            assert self._session is not None
+            async with self._session.get(  # type: ignore[union-attr]
                 url,
                 allow_redirects=follow_redirects,
                 max_redirects=5 if follow_redirects else 0
@@ -235,7 +236,6 @@ class WebScraperTool:
             List of ScrapedContent objects
         """
         semaphore = asyncio.Semaphore(max_concurrent)
-        results = []
 
         async def scrape_with_semaphore(url: str) -> ScrapedContent:
             async with semaphore:
@@ -243,19 +243,19 @@ class WebScraperTool:
 
         # Scrape all URLs concurrently
         tasks = [scrape_with_semaphore(url) for url in urls]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        gather_results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Handle any exceptions that occurred
-        processed_results = []
-        for i, result in enumerate(results):
-            if isinstance(result, Exception):
+        processed_results: List[ScrapedContent] = []
+        for i, result in enumerate(gather_results):
+            if isinstance(result, BaseException):
                 processed_results.append(ScrapedContent(
                     url=urls[i],
                     success=False,
                     error_message=f"Exception: {str(result)}"
                 ))
             else:
-                processed_results.append(result)
+                processed_results.append(result)  # type: ignore[arg-type]
 
         return processed_results
 

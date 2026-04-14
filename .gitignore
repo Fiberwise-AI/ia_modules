@@ -43,6 +43,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!showcase_app/frontend/src/lib/
 lib64/
 parts/
 sdist/

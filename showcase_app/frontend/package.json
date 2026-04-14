@@ -10,6 +10,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@microlink/react-json-view": "^1.23.1",
     "@monaco-editor/react": "^4.7.0",
+    "@rollup/rollup-linux-x64-gnu": "^4.60.1",
     "@tanstack/react-query": "^5.12.0",
     "axios": "^1.6.2",
     "class-variance-authority": "^0.7.1",

@@ -4,7 +4,7 @@ Plugin Registry
 Central registry for managing plugins.
 """
 
-from typing import Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 import logging
 from .base import Plugin, PluginType
 
@@ -40,7 +40,7 @@ class PluginRegistry:
     def register(
         self,
         plugin_class: Type[Plugin],
-        config: Optional[Dict] = None
+        config: Optional[Dict[str, Any]] = None
     ) -> None:
         """
         Register a plugin class
@@ -117,7 +117,7 @@ class PluginRegistry:
     def create_instance(
         self,
         plugin_name: str,
-        config: Optional[Dict] = None
+        config: Optional[Dict[str, Any]] = None
     ) -> Optional[Plugin]:
         """
         Create a new instance of a plugin
@@ -165,7 +165,7 @@ class PluginRegistry:
         plugin_names = self._plugins_by_type[plugin_type]
         return [self._plugins[name] for name in plugin_names]
 
-    def get_info(self, plugin_name: str) -> Optional[Dict]:
+    def get_info(self, plugin_name: str) -> Optional[Dict[str, Any]]:
         """
         Get information about a plugin
 
@@ -181,7 +181,7 @@ class PluginRegistry:
 
         return plugin.get_info()
 
-    def get_all_info(self) -> List[Dict]:
+    def get_all_info(self) -> List[Dict[str, Any]]:
         """
         Get information about all registered plugins
 

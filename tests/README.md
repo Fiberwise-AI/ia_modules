@@ -240,7 +240,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.14'
 
       - name: Install dependencies
         run: |
@@ -387,14 +387,6 @@ row = db.fetch_one("SELECT * FROM users WHERE name = :name", {"name": "Alice"})
 assert row is not None
 assert row["name"] == "Alice"
 ```
-
-## Current Status
-
-**Total Tests:** 866
-**Passing:** 853 (98.5%)
-**Failing:** 0
-**Errors:** 13 (Redis - expected, Redis not running)
-**Skipped:** 18 (PostgreSQL integration - no database configured)
 
 ## Common Issues
 

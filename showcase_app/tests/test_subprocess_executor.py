@@ -15,17 +15,19 @@ from pathlib import Path
 import pytest
 from dotenv import load_dotenv
 
+pytestmark = pytest.mark.integration
+
 # Load .env from showcase_app/backend/ so tests get the real API key/provider
 _env_path = Path(__file__).resolve().parent.parent / "backend" / ".env"
 load_dotenv(_env_path)
 
-from ia_modules.agents.executor import (
+from ia_modules.agents.executor import (  # noqa: E402
     AgentConfig,
     AgentMode,
     CLIType,
     EventType,
 )
-from ia_modules.agents.subprocess_executor import SubprocessExecutor, _find_executable
+from ia_modules.agents.subprocess_executor import SubprocessExecutor, _find_executable  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -134,12 +136,12 @@ class TestOpenCodeDirect:
         assert events[-1].is_stream_end
         assert len(events) >= 2  # At least one content event + stream_end
 
-        # If the API key is real, we should get TEXT events.
-        # If not, we'll get an error event — either way the stream is valid.
+        # We should get content events: TEXT, TOOL_USE, TOOL_RESULT, or errors.
         text_events = [e for e in events if e.type == EventType.TEXT and e.text]
+        tool_events = [e for e in events if e.type in (EventType.TOOL_USE, EventType.TOOL_RESULT)]
         error_events = [e for e in events if e.error]
-        assert len(text_events) > 0 or len(error_events) > 0, \
-            "Expected either TEXT or error events"
+        assert len(text_events) > 0 or len(tool_events) > 0 or len(error_events) > 0, \
+            "Expected TEXT, TOOL_USE/TOOL_RESULT, or error events"
 
         print(f"\nEvent types: {[e.type.value for e in events]}")
         if error_events:

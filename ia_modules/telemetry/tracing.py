@@ -5,7 +5,7 @@ OpenTelemetry integration for distributed tracing.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, Callable
+from typing import Optional, Dict, Any, Callable, List
 from contextlib import contextmanager
 import time
 import logging
@@ -101,6 +101,10 @@ class Tracer(ABC):
         """End a span"""
         pass
 
+    def get_spans(self, trace_id: Optional[str] = None) -> List[Span]:
+        """Get spans, optionally filtered by trace ID"""
+        return []
+
 
 class SimpleTracer(Tracer):
     """
@@ -141,7 +145,8 @@ class SimpleTracer(Tracer):
         """End a span"""
         span.finish()
         self.spans.append(span)
-        self.logger.debug(f"Ended span: {span.name} (duration={span.duration:.3f}s)")
+        duration = span.duration or 0.0
+        self.logger.debug(f"Ended span: {span.name} (duration={duration:.3f}s)")
 
     def _generate_trace_id(self) -> str:
         """Generate a trace ID"""

@@ -17,19 +17,49 @@ import json
 import os
 import sys
 import tempfile
-import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import (
-    AsyncMock, MagicMock, Mock, patch, PropertyMock,
+    AsyncMock, MagicMock, patch,
 )
 
 import pytest
 
-# ---------------------------------------------------------------------------
-# 0. Helpers
-# ---------------------------------------------------------------------------
+from ia_modules.agents.executor import AgentConfig, CLIType, EventType
+from ia_modules.agents.subprocess_executor import (
+    SubprocessExecutor,
+    _find_executable,
+    _write_opencode_json,
+)
+from ia_modules.cli.main import (
+    create_parser, cmd_validate, cmd_visualize, cmd_format, cmd_run,
+    print_validation_result, cli,
+)
+from ia_modules.cli.validate import ValidationResult, validate_pipeline
 from ia_modules.pipeline.core import Step, ExecutionContext
+from ia_modules.pipeline.db_step_loader import DatabaseStepLoader, load_step_class_from_db, _step_class_cache
+from ia_modules.pipeline.graph_pipeline_runner import (
+    AgentStepWrapper,
+    PipelineStep,
+    FlowCondition,
+    FlowPath,
+    PipelineFlow,
+    PipelineConfig,
+    GraphPipelineRunner,
+    run_graph_pipeline,
+    run_graph_pipeline_from_file,
+)
+from ia_modules.pipeline.hitl import (
+    HITLException, PipelineStateManager, get_state_manager, set_state_manager,
+    HumanInputStep, PauseForInputStep, ReviewAndApproveStep,
+    ConditionalHumanStep, MultiStakeholderStep, TimeBasedDecisionStep,
+    HITLResumeManager, create_pause_step, create_approval_step,
+    create_conditional_step,
+)
+from ia_modules.pipeline.hitl_manager import HITLManager, HITLInteraction
+from ia_modules.pipeline.iterative_refinement import (
+    IterativeRefinementStep, ProcessRefinementResponseStep,
+)
 from ia_modules.pipeline.services import ServiceRegistry
 
 
@@ -48,17 +78,6 @@ class FailStep(Step):
 # ---------------------------------------------------------------------------
 # 1. graph_pipeline_runner  – Pydantic models + runner helpers
 # ---------------------------------------------------------------------------
-from ia_modules.pipeline.graph_pipeline_runner import (
-    AgentStepWrapper,
-    PipelineStep,
-    FlowCondition,
-    FlowPath,
-    PipelineFlow,
-    PipelineConfig,
-    GraphPipelineRunner,
-    run_graph_pipeline,
-    run_graph_pipeline_from_file,
-)
 
 
 class TestPydanticModels:
@@ -417,7 +436,6 @@ class TestConvenienceFunctions:
 # ---------------------------------------------------------------------------
 # 2. db_step_loader
 # ---------------------------------------------------------------------------
-from ia_modules.pipeline.db_step_loader import DatabaseStepLoader, load_step_class_from_db, _step_class_cache
 
 
 class TestDatabaseStepLoader:
@@ -599,11 +617,6 @@ class TestDatabaseStepLoader:
 # ---------------------------------------------------------------------------
 # 3. cli/main.py
 # ---------------------------------------------------------------------------
-from ia_modules.cli.main import (
-    create_parser, cmd_validate, cmd_visualize, cmd_format, cmd_run,
-    print_validation_result, cli,
-)
-from ia_modules.cli.validate import ValidationResult
 
 
 class TestCLIParser:
@@ -648,7 +661,7 @@ class TestCmdValidate:
         f.write_text(json.dumps(pipeline))
         parser = create_parser()
         args = parser.parse_args(["validate", str(f), "--json"])
-        result = cmd_validate(args)
+        cmd_validate(args)
         captured = capsys.readouterr()
         assert "is_valid" in captured.out
 
@@ -662,7 +675,7 @@ class TestCmdValidate:
         f.write_text(json.dumps(pipeline))
         parser = create_parser()
         args = parser.parse_args(["validate", str(f)])
-        result = cmd_validate(args)
+        cmd_validate(args)
         captured = capsys.readouterr()
         assert "validation" in captured.out.lower()
 
@@ -875,7 +888,6 @@ class TestCLIEntry:
 # ---------------------------------------------------------------------------
 # 4. cli/validate.py
 # ---------------------------------------------------------------------------
-from ia_modules.cli.validate import PipelineValidator, validate_pipeline
 
 
 class TestValidationResult:
@@ -1225,14 +1237,6 @@ class TestFindCyclesTransitions:
 # ---------------------------------------------------------------------------
 # 5. hitl.py
 # ---------------------------------------------------------------------------
-from ia_modules.pipeline.hitl import (
-    HITLException, InteractionTimeoutException,
-    PipelineStateManager, get_state_manager, set_state_manager,
-    HumanInputStep, PauseForInputStep, ReviewAndApproveStep,
-    ConditionalHumanStep, MultiStakeholderStep, TimeBasedDecisionStep,
-    HITLResumeManager, create_pause_step, create_approval_step,
-    create_conditional_step,
-)
 
 
 class TestPipelineStateManager:
@@ -1560,7 +1564,6 @@ class TestConvenienceHITLFunctions:
 # ---------------------------------------------------------------------------
 # 6. hitl_manager.py
 # ---------------------------------------------------------------------------
-from ia_modules.pipeline.hitl_manager import HITLManager, HITLInteraction
 
 
 class TestHITLManager:
@@ -1581,7 +1584,7 @@ class TestHITLManager:
 
     async def test_create_interaction_with_users(self):
         mgr, db = self._make_manager()
-        iid = await mgr.create_interaction(
+        await mgr.create_interaction(
             "exec1", "pipe1", "step1", "Step 1", "Review",
             {"data": 1}, assigned_users=["u1", "u2"]
         )
@@ -1590,9 +1593,9 @@ class TestHITLManager:
 
     async def test_create_interaction_with_channels_and_ws(self):
         mgr, db = self._make_manager()
-        ws_mock = AsyncMock()
+        _ws_mock = AsyncMock()
         with patch.dict(sys.modules, {'ia_modules.showcase_app.backend.api.websocket': MagicMock()}):
-            iid = await mgr.create_interaction(
+            await mgr.create_interaction(
                 "exec1", "pipe1", "step1", "Step 1", "Review",
                 {"data": 1}, channels=["web", "email"],
                 assigned_users=["u1"]
@@ -1760,12 +1763,6 @@ class TestHITLManager:
 # ---------------------------------------------------------------------------
 # 7. subprocess_executor.py
 # ---------------------------------------------------------------------------
-from ia_modules.agents.subprocess_executor import (
-    SubprocessExecutor,
-    _find_executable,
-    _write_opencode_json,
-)
-from ia_modules.agents.executor import AgentConfig, AgentEvent, CLIType, EventType, AgentMode
 
 
 class TestFindExecutable:
@@ -2183,9 +2180,6 @@ async def _exhaust_async_gen(gen):
 # ---------------------------------------------------------------------------
 # 12. iterative_refinement.py
 # ---------------------------------------------------------------------------
-from ia_modules.pipeline.iterative_refinement import (
-    IterativeRefinementStep, ProcessRefinementResponseStep,
-)
 
 
 class TestIterativeRefinementStep:

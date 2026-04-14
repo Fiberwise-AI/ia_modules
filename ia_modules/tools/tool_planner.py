@@ -451,11 +451,11 @@ class ToolPlanner:
 
         # Sort by original index
         optimized_steps.sort(key=lambda x: x[0])
-        optimized_steps = [s[1] for s in optimized_steps]
+        final_steps = [s[1] for s in optimized_steps]
 
         # Recalculate estimated time (parallel steps save time)
         groups = {}
-        for step in optimized_steps:
+        for step in final_steps:
             pg = step.get("parallel_group")
             if pg is not None:
                 if pg not in groups:
@@ -463,12 +463,11 @@ class ToolPlanner:
                 groups[pg] += 1
 
         # Time saved by parallelization
-        len(plan.steps) * 2.0
         parallel_time = (len(plan.steps) - sum(max(0, count - 1) for count in groups.values())) * 2.0
 
         return ExecutionPlan(
             task=plan.task,
-            steps=optimized_steps,
+            steps=final_steps,
             estimated_time=parallel_time,
             estimated_cost=plan.estimated_cost,
             complexity=plan.complexity,
@@ -511,7 +510,7 @@ class ToolPlanner:
             rec_stack.remove(node)
             return False
 
-        visited = set()
+        visited: set[int] = set()
         for i in range(len(plan.steps)):
             if i not in visited:
                 if has_cycle(i, visited, set()):

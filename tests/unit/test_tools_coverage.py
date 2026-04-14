@@ -7,7 +7,6 @@ code_executor, api_caller, web_search).
 """
 
 import asyncio
-import json
 import math
 import tempfile
 from datetime import datetime, timedelta, timezone
@@ -30,9 +29,7 @@ from ia_modules.tools.core import (
 )
 from ia_modules.tools.tool_registry import (
     AdvancedToolRegistry,
-    ToolVersion,
     CacheEntry,
-    ToolCapability,
 )
 
 # --------------------------------------------------------------------------- #
@@ -70,9 +67,6 @@ from ia_modules.tools.error_handling import (
 # --------------------------------------------------------------------------- #
 from ia_modules.tools.tool_chain import (
     ToolChain,
-    ChainStep,
-    ChainResult,
-    ChainMode,
     ChainBuilder,
 )
 
@@ -81,7 +75,6 @@ from ia_modules.tools.tool_chain import (
 # --------------------------------------------------------------------------- #
 from ia_modules.tools.parallel_executor import (
     ParallelExecutor,
-    ExecutionTask,
     ExecutionStatus,
     ResourceLimits,
 )
@@ -893,7 +886,7 @@ class TestParallelExecutor:
         pe = ParallelExecutor(_dummy_executor)
         pe.add_task("t1", "tool_a", {})
         pe.add_task("t2", "tool_b", {}, dependencies=["t1"])
-        results = await pe.execute_all()
+        await pe.execute_all()
         assert pe.tasks["t1"].status == ExecutionStatus.COMPLETED
         assert pe.tasks["t2"].status == ExecutionStatus.COMPLETED
 
@@ -919,14 +912,14 @@ class TestParallelExecutor:
         pe = ParallelExecutor(_dummy_executor)
         pe.add_task("t1", "a", {})
         pe.add_task("t2", "b", {}, dependencies=["t1"])
-        result = await pe.execute_task("t2")
+        _result = await pe.execute_task("t2")
         assert pe.tasks["t1"].status == ExecutionStatus.COMPLETED
 
     async def test_fail_fast(self):
         pe = ParallelExecutor(_failing_executor)
         pe.add_task("t1", "a", {})
         pe.add_task("t2", "b", {})
-        results = await pe.execute_all(fail_fast=True)
+        await pe.execute_all(fail_fast=True)
         failed = [t for t in pe.tasks.values() if t.status == ExecutionStatus.FAILED]
         assert len(failed) >= 1
 
@@ -936,7 +929,7 @@ class TestParallelExecutor:
 
         pe = ParallelExecutor(slow_executor, ResourceLimits(timeout_seconds=0.1))
         pe.add_task("t1", "slow", {})
-        results = await pe.execute_all()
+        await pe.execute_all()
         assert pe.tasks["t1"].status == ExecutionStatus.FAILED
         assert "timed out" in pe.tasks["t1"].error
 
@@ -2015,7 +2008,7 @@ class TestToolAdapter:
         mock_lc.description = "d"
         mock_lc.args_schema = None
         mock_lc.__class__.__name__ = "Mock"
-        td = adapter.add_langchain_tool(mock_lc)
+        _td = adapter.add_langchain_tool(mock_lc)
         assert reg.get_tool("lc") is not None
 
     def test_add_langchain_tools(self):
@@ -2040,7 +2033,7 @@ class TestToolAdapter:
         async def impl():
             pass
 
-        td = adapter.add_openai_function(schema, impl)
+        _td = adapter.add_openai_function(schema, impl)
         assert reg.get_tool("oai") is not None
 
     def test_add_openai_functions(self):

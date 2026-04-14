@@ -4,7 +4,7 @@ Structured output validation.
 Validates agent outputs against Pydantic schemas with automatic retry.
 """
 
-from typing import Type, Callable, Any, Dict
+from typing import Type, Callable, Any, Dict, Optional
 from pydantic import BaseModel, ValidationError
 import logging
 
@@ -105,6 +105,7 @@ class StructuredOutputValidator:
             ...     max_retries=3
             ... )
         """
+        last_error: Optional[ValidationError] = None
         for attempt in range(max_retries):
             try:
                 # Try to validate
@@ -112,6 +113,7 @@ class StructuredOutputValidator:
                 return validated
 
             except ValidationError as e:
+                last_error = e
                 if attempt == max_retries - 1:
                     # Final attempt failed - re-raise original error
                     self.logger.error(f"Output validation failed after {max_retries} attempts")
@@ -122,6 +124,9 @@ class StructuredOutputValidator:
                 self.logger.info(f"Validation failed (attempt {attempt + 1}/{max_retries}), retrying with feedback")
 
                 output = await retry_func(error_feedback=error_msg)
+
+        assert last_error is not None
+        raise last_error
 
     def _format_error(self, error: ValidationError) -> str:
         """

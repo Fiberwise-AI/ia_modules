@@ -3,12 +3,12 @@
 import json
 import pytest
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 from ia_modules.pipeline.agent_step import AgentStep
 from ia_modules.pipeline.ndjson_logger import NdjsonLogger
 from ia_modules.pipeline.services import CentralLoggingService, ServiceRegistry
-from ia_modules.agents.executor import AgentConfig, AgentEvent, AgentMode, CLIType, EventType
+from ia_modules.agents.executor import AgentEvent, AgentMode, CLIType, EventType
 
 
 # --- CentralLoggingService NDJSON wiring ---
@@ -218,7 +218,7 @@ class TestAgentStepRun:
         assert len(lines) == 4
 
         # Verify event types in log
-        event_types = [json.loads(l)["type"] for l in lines]
+        event_types = [json.loads(line)["type"] for line in lines]
         assert event_types == ["text", "tool_use", "result", "system"]
 
     async def test_run_logs_agent_spawned_to_pipeline_ndjson(self, tmp_path):
@@ -249,7 +249,7 @@ class TestAgentStepRun:
         await pipeline_ndjson.close()
 
         lines = Path(pipeline_log).read_text().strip().split("\n")
-        events = [json.loads(l) for l in lines]
+        events = [json.loads(line) for line in lines]
 
         subtypes = [e.get("subtype") for e in events]
         assert "agent_spawned" in subtypes

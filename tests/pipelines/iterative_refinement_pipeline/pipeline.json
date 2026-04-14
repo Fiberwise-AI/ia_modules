@@ -2,6 +2,14 @@
   "name": "Iterative Refinement Demo",
   "description": "Demonstrates progressive enhancement pattern where humans iteratively improve results",
   "version": "1.0.0",
+  "parameters": [
+    {
+      "name": "topic",
+      "schema": {"type": "string"},
+      "required": false,
+      "description": "The topic for the initial draft"
+    }
+  ],
   "steps": [
     {
       "id": "generate_draft",

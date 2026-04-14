@@ -9,13 +9,9 @@ from ia_modules.agents.auth import (
     ClientCredentials,
     LocalJwtAdapter,
     MiniOIDCAdapter,
-    KeycloakAdapter,
-    get_adapter,
     get_default_permissions,
     DEFAULT_A2A_PERMISSIONS,
 )
-from ia_modules.agents.auth.adapter import IDPAdapter as AdapterABC
-from ia_modules.agents.auth.defaults import DEFAULT_A2A_PERMISSIONS as DEFAULTS
 
 
 # ---------------------------------------------------------------------------

@@ -15,7 +15,6 @@ Or register on ServiceRegistry for automatic pipeline integration:
     # Pipeline will automatically log step lifecycle events
 """
 
-import asyncio
 import json
 import logging
 import os

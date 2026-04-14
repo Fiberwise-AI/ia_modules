@@ -2,37 +2,35 @@
 IA Modules Showcase App - FastAPI Backend
 Main application entry point
 """
+import logging
+import os
 import sys
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
-# Ensure backend directory is in sys.path for relative imports
-_backend_dir = Path(__file__).parent
-if str(_backend_dir) not in sys.path:
-    sys.path.insert(0, str(_backend_dir))
-
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
-from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-import logging
-import os
-from dotenv import load_dotenv
+from nexusql import DatabaseManager
 
-# Load environment variables from .env file
-load_dotenv()
-
-from pathlib import Path  # noqa: E402
-
-from nexusql import DatabaseManager  # noqa: E402
-from ia_modules.agents.subprocess_executor import SubprocessExecutor  # noqa: E402
+from ia_modules.agents.subprocess_executor import SubprocessExecutor
 # DEPRECATED: decision trail feature disabled in showcase. The ia_modules
 # DecisionTrailBuilder requires live StateManager/ToolRegistry instances from
 # the run being inspected, which the showcase's per-run execution flows don't
 # retain. Re-enable only with a proper per-run registry.
-# from ia_modules.reliability.decision_trail import DecisionTrailBuilder  # noqa: E402
-from ia_modules.pipeline.importer import PipelineImportService  # noqa: E402
-from ia_modules.telemetry.integration import configure_agent_telemetry, configure_llm_telemetry  # noqa: E402
+# from ia_modules.reliability.decision_trail import DecisionTrailBuilder
+from ia_modules.pipeline.importer import PipelineImportService
+from ia_modules.telemetry.integration import configure_agent_telemetry, configure_llm_telemetry
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Ensure backend directory is in sys.path for services.* imports
+_backend_dir = Path(__file__).parent
+if str(_backend_dir) not in sys.path:
+    sys.path.insert(0, str(_backend_dir))
 
 from api.pipelines import router as pipelines_router  # noqa: E402
 from api.execution import router as execution_router  # noqa: E402
@@ -62,13 +60,14 @@ from services.checkpoint_service import CheckpointService  # noqa: E402
 from services.memory_service import MemoryService  # noqa: E402
 from services.replay_service import ReplayService  # noqa: E402
 # DEPRECATED: see note above DecisionTrailBuilder import.
-# from services.decision_trail_service import DecisionTrailService  # noqa: E402
+# from services.decision_trail_service import DecisionTrailService
 from services.plugin_service import PluginService  # noqa: E402
-from services.guardrails_service import GuardrailsService
-from services.agent_execution_service import AgentExecutionService
+from services.guardrails_service import GuardrailsService  # noqa: E402
+from services.agent_execution_service import AgentExecutionService  # noqa: E402
 from services.collaboration_service import CollaborationService  # noqa: E402
 from services.pattern_service import PatternService  # noqa: E402
-from services.llm_config import get_agent_config, set_shared_agent_executor  # noqa: E402
+from services.llm_config import get_agent_config  # noqa: E402
+from ia_modules.agents.subprocess_executor import set_shared_executor as set_shared_agent_executor  # noqa: E402
 
 # Configure logging
 logging.basicConfig(

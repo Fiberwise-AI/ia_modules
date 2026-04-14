@@ -152,13 +152,14 @@ class OpenTelemetryExporter(MetricsExporter):
 
         if metric.metric_type == MetricType.COUNTER:
             # For counters, record the increment
-            instrument.add(metric.value, attributes)
+            if isinstance(metric.value, (int, float)):
+                instrument.add(metric.value, attributes)
 
         elif metric.metric_type == MetricType.GAUGE:
             # For gauges, set the current value
             # Note: OpenTelemetry doesn't have a direct gauge in metrics API
             # We use UpDownCounter or Observable gauge
-            if hasattr(instrument, 'add'):
+            if hasattr(instrument, 'add') and isinstance(metric.value, (int, float)):
                 # UpDownCounter
                 instrument.add(metric.value, attributes)
             else:
@@ -170,13 +171,19 @@ class OpenTelemetryExporter(MetricsExporter):
             if isinstance(metric.value, dict):
                 # Extract individual observations if available
                 if 'observations' in metric.value:
-                    for obs in metric.value['observations']:
-                        instrument.record(obs, attributes)
+                    observations = metric.value['observations']
+                    if isinstance(observations, list):
+                        for obs in observations:
+                            if isinstance(obs, (int, float)):
+                                instrument.record(obs, attributes)
                 elif 'sum' in metric.value and 'count' in metric.value:
                     # Approximate by recording sum/count times
-                    avg = metric.value['sum'] / max(metric.value['count'], 1)
-                    instrument.record(avg, attributes)
-            else:
+                    sum_val = metric.value['sum']
+                    count_val = metric.value['count']
+                    if isinstance(sum_val, (int, float)) and isinstance(count_val, (int, float)):
+                        avg = sum_val / max(count_val, 1)
+                        instrument.record(avg, attributes)
+            elif isinstance(metric.value, (int, float)):
                 # Simple value
                 instrument.record(float(metric.value), attributes)
 
@@ -296,14 +303,19 @@ class PrometheusRemoteWriteExporter(MetricsExporter):
             collector = collector.labels(**metric.labels)
 
         if metric.metric_type == MetricType.COUNTER:
-            collector.inc(metric.value)
+            if isinstance(metric.value, (int, float)):
+                collector.inc(metric.value)
         elif metric.metric_type == MetricType.GAUGE:
-            collector.set(metric.value)
+            if isinstance(metric.value, (int, float)):
+                collector.set(metric.value)
         elif metric.metric_type == MetricType.HISTOGRAM:
             if isinstance(metric.value, dict) and 'observations' in metric.value:
-                for obs in metric.value['observations']:
-                    collector.observe(obs)
-            else:
+                observations = metric.value['observations']
+                if isinstance(observations, list):
+                    for obs in observations:
+                        if isinstance(obs, (int, float)):
+                            collector.observe(obs)
+            elif isinstance(metric.value, (int, float)):
                 collector.observe(float(metric.value))
 
     def _create_collector(

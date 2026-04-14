@@ -2,10 +2,10 @@
 
 **Intelligent Application Modules - Python framework for building reliable AI workflows**
 
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests](https://github.com/yourusername/ia_modules/actions/workflows/test.yml/badge.svg)](https://github.com/yourusername/ia_modules/actions/workflows/test.yml)
-[![Coverage](https://img.shields.io/badge/coverage-49%25-yellow.svg)](htmlcov/index.html)
+[![Coverage](https://img.shields.io/badge/coverage-dynamic-lightgrey.svg)](htmlcov/index.html)
 [![EARF Compliant](https://img.shields.io/badge/EARF-compliant-success.svg)](docs/RELIABILITY_USAGE_GUIDE.md)
 
 
@@ -25,7 +25,6 @@
 - [Human-in-the-Loop](#human-in-the-loop-hitl)
 - [Parallel Processing](#parallel-processing)
 - [Comparison vs LangChain/LangGraph](#why-ia-modules)
-- [Production Readiness](#production-readiness)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 
@@ -117,11 +116,9 @@ IA Modules runs AI workflows as directed graphs. You define steps (call an LLM, 
 - **Grounding**: Citation tracking and fact verification for AI outputs
 
 ### 📈 **Testing**
-- **2,993+ test cases** across unit, integration, and e2e suites
-- **Coverage**: Unit, integration, e2e, performance, edge cases
-- **Python 3.9-3.13** compatibility
-- **Test markers**: slow, integration, e2e, redis, postgres, mysql, mssql, observability
-- **Run**: `pytest tests/`
+- Unit, integration, showcase, and e2e suites
+- **Run**: `pytest tests/unit/` (unit), `pytest tests/integration/` (integration)
+- Showcase app tests and Playwright e2e run in CI
 
 ---
 
@@ -874,32 +871,6 @@ await db.initialize(
 ```
 
 **About migrations**: nexusql includes a migration runner that executes `V001__description.sql` files from `database/migrations/`. It automatically translates SQL syntax for your target database (PostgreSQL, MySQL, SQLite, etc.). See [nexusql docs](https://github.com/Fiberwise-AI/nexusql) for details.
-
-## Production Status
-
-**What works:**
-- Core pipeline execution with 2,993+ passing tests
-- Database integration (PostgreSQL, MySQL, SQLite, MSSQL - fully tested)
-- Reliability metrics collection (7 metrics tracked)
-- Prometheus exporter (tested)
-- Checkpointing and recovery
-- Multi-agent coordination
-- LLM integration (OpenAI, Anthropic, Google)
-- Circuit breakers and cost tracking
-- Anomaly detection and alerting
-
-**What needs work before production:**
-- Load testing (not done - don't know how it performs under concurrent users)
-- Security review (no formal audit completed)
-- Backup/restore procedures (not documented or tested)
-- CloudWatch/Datadog exporters (exist but untested with real endpoints)
-
-**If you're deploying to production:**
-- Run your own load tests for your expected traffic
-- Set up monitoring (Prometheus exporter works)
-- Test backup/restore for your database
-- Review security for your use case
-- Test with your specific database backend
 
 ## Contributing
 

@@ -26,7 +26,6 @@ Environment overrides:
 """
 
 import os
-import time
 import logging
 from typing import Any, Dict, Optional
 
@@ -49,22 +48,20 @@ from ia_modules.telemetry.llm_telemetry import LLMTelemetry
 
 logger = logging.getLogger(__name__)
 
+
+
 # ── Service endpoints ──────────────────────────────────────────────────────────
 
 OTEL_ENDPOINT  = os.environ.get("OTEL_COLLECTOR_ENDPOINT", "http://localhost:14318")
 JAEGER_URL     = os.environ.get("JAEGER_URL",              "http://localhost:16686")
 PROMETHEUS_URL = os.environ.get("PROMETHEUS_URL",          "http://localhost:19090")
 
-# Derived URLs (from the docker-compose.test.yml port mapping)
-OTEL_HEALTH_URL   = OTEL_ENDPOINT.replace(":14318", ":23133")
-OTEL_METRICS_URL  = OTEL_ENDPOINT.replace(":14318", ":18889") + "/metrics"
+# Derived URLs — support both docker-compose (mapped ports) and CI (host network)
+OTEL_HEALTH_URL   = os.environ.get("OTEL_HEALTH_URL", OTEL_ENDPOINT.replace(":14318", ":23133").replace(":4318", ":13133"))
+OTEL_METRICS_URL  = os.environ.get("OTEL_METRICS_URL", OTEL_ENDPOINT.replace(":14318", ":18889").replace(":4318", ":8889") + "/metrics")
 
 # Service name used in all spans – unique enough to filter Jaeger results
 SERVICE_NAME = "ia_modules_e2e_test"
-
-# How long to wait (seconds) for Jaeger to ingest spans after force_flush.
-# The collector batch timeout is 10 s; give a couple of extra seconds.
-JAEGER_PROPAGATION_WAIT = 14
 
 
 # ── OTel Bridge ───────────────────────────────────────────────────────────────
@@ -206,6 +203,34 @@ def _query_jaeger_traces(service: str, operation: str, limit: int = 20) -> list:
     return resp.json().get("data", [])
 
 
+def _wait_for_jaeger_service(service: str, timeout: int = 15) -> list:
+    """Poll Jaeger until the service appears (OTel batch + Jaeger indexing delay)."""
+    import time
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        resp = requests.get(f"{JAEGER_URL}/api/services", timeout=5)
+        if resp.status_code == 200:
+            services = resp.json().get("data", [])
+            if service in services:
+                return services
+        time.sleep(1)
+    # Final attempt for assertion message
+    resp = requests.get(f"{JAEGER_URL}/api/services", timeout=5)
+    return resp.json().get("data", [])
+
+
+def _wait_for_jaeger_traces(service: str, operation: str, timeout: int = 15) -> list:
+    """Poll Jaeger until traces appear for the given operation."""
+    import time
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        traces = _query_jaeger_traces(service, operation)
+        if traces:
+            return traces
+        time.sleep(1)
+    return []
+
+
 # ── OTel provider (module-scoped so all tests share one exporter) ─────────────
 
 @pytest.fixture(scope="module")
@@ -293,19 +318,16 @@ class TestAgentPipelineObservabilityE2E:
 
         # Flush → collector → Jaeger
         otel_provider.force_flush(timeout_millis=5_000)
-        time.sleep(JAEGER_PROPAGATION_WAIT)
 
-        # Verify service registered in Jaeger
-        services_resp = requests.get(f"{JAEGER_URL}/api/services", timeout=10)
-        assert services_resp.status_code == 200
-        services = services_resp.json().get("data", [])
+        # Wait for service to appear in Jaeger (batch + indexing delay)
+        services = _wait_for_jaeger_service(SERVICE_NAME)
         assert SERVICE_NAME in services, (
             f"Service '{SERVICE_NAME}' not found in Jaeger. "
             f"Available services: {services}"
         )
 
         # Verify summarizer span
-        traces = _query_jaeger_traces(SERVICE_NAME, "agent.summarizer.execute")
+        traces = _wait_for_jaeger_traces(SERVICE_NAME, "agent.summarizer.execute")
         assert len(traces) >= 1, (
             "No traces found for operation 'agent.summarizer.execute'. "
             "Check the OTel Collector is receiving spans."
@@ -369,9 +391,8 @@ class TestAgentPipelineObservabilityE2E:
             )
 
         otel_provider.force_flush(timeout_millis=5_000)
-        time.sleep(JAEGER_PROPAGATION_WAIT)
 
-        traces = _query_jaeger_traces(SERVICE_NAME, "gen_ai.chat")
+        traces = _wait_for_jaeger_traces(SERVICE_NAME, "gen_ai.chat")
         assert len(traces) >= 1, "No gen_ai.chat traces found in Jaeger"
 
         first_span = traces[0]["spans"][0]
@@ -452,9 +473,8 @@ class TestAgentPipelineObservabilityE2E:
                     ctx.set_result(result)
 
         otel_provider.force_flush(timeout_millis=5_000)
-        time.sleep(JAEGER_PROPAGATION_WAIT)
 
-        traces = _query_jaeger_traces(SERVICE_NAME, "collaboration.hierarchical")
+        traces = _wait_for_jaeger_traces(SERVICE_NAME, "collaboration.hierarchical")
         assert len(traces) >= 1, "No collaboration.hierarchical trace found in Jaeger"
 
         first_trace = traces[0]
@@ -517,13 +537,12 @@ class TestAgentPipelineObservabilityE2E:
         )
 
         with pytest.raises(RuntimeError, match="Simulated agent failure"):
-            with telemetry.trace_agent_execution("broken_agent", "broken") as ctx:
+            with telemetry.trace_agent_execution("broken_agent", "broken") as _ctx:
                 await broken.execute({})
 
         otel_provider.force_flush(timeout_millis=5_000)
-        time.sleep(JAEGER_PROPAGATION_WAIT)
 
-        traces = _query_jaeger_traces(SERVICE_NAME, "agent.broken_agent.execute")
+        traces = _wait_for_jaeger_traces(SERVICE_NAME, "agent.broken_agent.execute")
         assert len(traces) >= 1, "Error span not found in Jaeger"
 
         first_span = traces[0]["spans"][0]

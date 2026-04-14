@@ -48,7 +48,7 @@ class TestNdjsonLogger:
         await logger.close()
 
         lines = Path(log_path).read_text().strip().split("\n")
-        seqs = [json.loads(l)["_seq"] for l in lines]
+        seqs = [json.loads(line)["_seq"] for line in lines]
         assert seqs == [1, 2, 3]
 
     async def test_default_metadata_merged(self, log_path):

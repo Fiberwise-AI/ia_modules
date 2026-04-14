@@ -312,7 +312,7 @@ class HITLManager:
             if dt is None:
                 return None
             if isinstance(dt, str):
-                from dateutil import parser
+                from dateutil import parser  # type: ignore[import-untyped]
                 return parser.isoparse(dt).replace(tzinfo=timezone.utc)
             return dt
 

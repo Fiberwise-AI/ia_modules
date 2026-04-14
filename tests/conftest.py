@@ -2,11 +2,10 @@
 Test configuration and fixtures
 """
 
-import asyncio
 import os
-import sys
 from pathlib import Path
 import pytest
+from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 
 # Note: sys.path manipulation removed - rely on proper package installation
 # Install with: pip install -e .
@@ -23,7 +22,19 @@ except ImportError:
 # Force in-memory database for tests so the showcase app's file-based DB is never touched
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
-from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
+# Default env vars for docker-compose.test.yml (only set if not already provided)
+_DOCKER_COMPOSE_DEFAULTS = {
+    "TEST_POSTGRESQL_URL": "postgresql://testuser:testpass@localhost:15432/ia_modules_test",
+    "REDIS_URL": "redis://localhost:16379",
+    "PROMETHEUS_URL": "http://localhost:19090",
+    "GRAFANA_URL": "http://localhost:13001",
+    "OTEL_COLLECTOR_URL": "http://localhost:14318",
+    "OTEL_COLLECTOR_ENDPOINT": "http://localhost:14318",
+    "JAEGER_URL": "http://localhost:16686",
+}
+for _key, _val in _DOCKER_COMPOSE_DEFAULTS.items():
+    os.environ.setdefault(_key, _val)
+
 
 # This file can be used to define pytest fixtures that are shared across all tests
 
@@ -31,11 +42,6 @@ from nexusql import DatabaseManager, ConnectionConfig, DatabaseType
 pytest_plugins = [
     "pytest_asyncio",
 ]
-
-# Set up event loop policy for Windows
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
 
 # Database connection configurations for testing
 def get_database_configs():

@@ -1,13 +1,13 @@
 # Release Notes - v0.0.2
 
 **Release Date**: 2025-10-19
-**Status**: 🚀 Production Ready
+**Status**: Released
 
 ---
 
 ## 🎉 What's New in v0.0.2
 
-Version 0.0.2 is a **major release** that adds **comprehensive developer tooling, performance benchmarking, a plugin system, and production-ready telemetry/monitoring** to the IA Modules pipeline framework.
+Version 0.0.2 adds developer tooling, performance benchmarking, a plugin system, and telemetry/monitoring to the IA Modules pipeline framework.
 
 ### 🌟 Headline Features
 

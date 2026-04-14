@@ -36,8 +36,6 @@ pytest --cov=ia_modules --cov-report=html
 
 ### Test Collection
 
-Current test suite: **2,852 tests** (13 collection errors in security/performance modules)
-
 ```bash
 # Show all collected tests
 pytest --collect-only
@@ -623,41 +621,18 @@ pytest -k "asyncio" -v
 
 ## Continuous Integration
 
-```yaml
-# .github/workflows/test.yml
-name: Tests
+CI runs in `.github/workflows/test.yml` with the following jobs:
 
-on: [push, pull_request]
+| Job | What it runs | Services |
+|-----|-------------|----------|
+| **test** | Unit tests (`tests/unit/`) with coverage | Redis |
+| **lint** | `ruff check` + `mypy` | — |
+| **integration** | PostgreSQL, Redis, SQLite, observability tests | Postgres, MySQL, Redis, Prometheus, OTel Collector, Grafana, Jaeger |
+| **showcase-tests** | Showcase app Python tests (`showcase_app/tests/`) | Postgres, Redis |
+| **showcase-e2e** | Playwright browser tests (Chromium) | Postgres, Redis |
+| **build** | Package build + `twine check` | — |
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install dependencies
-      run: |
-        pip install -e .
-        pip install pytest pytest-asyncio pytest-cov
-
-    - name: Run tests
-      run: |
-        pytest tests/ -v --cov=ia_modules --cov-report=xml
-
-    - name: Upload coverage
-      uses: codecov/codecov-action@v1
-      with:
-        file: ./coverage.xml
-```
+All jobs use **Python 3.14** on `ubuntu-latest`.
 
 ## Documentation
 

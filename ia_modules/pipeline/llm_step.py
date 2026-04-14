@@ -22,7 +22,6 @@ The user's message is passed via input_data["prompt"] or input_data["message"].
 """
 
 import logging
-import os
 import tempfile
 from typing import Any, Dict
 

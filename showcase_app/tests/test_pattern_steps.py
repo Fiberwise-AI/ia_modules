@@ -5,15 +5,11 @@ Tests that pattern steps correctly integrate with the pipeline system
 and SubprocessAgentAdapter.
 """
 
+import os
 import pytest
 import asyncio
-import os
-import sys
 
-# Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from backend.pipelines.pattern_steps import ReflectionStep, PlanningStep, ToolUseStep
+from pipelines.pattern_steps import ReflectionStep, PlanningStep, ToolUseStep
 
 
 class MockAdapter:

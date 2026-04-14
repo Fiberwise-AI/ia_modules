@@ -31,7 +31,6 @@ from typing import Any, Dict, Optional
 
 from ia_modules.agents.executor import (
     AgentConfig,
-    AgentEvent,
     AgentMode,
     CLIType,
     EventType,

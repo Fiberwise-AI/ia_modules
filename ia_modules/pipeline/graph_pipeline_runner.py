@@ -5,24 +5,19 @@ A comprehensive runner for executing graph-based pipelines with conditional flow
 parallel execution, and advanced routing capabilities.
 """
 
+import asyncio
+import json
 import sys
+import uuid
+from typing import Dict, Any, Optional, List, Union
+from datetime import datetime
 from pathlib import Path
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
-current_dir = Path(__file__).parent
-sys.path.insert(0, str(current_dir.parent.parent))  # noqa: E402
-sys.path.insert(0, str(current_dir))  # noqa: E402
-
-import asyncio  # noqa: E402
-import json  # noqa: E402
-import uuid  # noqa: E402
-from typing import Dict, Any, Optional, List, Union  # noqa: E402
-from datetime import datetime  # noqa: E402
-from pydantic import BaseModel, Field, field_validator, ConfigDict  # noqa: E402
-
-from ia_modules.pipeline.core import Pipeline, Step, ExecutionContext  # noqa: E402
-from ia_modules.pipeline.runner import create_pipeline_from_json  # noqa: E402
-from ia_modules.pipeline.services import ServiceRegistry  # noqa: E402
-from ia_modules.pipeline.in_memory_tracker import InMemoryExecutionTracker  # noqa: E402
+from ia_modules.pipeline.core import Pipeline, Step, ExecutionContext
+from ia_modules.pipeline.runner import create_pipeline_from_json
+from ia_modules.pipeline.services import ServiceRegistry
+from ia_modules.pipeline.in_memory_tracker import InMemoryExecutionTracker
 
 
 class AgentStepWrapper(Step):
@@ -193,8 +188,8 @@ class GraphPipelineRunner:
     async def run_pipeline_from_json(
         self,
         pipeline_config: Dict[str, Any],
-        input_data: Dict[str, Any] = None,
-        execution_context: ExecutionContext = None,
+        input_data: Optional[Dict[str, Any]] = None,
+        execution_context: Optional[ExecutionContext] = None,
         use_enhanced_features: bool = True
     ) -> Dict[str, Any]:
         """
@@ -525,8 +520,8 @@ class GraphPipelineRunner:
         name: str,
         steps: List[Step],
         flow: Dict[str, Any],
-        input_data: Dict[str, Any] = None,
-        execution_context: ExecutionContext = None,
+        input_data: Optional[Dict[str, Any]] = None,
+        execution_context: Optional[ExecutionContext] = None,
         loop_config: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Run a pipeline from pre-built Step instances.
@@ -664,7 +659,7 @@ class GraphPipelineRunner:
 
 async def run_graph_pipeline(
     pipeline_config: Dict[str, Any],
-    input_data: Dict[str, Any] = None,
+    input_data: Optional[Dict[str, Any]] = None,
     services: Optional[ServiceRegistry] = None
 ) -> Dict[str, Any]:
     """
@@ -684,7 +679,7 @@ async def run_graph_pipeline(
 
 async def run_graph_pipeline_from_file(
     pipeline_file: str,
-    input_data: Dict[str, Any] = None,
+    input_data: Optional[Dict[str, Any]] = None,
     services: Optional[ServiceRegistry] = None
 ) -> Dict[str, Any]:
     """

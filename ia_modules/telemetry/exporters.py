@@ -5,7 +5,7 @@ Export metrics to various monitoring systems.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 import logging
 from .metrics import Metric, MetricType
 
@@ -96,14 +96,16 @@ class PrometheusExporter(MetricsExporter):
 
         elif metric.metric_type == MetricType.HISTOGRAM:
             # Histogram has multiple lines
-            lines = []
+            lines: List[str] = []
             data = metric.value
             if isinstance(data, dict):
                 # Bucket lines
-                for bucket, count in data.get('buckets', {}).items():
-                    bucket_labels = {**metric.labels, 'le': str(bucket)}
-                    labels_str = self._format_labels(bucket_labels)
-                    lines.append(f"{name}_bucket{labels_str} {count}")
+                buckets_data = data.get('buckets', {})
+                if isinstance(buckets_data, dict):
+                    for bucket, count in buckets_data.items():
+                        bucket_labels = {**metric.labels, 'le': str(bucket)}
+                        labels_str = self._format_labels(bucket_labels)
+                        lines.append(f"{name}_bucket{labels_str} {count}")
 
                 # +Inf bucket
                 inf_labels = {**metric.labels, 'le': '+Inf'}
@@ -123,10 +125,12 @@ class PrometheusExporter(MetricsExporter):
             data = metric.value
             if isinstance(data, dict):
                 # Quantile lines
-                for quantile, value in data.get('quantiles', {}).items():
-                    quantile_labels = {**metric.labels, 'quantile': str(quantile)}
-                    labels_str = self._format_labels(quantile_labels)
-                    lines.append(f"{name}{labels_str} {value}")
+                quantiles_data = data.get('quantiles', {})
+                if isinstance(quantiles_data, dict):
+                    for quantile, value in quantiles_data.items():
+                        quantile_labels = {**metric.labels, 'quantile': str(quantile)}
+                        labels_str = self._format_labels(quantile_labels)
+                        lines.append(f"{name}{labels_str} {value}")
 
                 # Sum and count
                 labels_str = self._format_labels(metric.labels)
@@ -196,7 +200,7 @@ class CloudWatchExporter(MetricsExporter):
             except Exception as e:
                 self.logger.error(f"Failed to export metrics to CloudWatch: {e}")
 
-    def _format_cloudwatch_metric(self, metric: Metric) -> Optional[Dict[str, Any]]:
+    def _format_cloudwatch_metric(self, metric: Metric) -> Optional[Union[Dict[str, Any], List[Dict[str, Any]]]]:
         """Format metric for CloudWatch"""
         formatted_name = self.format_metric_name(metric.name)
 
@@ -207,29 +211,32 @@ class CloudWatchExporter(MetricsExporter):
         ]
 
         if metric.metric_type in [MetricType.COUNTER, MetricType.GAUGE]:
-            return {
-                'MetricName': formatted_name,
-                'Value': float(metric.value),
-                'Timestamp': metric.timestamp,
-                'Dimensions': dimensions,
-                'Unit': 'None'
-            }
+            if isinstance(metric.value, (int, float)):
+                return {
+                    'MetricName': formatted_name,
+                    'Value': float(metric.value),  # type: ignore[arg-type]
+                    'Timestamp': metric.timestamp,
+                    'Dimensions': dimensions,
+                    'Unit': 'None'
+                }
 
         # For histogram/summary, send multiple metrics
         elif metric.metric_type in [MetricType.HISTOGRAM, MetricType.SUMMARY]:
-            metrics_data = []
+            metrics_data: List[Dict[str, Any]] = []
             if isinstance(metric.value, dict):
                 # Send sum and count
+                sum_val = metric.value.get('sum', 0)
+                count_val = metric.value.get('count', 0)
                 metrics_data.append({
                     'MetricName': f"{formatted_name}_sum",
-                    'Value': float(metric.value.get('sum', 0)),
+                    'Value': float(sum_val) if isinstance(sum_val, (int, float)) else 0.0,
                     'Timestamp': metric.timestamp,
                     'Dimensions': dimensions,
                     'Unit': 'None'
                 })
                 metrics_data.append({
                     'MetricName': f"{formatted_name}_count",
-                    'Value': float(metric.value.get('count', 0)),
+                    'Value': float(count_val) if isinstance(count_val, (int, float)) else 0.0,
                     'Timestamp': metric.timestamp,
                     'Dimensions': dimensions,
                     'Unit': 'Count'

@@ -41,7 +41,7 @@ class CodeExecutorTool:
     def __init__(
         self,
         timeout: float = 5.0,
-        allowed_imports: Optional[list] = None
+        allowed_imports: Optional[list[str]] = None
     ):
         """
         Initialize code executor.
@@ -227,7 +227,7 @@ class CodeExecutorTool:
             Function result
         """
         # Execute code to define function
-        globals_dict = {}
+        globals_dict: dict[str, Any] = {}
         result = await self.execute(code, globals_dict=globals_dict)
 
         if not result["success"]:

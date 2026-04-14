@@ -187,7 +187,7 @@ class ConfigLoader:
             Configured GuardrailsEngine instance
         """
         try:
-            import yaml
+            import yaml  # type: ignore[import-untyped]
         except ImportError:
             raise ImportError(
                 "PyYAML is required for YAML configuration. "
@@ -263,7 +263,7 @@ class ConfigLoader:
             file_path: Output file path
         """
         try:
-            import yaml
+            import yaml  # type: ignore[import-untyped]
         except ImportError:
             raise ImportError(
                 "PyYAML is required for YAML configuration. "

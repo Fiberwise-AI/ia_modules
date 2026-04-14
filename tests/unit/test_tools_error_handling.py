@@ -5,7 +5,6 @@ Tests RetryExecutor, CircuitBreaker, FallbackExecutor,
 CompositeErrorHandler, and decorators.
 """
 
-import asyncio
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 

@@ -5,13 +5,6 @@ Exposes the PatternService (reflection, planning, tool use, agentic RAG,
 metacognition) over HTTP so the frontend PatternsPage can execute them.
 """
 
-import sys
-from pathlib import Path
-
-_backend_dir = str(Path(__file__).parent.parent)
-if _backend_dir not in sys.path:
-    sys.path.insert(0, _backend_dir)
-
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional

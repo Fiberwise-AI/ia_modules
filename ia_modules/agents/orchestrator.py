@@ -11,9 +11,8 @@ through step I/O like Pipeline does.
 Backward-compatible with BaseAgent — legacy agents are wrapped automatically.
 """
 
-import asyncio
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Callable, Any, Union
+from typing import Dict, List, Optional, Callable, Any
 import logging
 import time
 
@@ -34,7 +33,7 @@ class Edge:
     """
     to: str
     condition: Optional[Callable] = None
-    metadata: Dict[str, Any] = None
+    metadata: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -208,7 +207,7 @@ class AgentOrchestrator:
             self.graph[from_step] = []
 
         self.graph[from_step].append(
-            Edge(to=to_step, condition=condition, metadata=metadata)
+            Edge(to=to_step, condition=condition, metadata=metadata or {})
         )
 
         self.logger.debug("Added edge: %s → %s", from_step, to_step)
@@ -269,7 +268,7 @@ class AgentOrchestrator:
 
         return is_complete
 
-    async def run(self, start_step: str, input_data: Dict[str, Any] = None,
+    async def run(self, start_step: str, input_data: Optional[Dict[str, Any]] = None,
                   max_steps: int = 100) -> Dict[str, Any]:
         """
         Execute workflow starting from start_step.
@@ -364,7 +363,7 @@ class AgentOrchestrator:
             else:
                 self.logger.info("Workflow complete (no more steps)")
 
-            current = next_step
+            current = next_step  # type: ignore[assignment]
 
         if steps_taken >= max_steps:
             raise RuntimeError(
@@ -475,7 +474,7 @@ class _LegacyAgentWrapper:
 
     def __init__(self, name: str, agent):
         self.name = name
-        self.config = {}
+        self.config: Dict[str, Any] = {}
         self.services = None
         self._agent = agent
         self.logger = logging.getLogger(f"LegacyWrapper.{name}")

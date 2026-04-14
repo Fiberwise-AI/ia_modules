@@ -381,7 +381,7 @@ class PipelineValidator:
         to_visit = [start]
 
         # Build adjacency list
-        adjacency = {}
+        adjacency: dict[str, list[str]] = {}
         if 'paths' in flow:
             for path in flow.get('paths', []):
                 from_step = path.get('from_step')
@@ -412,7 +412,7 @@ class PipelineValidator:
     def _find_cycles(self, flow: Dict[str, Any]) -> List[str]:
         """Detect cycles in flow graph"""
         # Build adjacency list
-        adjacency = {}
+        adjacency: dict[str, list[str]] = {}
         if 'paths' in flow:
             for path in flow.get('paths', []):
                 from_step = path.get('from_step')

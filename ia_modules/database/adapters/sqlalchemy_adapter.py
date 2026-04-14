@@ -69,16 +69,16 @@ class SQLAlchemyAdapter(DatabaseInterface):
                 **self.engine_kwargs
             }
 
-            self._engine = create_engine(self.database_url, **engine_kwargs)
+            self._engine = create_engine(self.database_url, **engine_kwargs)  # type: ignore[assignment]
 
             # Create session maker
-            self._session_maker = sessionmaker(bind=self._engine)
+            self._session_maker = sessionmaker(bind=self._engine)  # type: ignore[assignment]
 
             # Create session
-            self._session = self._session_maker()
+            self._session = self._session_maker()  # type: ignore[misc]
 
             # Test connection
-            with self._engine.connect() as conn:
+            with self._engine.connect() as conn:  # type: ignore[union-attr]
                 conn.execute(text("SELECT 1"))
 
             logger.info(f"Connected to database via SQLAlchemy: {self.database_url}")

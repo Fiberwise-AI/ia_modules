@@ -73,7 +73,7 @@ class SQLCheckpointer(BaseCheckpointer):
         }
 
         try:
-            self.db.execute(query, params)
+            await self.db.execute(query, params)
             return checkpoint_id
         except Exception as e:
             raise CheckpointSaveError(f"Failed to save checkpoint: {e}")
@@ -100,7 +100,7 @@ class SQLCheckpointer(BaseCheckpointer):
             params = {"thread_id": thread_id}
 
         try:
-            row = self.db.fetch_one(query, params)
+            row = await self.db.fetch_one(query, params)
             if not row:
                 return None
 
@@ -150,7 +150,7 @@ class SQLCheckpointer(BaseCheckpointer):
             params = {"thread_id": thread_id, "limit": limit, "offset": offset}
 
         try:
-            rows = self.db.fetch_all(query, params)
+            rows = await self.db.fetch_all(query, params)
             return [
                 Checkpoint(
                     checkpoint_id=row["checkpoint_id"],
@@ -178,7 +178,7 @@ class SQLCheckpointer(BaseCheckpointer):
         params = {"thread_id": thread_id, "checkpoint_id": checkpoint_id}
 
         try:
-            self.db.execute(query, params)
+            await self.db.execute(query, params)
             return True
         except Exception:
             return False
@@ -186,7 +186,9 @@ class SQLCheckpointer(BaseCheckpointer):
     async def delete_checkpoints(
         self,
         thread_id: str,
-        pipeline_id: Optional[str] = None
+        pipeline_id: Optional[str] = None,
+        before: Optional[datetime] = None,
+        keep_latest: int = 0,
     ) -> int:
         """Delete all checkpoints for thread (optionally filtered by pipeline)"""
         if pipeline_id:
@@ -203,7 +205,7 @@ class SQLCheckpointer(BaseCheckpointer):
             params = {"thread_id": thread_id}
 
         try:
-            result = self.db.execute(query, params)
+            result = await self.db.execute(query, params)
             return result.rowcount if hasattr(result, 'rowcount') else 0
         except Exception:
             return 0
@@ -220,7 +222,7 @@ class SQLCheckpointer(BaseCheckpointer):
             WHERE thread_id = :thread_id
             """
             params = {"thread_id": thread_id}
-            row = self.db.fetch_one(query, params)
+            row = await self.db.fetch_one(query, params)
 
             return {
                 'total_checkpoints': row['total'] if row else 0,
@@ -234,10 +236,10 @@ class SQLCheckpointer(BaseCheckpointer):
                    COUNT(DISTINCT thread_id) as thread_count
             FROM pipeline_checkpoints
             """
-            row = self.db.fetch_one(query)
+            row = await self.db.fetch_one(query)
 
             threads_query = "SELECT DISTINCT thread_id FROM pipeline_checkpoints"
-            threads = self.db.fetch_all(threads_query)
+            threads = await self.db.fetch_all(threads_query)
 
             return {
                 'total_checkpoints': row['total'] if row else 0,

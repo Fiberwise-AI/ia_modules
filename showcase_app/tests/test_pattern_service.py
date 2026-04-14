@@ -6,17 +6,7 @@ the full pattern logic (iteration, JSON parsing, scoring, etc.).
 """
 
 import pytest
-import sys
-import os
-from unittest.mock import AsyncMock, patch
-
-# Add both showcase_app/ and showcase_app/backend/ to path
-_tests_dir = os.path.dirname(__file__)
-_showcase_dir = os.path.abspath(os.path.join(_tests_dir, '..'))
-_backend_dir = os.path.join(_showcase_dir, 'backend')
-for p in (_showcase_dir, _backend_dir):
-    if p not in sys.path:
-        sys.path.insert(0, p)
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from services.pattern_service import PatternService, _parse_json_response
 from services.llm_config import LLMCallResult
@@ -25,6 +15,15 @@ from services.llm_config import LLMCallResult
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _make_container():
+    """Build a minimal mock container satisfying PatternService.__init__."""
+    container = MagicMock()
+    container.reliability_service.metrics.record_workflow = AsyncMock()
+    container.reliability_service.metrics.record_step = AsyncMock()
+    container.ws_manager.broadcast_patterns = AsyncMock()
+    return container
+
 
 def _mock_llm_call(*responses: str):
     """Create a patched llm_call that returns responses in order."""
@@ -84,7 +83,7 @@ class TestReflectionPattern:
             # Iteration 2: critique (positive words → high score)
             "The output is clear, accurate, and complete. Excellent quality.",
         ):
-            svc = PatternService()
+            svc = PatternService(_make_container())
             result = await svc.reflection_example(
                 initial_output="AI is useful.",
                 criteria={"clarity": "Be clear", "completeness": "Be thorough"},
@@ -103,7 +102,7 @@ class TestReflectionPattern:
         with _mock_llm_call(
             "The output is clear, accurate, complete, thorough, and excellent.",
         ):
-            svc = PatternService()
+            svc = PatternService(_make_container())
             result = await svc.reflection_example(
                 initial_output="A very good piece of text.",
                 criteria={"quality": "High quality"},
@@ -121,7 +120,7 @@ class TestReflectionPattern:
             "Here is a much improved version with full detail.",
             "Clear, accurate, complete, excellent.",
         ):
-            svc = PatternService()
+            svc = PatternService(_make_container())
             result = await svc.reflection_example(
                 initial_output="Short.",
                 criteria={"quality": "High"},
@@ -156,7 +155,7 @@ class TestPlanningPattern:
             }
         ])
         with _mock_llm_call(plan_json):
-            svc = PatternService()
+            svc = PatternService(_make_container())
             result = await svc.planning_example(
                 goal="Write a research report",
                 constraints={"time": "2 hours"},
@@ -178,7 +177,7 @@ class TestPlanningPattern:
             ]
         })
         with _mock_llm_call(plan_json):
-            svc = PatternService()
+            svc = PatternService(_make_container())
             result = await svc.planning_example(goal="Do something")
 
         assert result["total_steps"] == 1
@@ -187,7 +186,7 @@ class TestPlanningPattern:
     async def test_planning_handles_bad_json(self):
         """Planning should return empty plan on unparseable response."""
         with _mock_llm_call("I can't create a plan right now."):
-            svc = PatternService()
+            svc = PatternService(_make_container())
             result = await svc.planning_example(goal="Do something")
 
         assert result["total_steps"] == 0
@@ -217,7 +216,7 @@ class TestToolUsePattern:
             "reasoning": "Search first, then analyze"
         })
         with _mock_llm_call(analysis_json):
-            svc = PatternService()
+            svc = PatternService(_make_container())
             result = await svc.tool_use_example(
                 task="Research quantum computing",
                 available_tools=["web_search", "calculator", "llm_analyzer"],
@@ -233,7 +232,7 @@ class TestToolUsePattern:
     async def test_tool_use_handles_bad_json(self):
         """Tool use should return empty fields on bad JSON."""
         with _mock_llm_call("Use the search tool and the calculator."):
-            svc = PatternService()
+            svc = PatternService(_make_container())
             result = await svc.tool_use_example(
                 task="Calculate something",
                 available_tools=["calculator"],
@@ -268,7 +267,7 @@ class TestAgenticRAGPattern:
             "machine learning in healthcare",   # Iteration 1: refine
             eval_high,                          # Iteration 2: evaluate (high → stop)
         ):
-            svc = PatternService()
+            svc = PatternService(_make_container())
             result = await svc.agentic_rag_example(
                 initial_query="machine learning",
                 max_refinements=3,
@@ -289,7 +288,7 @@ class TestAgenticRAGPattern:
             "refinement_suggestion": ""
         })
         with _mock_llm_call(eval_high):
-            svc = PatternService()
+            svc = PatternService(_make_container())
             result = await svc.agentic_rag_example(
                 initial_query="specific query",
                 max_refinements=5,
@@ -320,7 +319,7 @@ class TestMetacognitionPattern:
             "confidence": 0.8
         })
         with _mock_llm_call(analysis_json):
-            svc = PatternService()
+            svc = PatternService(_make_container())
             result = await svc.metacognition_example(
                 execution_trace=[
                     {"step": "search", "status": "success", "duration": 1.2},
@@ -339,7 +338,7 @@ class TestMetacognitionPattern:
     async def test_metacognition_handles_bad_json(self):
         """Metacognition should return defaults on bad JSON."""
         with _mock_llm_call("Performance looks okay overall."):
-            svc = PatternService()
+            svc = PatternService(_make_container())
             result = await svc.metacognition_example(
                 execution_trace=[],
                 performance_metrics={"accuracy": 0.5},
@@ -359,7 +358,7 @@ class TestRateLimiting:
         """Should raise HTTPException 429 when rate limited."""
         from fastapi import HTTPException
 
-        svc = PatternService()
+        svc = PatternService(_make_container())
         svc.monitoring_service.check_rate_limits = lambda *a: {
             "allowed": False,
             "reason": "Too many requests",
@@ -381,6 +380,13 @@ class TestRateLimiting:
 class TestPatternAPI:
     """Test that API endpoints call the service correctly."""
 
+    @staticmethod
+    def _mock_request():
+        """Build a mock FastAPI Request whose app.state holds a real PatternService."""
+        req = MagicMock()
+        req.app.state.services.pattern_service = PatternService(_make_container())
+        return req
+
     @pytest.mark.asyncio
     async def test_reflection_endpoint(self):
         from api.patterns import run_reflection, ReflectionRequest
@@ -388,12 +394,12 @@ class TestPatternAPI:
         with _mock_llm_call(
             "Clear, accurate, complete, excellent quality.",
         ):
-            request = ReflectionRequest(
+            body = ReflectionRequest(
                 initial_output="Test text",
                 criteria={"quality": "High"},
                 max_iterations=1,
             )
-            result = await run_reflection(request)
+            result = await run_reflection(body, self._mock_request())
 
         assert result["pattern"] == "reflection"
         assert result["total_iterations"] == 1
@@ -406,8 +412,8 @@ class TestPatternAPI:
             {"description": "Step 1", "reasoning": "R", "duration": 10, "dependencies": [], "success_criteria": ["Done"]}
         ])
         with _mock_llm_call(plan_json):
-            request = PlanningRequest(goal="Build something")
-            result = await run_planning(request)
+            body = PlanningRequest(goal="Build something")
+            result = await run_planning(body, self._mock_request())
 
         assert result["pattern"] == "planning"
         assert result["total_steps"] == 1
@@ -423,8 +429,8 @@ class TestPatternAPI:
             "refinement_suggestion": ""
         })
         with _mock_llm_call(eval_json):
-            request = AgenticRAGRequest(query="test query")
-            result = await run_agentic_rag(request)
+            body = AgenticRAGRequest(query="test query")
+            result = await run_agentic_rag(body, self._mock_request())
 
         assert result["pattern"] == "agentic_rag"
         assert result["final_relevance"] >= 0.75

@@ -170,11 +170,7 @@ Via nexusql package:
 
 | Python Version | Status | Notes |
 |----------------|--------|-------|
-| 3.9 | ✅ Supported | Minimum required version |
-| 3.10 | ✅ Supported | Fully tested |
-| 3.11 | ✅ Supported | Fully tested |
-| 3.12 | ✅ Supported | Fully tested |
-| 3.13 | ✅ Supported | All datetime deprecations fixed |
+| 3.14 | ✅ Supported | Minimum required version, CI tested |
 
 ## EARF Compliance Matrix
 
@@ -199,7 +195,7 @@ IA Modules v0.2.0 is fully compliant with the Enterprise Agent Reliability Frame
 
 | Module | Tests | Notes |
 |--------|-------|-------|
-| **Total** | **2,993+ tests** | Includes new agent-auth and built-in step-type suites |
+| **Total** | Unit, integration, showcase, e2e | Includes agent-auth and built-in step-type suites |
 
 
 

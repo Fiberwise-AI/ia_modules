@@ -1,6 +1,5 @@
 """Scheduler service using ia_modules library"""
 
-import asyncio
 import logging
 import uuid
 from typing import Dict, Any, Optional, List

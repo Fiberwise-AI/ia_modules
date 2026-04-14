@@ -303,13 +303,13 @@ class ExecutionGuardrailStep(Step):
                     blocked_tools=blocked_tools
                 ))
 
-            rails.append(CodeExecutionSafetyRail(
+            rails.append(CodeExecutionSafetyRail(  # type: ignore[arg-type]
                 GuardrailConfig(name="code", type=RailType.EXECUTION),
                 allow_file_read=config.get("allow_file_read", True),
                 allow_network=config.get("allow_network", False)
             ))
 
-            self.engine.add_rails(rails)
+            self.engine.add_rails(rails)  # type: ignore[arg-type]
 
         self.code_field = config.get("code_field", "code")
         self.tool_field = config.get("tool_field", "tool_name")

@@ -133,8 +133,8 @@ class CalculatorTool:
 
     async def calculate_statistics(
         self,
-        numbers: list,
-        operations: Optional[list] = None
+        numbers: list[float],
+        operations: Optional[list[str]] = None
     ) -> Dict[str, float]:
         """
         Calculate statistics for a list of numbers.
@@ -188,7 +188,7 @@ class CalculatorTool:
 async def calculator_function(
     expression: Optional[str] = None,
     operation: Optional[str] = None,
-    numbers: Optional[list] = None
+    numbers: Optional[list[float]] = None
 ) -> Dict[str, Any]:
     """
     Calculator function for tool execution.

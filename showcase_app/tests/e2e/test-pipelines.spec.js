@@ -59,6 +59,9 @@ test.describe('Pipelines Page', () => {
   });
 
   test('should display imported pipeline cards', async ({ page }) => {
+    // Switch to cards view (default is table)
+    await page.getByRole('button', { name: /cards/i }).click();
+
     // Verify we have pipeline cards, not the empty state
     await expect(page.getByText(/no pipelines yet/i)).not.toBeVisible();
 
@@ -70,6 +73,9 @@ test.describe('Pipelines Page', () => {
   });
 
   test('should show pipeline name and description on cards', async ({ page }) => {
+    // Switch to cards view (default is table)
+    await page.getByRole('button', { name: /cards/i }).click();
+
     // The first pipeline from the API should appear as an h3
     const firstPipeline = testPipelines[0];
     expect(firstPipeline).toBeTruthy();
@@ -107,6 +113,9 @@ test.describe('Pipelines Page', () => {
     // Verify dialog opens with the pipeline name in the header
     const dialogHeading = page.locator('h2', { hasText: /execute:/i });
     await expect(dialogHeading).toBeVisible();
+
+    // Switch to JSON mode (dialog defaults to form mode)
+    await page.getByRole('button', { name: /json/i }).click();
 
     // Verify the JSON textarea exists and has content
     const textarea = page.locator('textarea');
@@ -196,14 +205,17 @@ test.describe('Pipeline Execution', () => {
   });
 
   test('should handle conditional pipeline execution', async ({ page }) => {
+    // Switch to cards view so we can locate individual pipeline cards
+    await page.getByRole('button', { name: /cards/i }).click();
+
     const conditionalPipeline = page.getByText(/conditional/i).first();
     const isVisible = await conditionalPipeline.isVisible().catch(() => false);
     // Fail explicitly rather than silently skipping if no conditional pipeline exists
     test.skip(!isVisible, 'No conditional pipeline available - import one to enable this test');
 
     if (isVisible) {
-      // Find and click the Execute button in the same card
-      const card = conditionalPipeline.locator('xpath=ancestor::div[contains(@class, "rounded-lg")]').first();
+      // Find the card that contains this pipeline text (cards are direct children of the grid)
+      const card = page.locator('.grid > div', { has: page.getByText(/conditional/i) }).first();
       const executeBtn = card.getByRole('button', { name: /execute/i });
       await executeBtn.click();
 
@@ -215,12 +227,16 @@ test.describe('Pipeline Execution', () => {
   });
 
   test('should handle parallel pipeline execution', async ({ page }) => {
+    // Switch to cards view so we can locate individual pipeline cards
+    await page.getByRole('button', { name: /cards/i }).click();
+
     const parallelPipeline = page.getByText(/parallel/i).first();
     const isVisible = await parallelPipeline.isVisible().catch(() => false);
     test.skip(!isVisible, 'No parallel pipeline available - import one to enable this test');
 
     if (isVisible) {
-      const card = parallelPipeline.locator('xpath=ancestor::div[contains(@class, "rounded-lg")]').first();
+      // Find the card that contains this pipeline text (cards are direct children of the grid)
+      const card = page.locator('.grid > div', { has: page.getByText(/parallel/i) }).first();
       const executeBtn = card.getByRole('button', { name: /execute/i });
       await executeBtn.click();
 

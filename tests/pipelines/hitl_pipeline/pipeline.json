@@ -2,6 +2,14 @@
     "name": "Human-in-the-Loop Test Pipeline",
     "description": "Comprehensive test pipeline demonstrating various HITL interaction patterns",
     "version": "1.0.0",
+    "parameters": [
+        {
+            "name": "content",
+            "schema": {"type": "string"},
+            "required": false,
+            "description": "The content to process through the HITL pipeline"
+        }
+    ],
     "steps": [
         {
             "id": "initial_processing",

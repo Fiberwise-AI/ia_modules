@@ -7,7 +7,7 @@ Follows: https://opentelemetry.io/docs/specs/semconv/gen-ai/
 
 import time
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from contextlib import contextmanager
 
 from .metrics import MetricsCollector

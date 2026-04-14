@@ -233,7 +233,7 @@ class ParameterValidationRail(BaseGuardrail):
     Ensures parameters meet type, range, and format requirements.
     """
 
-    def __init__(self, config, parameter_schemas: Optional[Dict[str, Dict]] = None):
+    def __init__(self, config, parameter_schemas: Optional[Dict[str, Dict[str, Any]]] = None):
         """
         Initialize parameter validation rail.
 

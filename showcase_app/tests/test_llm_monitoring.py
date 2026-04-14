@@ -6,7 +6,8 @@ Tests token tracking, cost calculation, and rate limiting functionality.
 
 import pytest
 import time
-from backend.services.llm_monitoring_service import (
+
+from services.llm_monitoring_service import (
     LLMMonitoringService,
     CostCalculator,
     TokenBucket
